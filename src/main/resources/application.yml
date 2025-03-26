@@ -1,0 +1,13 @@
+server:
+  port: 8082  # Server port
+
+spring:
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+
+springdoc:
+  api-docs:
+    path: /moera/api-docs
+  swagger-ui:
+    path: /moera/api-ui.html

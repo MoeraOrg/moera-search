@@ -1,0 +1,8 @@
+*.iml
+.*.swp
+.*.ods#
+*.log
+/.idea/
+/target/
+/log/
+/application-dev*.yml
