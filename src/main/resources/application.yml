@@ -11,3 +11,8 @@ springdoc:
     path: /moera/api-docs
   swagger-ui:
     path: /moera/api-ui.html
+
+search:
+  node-name: search_0
+  node-full-name: "Moera Search"
+  node-title: "Moera search engine"
