@@ -10,6 +10,7 @@ public class Config {
     private String nodeName;
     private String nodeFullName;
     private String nodeTitle;
+    private DatabaseConfig database = new DatabaseConfig();
 
     public String getNodeName() {
         return nodeName;
@@ -33,6 +34,14 @@ public class Config {
 
     public void setNodeTitle(String nodeTitle) {
         this.nodeTitle = nodeTitle;
+    }
+
+    public DatabaseConfig getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(DatabaseConfig database) {
+        this.database = database;
     }
 
 }

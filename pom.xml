@@ -92,6 +92,11 @@
             <artifactId>bcprov-lts8on</artifactId>
             <version>2.73.7</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>5.26.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.moera</groupId>
