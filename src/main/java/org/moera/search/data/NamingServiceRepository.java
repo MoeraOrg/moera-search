@@ -32,15 +32,4 @@ public class NamingServiceRepository {
         );
     }
 
-    public void mergeName(String name) {
-        database.tx().run(
-            """
-            MERGE (n:MoeraNode {name: $name})
-                ON CREATE
-                    SET n.scanProfile = true
-            """,
-            Map.of("name", name)
-        );
-    }
-
 }

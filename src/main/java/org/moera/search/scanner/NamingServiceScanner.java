@@ -7,9 +7,12 @@ import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.search.config.Config;
 import org.moera.search.data.Database;
+import org.moera.search.data.DatabaseInitializedEvent;
+import org.moera.search.data.NameRepository;
 import org.moera.search.data.NamingServiceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -29,8 +32,16 @@ public class NamingServiceScanner {
     @Inject
     private NamingServiceRepository namingServiceRepository;
 
+    @Inject
+    private NameRepository nameRepository;
+
+    @EventListener(DatabaseInitializedEvent.class)
     @Scheduled(fixedDelayString = "PT6H")
-    public void scan() {
+    private void scan() {
+        if (!database.isReady()) {
+            return;
+        }
+
         log.info("Scanning naming service");
 
         var total = new AtomicInteger(0);
@@ -47,7 +58,10 @@ public class NamingServiceScanner {
                     }
                     for (var name : names) {
                         var nodeName = NodeName.toString(name.getName(), name.getGeneration());
-                        namingServiceRepository.mergeName(nodeName);
+                        if (nameRepository.existsName(nodeName)) {
+                            continue;
+                        }
+                        nameRepository.createName(nodeName);
                         total.incrementAndGet();
                         lastTimestamp = Math.max(lastTimestamp, name.getCreated());
                     }

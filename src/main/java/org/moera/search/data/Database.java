@@ -1,6 +1,9 @@
 package org.moera.search.data;
 
-import java.util.concurrent.CountDownLatch;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Map;
 import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
@@ -14,12 +17,23 @@ import org.neo4j.driver.TransactionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 @Component
 public class Database {
+
+    public class SessionCloseable implements AutoCloseable {
+
+        @Override
+        public void close() {
+            Database.this.close();
+        }
+
+    }
 
     private static final Logger log = LoggerFactory.getLogger(Database.class);
 
@@ -27,10 +41,13 @@ public class Database {
     private Config config;
 
     @Inject
+    private ApplicationContext applicationContext;
+
+    @Inject
     private ApplicationEventPublisher applicationEventPublisher;
 
     private Driver driver;
-    private final CountDownLatch ready = new CountDownLatch(1);
+    private boolean ready = false;
     private final ThreadLocal<Session> session = new ThreadLocal<>();
     private final ThreadLocal<TransactionContext> tx = new ThreadLocal<>();
 
@@ -42,43 +59,81 @@ public class Database {
         );
         driver.verifyConnectivity();
         log.info("Connected to database {}", config.getDatabase().getUrl());
-        executeMigrations();
-        ready.countDown();
-        log.info("Count down");
+        try {
+            executeMigrations();
+        } catch (Exception e) {
+            throw new DatabaseException("Migration failed: " + e.getMessage());
+        }
+        ready = true;
         applicationEventPublisher.publishEvent(new DatabaseInitializedEvent(this));
     }
 
-    private void executeMigrations() {
-        try (Session session = openNoWait()) {
-            int version = session.executeWrite(tx ->
-                tx.run("""
-                    MERGE (v:Version)
-                        ON CREATE
-                            SET v.version = 0
-                    RETURN v.version AS version
-                """).single().get("version").asInt()
+    private void executeMigrations() throws IOException {
+        try (var ignored = open()) {
+            int version = getVersion();
+            log.info("Current database version: {}", version);
+            while (true) {
+                var resources = applicationContext.getResources(
+                    "classpath:/db/migration/V%d__*.cypher".formatted(++version)
+                );
+                if (resources.length == 0 || !resources[0].exists()) {
+                    break;
+                }
+                executeMigration(version, resources[0]);
+            }
+        }
+    }
+
+    private void executeMigration(int version, Resource resource) throws IOException {
+        log.info("Executing database migration {}", resource.getFilename());
+        try (var reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
+            var buf = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                buf.append(line).append('\n');
+            }
+            executeWriteWithoutResult(() ->
+                tx().run(buf.toString())
             );
-            log.info("Database version: {}", version);
+            setVersion(version);
         }
     }
 
-    public Session open() {
-        try {
-            log.info("Await");
-            ready.await();
-            log.info("Ready");
-        } catch (InterruptedException e) {
-            // ignore
-        }
-        return openNoWait();
+    private Integer getVersion() {
+        return executeWrite(() ->
+            tx().run(
+                """
+                MERGE (v:Version)
+                    ON CREATE
+                        SET v.version = 0
+                RETURN v.version AS version
+                """
+            ).single().get("version").asInt()
+        );
     }
 
-    private Session openNoWait() {
+    private void setVersion(int version) {
+        executeWriteWithoutResult(() ->
+            tx().run(
+                """
+                MATCH (v:Version)
+                SET v.version = $version
+                """,
+                Map.of("version", version)
+            )
+        );
+    }
+
+    public boolean isReady() {
+        return ready;
+    }
+
+    public SessionCloseable open() {
         if (session.get() != null) {
             throw new DatabaseException("Database session is open already");
         }
         session.set(driver.session(SessionConfig.forDatabase(config.getDatabase().getDatabase())));
-        return session.get();
+        return new SessionCloseable();
     }
 
     public void close() {
