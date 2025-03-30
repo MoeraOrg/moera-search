@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 
 import com.github.jknack.handlebars.springmvc.HandlebarsViewResolver;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.moera.search.config.Config;
 import org.moera.search.global.CacheControlInterceptor;
 import org.moera.search.global.RequestRateInterceptor;
 import org.moera.search.ui.helper.HelperSource;
@@ -15,7 +16,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -24,6 +27,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class MoeraSearchApplication implements WebMvcConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(MoeraSearchApplication.class);
+
+    @Inject
+    private Config config;
 
     @Inject
     private RequestRateInterceptor requestRateInterceptor;
@@ -44,6 +50,18 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
             resolver.registerHelpers(helperSource);
         }
         return resolver;
+    }
+
+    @Bean
+    public TaskExecutor namingTaskExecutor() {
+        return buildTaskExecutor(config.getPools().getNaming());
+    }
+
+    private ThreadPoolTaskExecutor buildTaskExecutor(int size) {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(size);
+        taskExecutor.setMaxPoolSize(size);
+        return taskExecutor;
     }
 
     @Override

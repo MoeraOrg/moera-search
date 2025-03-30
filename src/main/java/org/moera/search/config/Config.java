@@ -12,6 +12,7 @@ public class Config {
     private String nodeTitle;
     private DatabaseConfig database = new DatabaseConfig();
     private String namingServer;
+    private PoolsConfig pools = new PoolsConfig();
 
     public String getNodeName() {
         return nodeName;
@@ -51,6 +52,14 @@ public class Config {
 
     public void setNamingServer(String namingServer) {
         this.namingServer = namingServer;
+    }
+
+    public PoolsConfig getPools() {
+        return pools;
+    }
+
+    public void setPools(PoolsConfig pools) {
+        this.pools = pools;
     }
 
 }
