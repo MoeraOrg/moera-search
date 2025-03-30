@@ -11,6 +11,7 @@ public class Config {
     private String nodeFullName;
     private String nodeTitle;
     private DatabaseConfig database = new DatabaseConfig();
+    private String namingServer;
 
     public String getNodeName() {
         return nodeName;
@@ -42,6 +43,14 @@ public class Config {
 
     public void setDatabase(DatabaseConfig database) {
         this.database = database;
+    }
+
+    public String getNamingServer() {
+        return namingServer;
+    }
+
+    public void setNamingServer(String namingServer) {
+        this.namingServer = namingServer;
     }
 
 }

@@ -1,5 +1,6 @@
 package org.moera.search.data;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
@@ -29,6 +30,7 @@ public class Database {
     private ApplicationEventPublisher applicationEventPublisher;
 
     private Driver driver;
+    private final CountDownLatch ready = new CountDownLatch(1);
     private final ThreadLocal<Session> session = new ThreadLocal<>();
     private final ThreadLocal<TransactionContext> tx = new ThreadLocal<>();
 
@@ -41,11 +43,13 @@ public class Database {
         driver.verifyConnectivity();
         log.info("Connected to database {}", config.getDatabase().getUrl());
         executeMigrations();
+        ready.countDown();
+        log.info("Count down");
         applicationEventPublisher.publishEvent(new DatabaseInitializedEvent(this));
     }
 
     private void executeMigrations() {
-        try (Session session = open()) {
+        try (Session session = openNoWait()) {
             int version = session.executeWrite(tx ->
                 tx.run("""
                     MERGE (v:Version)
@@ -59,6 +63,17 @@ public class Database {
     }
 
     public Session open() {
+        try {
+            log.info("Await");
+            ready.await();
+            log.info("Ready");
+        } catch (InterruptedException e) {
+            // ignore
+        }
+        return openNoWait();
+    }
+
+    private Session openNoWait() {
         if (session.get() != null) {
             throw new DatabaseException("Database session is open already");
         }

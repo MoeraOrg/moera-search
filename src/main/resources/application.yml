@@ -16,3 +16,4 @@ search:
   node-name: search_0
   node-full-name: "Moera Search"
   node-title: "Moera search engine"
+  naming-server: "https://naming.moera.org/moera-naming"
