@@ -14,6 +14,7 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.config.Config;
 import org.moera.search.data.MediaFile;
 import org.moera.search.data.MediaFileRepository;
+import org.moera.search.model.AvatarImageUtil;
 import org.moera.search.util.DigestingOutputStream;
 import org.moera.search.util.ParametrizedLock;
 import org.slf4j.Logger;

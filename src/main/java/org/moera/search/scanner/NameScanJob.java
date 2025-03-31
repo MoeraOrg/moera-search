@@ -10,7 +10,7 @@ import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NameRepository;
 import org.moera.search.job.Job;
-import org.moera.search.media.AvatarImageUtil;
+import org.moera.search.model.AvatarImageUtil;
 import org.moera.search.media.MediaManager;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {

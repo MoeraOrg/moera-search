@@ -1,4 +1,4 @@
-package org.moera.search.media;
+package org.moera.search.model;
 
 import org.moera.lib.node.types.AvatarImage;
 import org.moera.lib.util.LogUtil;

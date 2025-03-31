@@ -265,7 +265,9 @@ public class MediaOperations {
         return out.getDigest();
     }
 
-    public ResponseEntity<Resource> serve(MediaFile mediaFile, boolean download) {
+    public ResponseEntity<Resource> serve(MediaFile mediaFile, Boolean download) {
+        download = download != null ? download : false;
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.valueOf(mediaFile.getMimeType()));
         if (download) {
