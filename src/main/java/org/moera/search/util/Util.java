@@ -20,4 +20,12 @@ public class Util {
         return s != null ? Base64.getUrlDecoder().decode(s) : null;
     }
 
+    public static Integer toInteger(Long value) {
+        return value != null ? value.intValue() : null;
+    }
+
+    public static Short toShort(Long value) {
+        return value != null ? value.shortValue() : null;
+    }
+
 }

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.moera.search.media.MimeUtils;
+import org.moera.search.util.Util;
 import org.neo4j.driver.types.Node;
 
 public class MediaFile {
@@ -26,8 +27,8 @@ public class MediaFile {
     public MediaFile(Node node) {
         id = node.get("id").asString(null);
         mimeType = node.get("mimeType").asString(null);
-        sizeX = (Integer) node.get("sizeX").asObject();
-        sizeY = (Integer) node.get("sizeY").asObject();
+        sizeX = Util.toInteger((Long) node.get("sizeX").asObject());
+        sizeY = Util.toInteger((Long) node.get("sizeY").asObject());
         orientation = (short) node.get("orientation").asInt(1);
         fileSize = node.get("fileSize").asLong(0);
         exposed = node.get("exposed").asBoolean(false);

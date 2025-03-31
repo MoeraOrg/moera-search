@@ -4,10 +4,14 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.WhoAmI;
+import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NameRepository;
 import org.moera.search.job.Job;
+import org.moera.search.media.AvatarImageUtil;
+import org.moera.search.media.MediaManager;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {
 
@@ -35,6 +39,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
     public static class State {
 
         private WhoAmI whoAmI;
+        private boolean detailsUpdated;
 
         public State() {
         }
@@ -47,6 +52,14 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             this.whoAmI = whoAmI;
         }
 
+        public boolean isDetailsUpdated() {
+            return detailsUpdated;
+        }
+
+        public void setDetailsUpdated(boolean detailsUpdated) {
+            this.detailsUpdated = detailsUpdated;
+        }
+
     }
 
     @Inject
@@ -54,6 +67,9 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
 
     @Inject
     private NameRepository nameRepository;
+
+    @Inject
+    private MediaManager mediaManager;
 
     public NameScanJob() {
         state = new State();
@@ -77,7 +93,27 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             checkpoint();
         }
 
-        database.executeWriteWithoutResult(() -> nameRepository.updateName(parameters.nodeName, state.whoAmI));
+        if (!state.detailsUpdated) {
+            database.executeWriteWithoutResult(() -> nameRepository.updateName(parameters.nodeName, state.whoAmI));
+            state.detailsUpdated = true;
+            checkpoint();
+        }
+
+        database.executeWriteWithoutResult(() -> {
+            try {
+                mediaManager.downloadAvatar(parameters.nodeName, state.whoAmI.getAvatar());
+            } catch (MoeraNodeException e) {
+                throw new MoeraNodeUncheckedException(e);
+            }
+        });
+        if (state.whoAmI.getAvatar() != null && AvatarImageUtil.getMediaFile(state.whoAmI.getAvatar()) != null) {
+            var mediaFileId = AvatarImageUtil.getMediaFile(state.whoAmI.getAvatar()).getId();
+            String shape = state.whoAmI.getAvatar().getShape();
+            database.executeWriteWithoutResult(() -> {
+                nameRepository.removeAvatar(parameters.nodeName);
+                nameRepository.addAvatar(parameters.nodeName, mediaFileId, shape);
+            });
+        }
     }
 
     @Override

@@ -24,8 +24,8 @@ public class NameRepository {
     public boolean existsName(String name) {
         return database.tx().run(
             """
-            MATCH (:MoeraNode {name: $name})
-            RETURN count(*) > 0 AS exists
+            MATCH (n:MoeraNode {name: $name})
+            RETURN count(n) > 0 AS exists
             """,
             Map.of("name", name)
         ).single().get("exists").asBoolean();
@@ -34,7 +34,8 @@ public class NameRepository {
     public void createName(String name) {
         database.tx().run(
             """
-            CREATE (:MoeraNode {name: $name, scanProfile: true})
+            MERGE (n:MoeraNode {name: $name})
+                ON CREATE SET n.scanProfile = true
             """,
             Map.of("name", name)
         );
@@ -62,6 +63,30 @@ public class NameRepository {
                 n.profileScannedAt = $now
             """,
             args
+        );
+    }
+
+    public void addAvatar(String name, String mediaFileId, String shape) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (mf:MediaFile {id: $mediaFileId})
+            CREATE (n)-[:AVATAR {shape: $shape}]->(mf)
+            """,
+            Map.of(
+                "name", name,
+                "mediaFileId", mediaFileId,
+                "shape", shape
+            )
+        );
+    }
+
+    public void removeAvatar(String name) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $name})-[a:AVATAR]->()
+            DELETE a
+            """,
+            Map.of("name", name)
         );
     }
 

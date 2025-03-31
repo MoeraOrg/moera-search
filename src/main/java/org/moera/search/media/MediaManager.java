@@ -47,6 +47,7 @@ public class MediaManager {
             throw new MoeraNodeException("Response has no Content-Type");
         }
         Long contentLength = responseBody.contentLength() >= 0 ? responseBody.contentLength() : null;
+        log.debug("Content length: {} bytes", contentLength);
         try {
             DigestingOutputStream out = MediaOperations.transfer(
                 responseBody.byteStream(), tmpFile.outputStream(), contentLength, maxSize

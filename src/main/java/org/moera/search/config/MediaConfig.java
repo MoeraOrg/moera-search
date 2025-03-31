@@ -6,7 +6,7 @@ public class MediaConfig {
     private String serve = "stream"; // stream, sendfile, accel
     private String accelPrefix = "/";
     private boolean directServe;
-    private int avatarMaxSize = 51200;
+    private int avatarMaxSize = 102400;
 
     public String getPath() {
         return path;
