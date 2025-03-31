@@ -13,6 +13,7 @@ public class Config {
     private DatabaseConfig database = new DatabaseConfig();
     private String namingServer;
     private PoolsConfig pools = new PoolsConfig();
+    private MediaConfig media = new MediaConfig();
 
     public String getNodeName() {
         return nodeName;
@@ -60,6 +61,14 @@ public class Config {
 
     public void setPools(PoolsConfig pools) {
         this.pools = pools;
+    }
+
+    public MediaConfig getMedia() {
+        return media;
+    }
+
+    public void setMedia(MediaConfig media) {
+        this.media = media;
     }
 
 }

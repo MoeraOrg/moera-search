@@ -69,7 +69,7 @@ public class NameRepository {
         return database.tx().run(
             """
             MATCH (n:MoeraNode {scanProfile: true})
-            WHERE NOT EXISTS {(n)<-[:SCANS]-(:Job)}
+            WHERE NOT (n)<-[:SCANS]-(:Job)
             LIMIT $limit
             RETURN n.name AS name
             """,

@@ -97,6 +97,16 @@
             <artifactId>neo4j-java-driver</artifactId>
             <version>5.26.0</version>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.18.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.drewnoakes</groupId>
+            <artifactId>metadata-extractor</artifactId>
+            <version>2.19.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.moera</groupId>
