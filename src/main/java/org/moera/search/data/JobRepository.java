@@ -1,5 +1,8 @@
 package org.moera.search.data;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,37 +24,40 @@ public class JobRepository {
             RETURN j
             """,
             Map.of("before", before)
-        ).list(PendingJob::new);
+        ).stream().map(r -> new PendingJob(r.get("j").asNode())).toList();
     }
 
     public UUID create(String jobType, String parameters, String state) {
         UUID id = UUID.randomUUID();
+        var args = new HashMap<String, Object>();
+        args.put("id", id.toString());
+        args.put("jobType", jobType);
+        args.put("parameters", parameters);
+        args.put("state", state);
+
         database.tx().run(
             """
-            CREATE (j:Job {id: $id, jobType: $jobType, parameters: $parameters, state: $state})
+            CREATE (:Job {id: $id, jobType: $jobType, parameters: $parameters, state: $state})
             """,
-            Map.of(
-                "id", id.toString(),
-                "jobType", jobType,
-                "parameters", parameters,
-                "state", state
-            )
+            args
         );
+
         return id;
     }
 
     public void updateState(UUID id, String state, int retries, Long waitUntil) {
+        var args = new HashMap<String, Object>();
+        args.put("id", id.toString());
+        args.put("state", state);
+        args.put("retries", retries);
+        args.put("waitUntil", waitUntil);
+
         database.tx().run(
             """
             MATCH (j:Job {id: $id})
             SET j.state = $state, j.retries = $retries, j.waitUntil = $waitUntil
             """,
-            Map.of(
-                "id", id.toString(),
-                "state", state,
-                "retries", retries,
-                "waitUntil", waitUntil
-            )
+            args
         );
     }
 
@@ -63,6 +69,20 @@ public class JobRepository {
             """,
             Map.of("id", id.toString())
         );
+    }
+
+    public int countRunningByType(String jobType) {
+        return database.tx().run(
+            """
+            MATCH (j:Job {jobType: $jobType})
+            WHERE j.waitUntil IS NULL OR j.waitUntil >= $now
+            RETURN count(j) AS count
+            """,
+            Map.of(
+                "jobType", jobType,
+                "now", Instant.now().minus(1, ChronoUnit.HOURS).toEpochMilli()
+            )
+        ).single().get("count").asInt();
     }
 
 }

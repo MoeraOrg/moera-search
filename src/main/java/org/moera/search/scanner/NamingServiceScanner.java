@@ -10,6 +10,7 @@ import org.moera.search.data.Database;
 import org.moera.search.data.DatabaseInitializedEvent;
 import org.moera.search.data.NameRepository;
 import org.moera.search.data.NamingServiceRepository;
+import org.moera.search.global.RequestCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -27,6 +28,9 @@ public class NamingServiceScanner {
     private Config config;
 
     @Inject
+    private RequestCounter requestCounter;
+
+    @Inject
     private Database database;
 
     @Inject
@@ -42,37 +46,39 @@ public class NamingServiceScanner {
             return;
         }
 
-        log.info("Scanning naming service");
+        try (var ignored = requestCounter.allot()) {
+            log.info("Scanning naming service");
 
-        var total = new AtomicInteger(0);
-        try (var ignored = database.open()) {
-            database.executeWriteWithoutResult(() -> {
-                long scanTimestamp = namingServiceRepository.getScanTimestamp();
-                long lastTimestamp = scanTimestamp;
-                var naming = new MoeraNaming(config.getNamingServer());
-                int page = 0;
-                while (true) {
-                    var names = naming.getAllNewer(scanTimestamp, page++, PAGE_SIZE);
-                    if (names.isEmpty()) {
-                        break;
-                    }
-                    for (var name : names) {
-                        var nodeName = NodeName.toString(name.getName(), name.getGeneration());
-                        if (nameRepository.existsName(nodeName)) {
-                            continue;
+            var total = new AtomicInteger(0);
+            try (var ignored2 = database.open()) {
+                database.executeWriteWithoutResult(() -> {
+                    long scanTimestamp = namingServiceRepository.getScanTimestamp();
+                    long lastTimestamp = scanTimestamp;
+                    var naming = new MoeraNaming(config.getNamingServer());
+                    int page = 0;
+                    while (true) {
+                        var names = naming.getAllNewer(scanTimestamp, page++, PAGE_SIZE);
+                        if (names.isEmpty()) {
+                            break;
                         }
-                        nameRepository.createName(nodeName);
-                        total.incrementAndGet();
-                        lastTimestamp = Math.max(lastTimestamp, name.getCreated());
+                        for (var name : names) {
+                            var nodeName = NodeName.toString(name.getName(), name.getGeneration());
+                            if (nameRepository.existsName(nodeName)) {
+                                continue;
+                            }
+                            nameRepository.createName(nodeName);
+                            total.incrementAndGet();
+                            lastTimestamp = Math.max(lastTimestamp, name.getCreated());
+                        }
                     }
-                }
-                if (lastTimestamp > scanTimestamp) {
-                    namingServiceRepository.updateScanTimestamp(lastTimestamp);
-                }
-            });
-        }
+                    if (lastTimestamp > scanTimestamp) {
+                        namingServiceRepository.updateScanTimestamp(lastTimestamp);
+                    }
+                });
+            }
 
-        log.info("{} new names added", total.get());
+            log.info("{} new names added", total.get());
+        }
     }
 
 }

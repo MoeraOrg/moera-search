@@ -14,6 +14,7 @@ import org.moera.lib.node.exception.MoeraNodeApiOperationException;
 import org.moera.lib.node.exception.MoeraNodeApiValidationException;
 import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.search.api.MoeraNodeUnknownNameException;
+import org.moera.search.data.Database;
 import org.moera.search.global.RequestCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,9 @@ public abstract class Job<P, S> implements Runnable {
     protected S state;
 
     protected Jobs jobs;
+
+    @Inject
+    protected Database database;
 
     private UUID id;
     private int retries;
@@ -197,17 +201,19 @@ public abstract class Job<P, S> implements Runnable {
     @Override
     public final void run() {
         try (var ignored = requestCounter.allot()) {
-            started();
+            try (var ignored2 = database.open()) {
+                started();
 
-            boolean exceptionThrown = false;
-            try {
-                execute();
-            } catch (Throwable e) {
-                handleException(e);
-                exceptionThrown = true;
-            } finally {
-                if (!exceptionThrown) {
-                    succeeded();
+                boolean exceptionThrown = false;
+                try {
+                    execute();
+                } catch (Throwable e) {
+                    handleException(e);
+                    exceptionThrown = true;
+                } finally {
+                    if (!exceptionThrown) {
+                        succeeded();
+                    }
                 }
             }
         }

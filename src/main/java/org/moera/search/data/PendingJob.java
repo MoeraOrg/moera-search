@@ -2,7 +2,7 @@ package org.moera.search.data;
 
 import java.util.UUID;
 
-import org.neo4j.driver.Record;
+import org.neo4j.driver.types.Node;
 
 public class PendingJob {
 
@@ -13,13 +13,13 @@ public class PendingJob {
     private int retries;
     private Long waitUntil;
 
-    public PendingJob(Record record) {
-        id = UUID.fromString(record.get("id").asString(null));
-        jobType = record.get("jobType").asString(null);
-        parameters = record.get("parameters").asString(null);
-        state = record.get("state").asString(null);
-        retries = record.get("retries").asInt(0);
-        waitUntil = (Long) record.get("waitUntil").asObject();
+    public PendingJob(Node node) {
+        id = UUID.fromString(node.get("id").asString(null));
+        jobType = node.get("jobType").asString(null);
+        parameters = node.get("parameters").asString(null);
+        state = node.get("state").asString(null);
+        retries = node.get("retries").asInt(0);
+        waitUntil = (Long) node.get("waitUntil").asObject();
     }
 
     public UUID getId() {

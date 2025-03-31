@@ -74,15 +74,15 @@ public class Jobs {
         return ready;
     }
 
-    public <P, T extends Job<P, ?>> void run(Class<T> klass, P parameters) {
-        run(klass, parameters, true);
+    public <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters) {
+        return run(klass, parameters, true);
     }
 
-    public <P, T extends Job<P, ?>> void runNoPersist(Class<T> klass, P parameters) {
-        run(klass, parameters, false);
+    public <P, T extends Job<P, ?>> UUID runNoPersist(Class<T> klass, P parameters) {
+        return run(klass, parameters, false);
     }
 
-    private <P, T extends Job<P, ?>> void run(Class<T> klass, P parameters, boolean persistent) {
+    private <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters, boolean persistent) {
         if (!ready) {
             throw new JobsManagerNotInitializedException();
         }
@@ -96,7 +96,7 @@ public class Jobs {
             log.error("Cannot find a job constructor", e);
         }
         if (job == null) {
-            return;
+            return null;
         }
 
         job.setParameters(parameters);
@@ -115,6 +115,12 @@ public class Jobs {
         } catch (RejectedExecutionException e) {
             // ignore, the job was persisted
         }
+
+        return job.getId();
+    }
+
+    public int countRunning(Class<?> klass) {
+        return jobRepository.countRunningByType(klass.getCanonicalName());
     }
 
     @Scheduled(fixedDelayString = "PT1H")
