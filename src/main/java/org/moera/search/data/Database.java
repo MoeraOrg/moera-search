@@ -62,7 +62,7 @@ public class Database {
         try {
             executeMigrations();
         } catch (Exception e) {
-            throw new DatabaseException("Migration failed: " + e.getMessage());
+            throw new DatabaseException("Migration failed: " + e.getMessage(), e);
         }
         ready = true;
         applicationEventPublisher.publishEvent(new DatabaseInitializedEvent(this));
@@ -157,9 +157,11 @@ public class Database {
         }
         return session().executeRead(context -> {
             tx.set(context);
-            T result = callback.get();
-            tx.remove();
-            return result;
+            try {
+                return callback.get();
+            } finally {
+                tx.remove();
+            }
         });
     }
 
@@ -169,9 +171,11 @@ public class Database {
         }
         return session().executeWrite(context -> {
             tx.set(context);
-            T result = callback.get();
-            tx.remove();
-            return result;
+            try {
+                return callback.get();
+            } finally {
+                tx.remove();
+            }
         });
     }
 
@@ -181,8 +185,11 @@ public class Database {
         }
         session().executeWriteWithoutResult(context -> {
             tx.set(context);
-            callback.run();
-            tx.remove();
+            try {
+                callback.run();
+            } finally {
+                tx.remove();
+            }
         });
     }
 
