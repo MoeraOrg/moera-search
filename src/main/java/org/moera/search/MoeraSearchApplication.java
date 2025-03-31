@@ -57,6 +57,11 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
         return buildTaskExecutor(config.getPools().getNaming());
     }
 
+    @Bean
+    public TaskExecutor jobTaskExecutor() {
+        return buildTaskExecutor(config.getPools().getJob());
+    }
+
     private ThreadPoolTaskExecutor buildTaskExecutor(int size) {
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
         taskExecutor.setCorePoolSize(size);

@@ -1,5 +1,6 @@
 package org.moera.search.data;
 
+import java.time.Instant;
 import java.util.Map;
 import jakarta.inject.Inject;
 
@@ -26,9 +27,12 @@ public class NamingServiceRepository {
         database.tx().run(
             """
             MATCH (ns:NamingService)
-            SET ns.scanTimestamp = $timestamp, ns.scannedAt = localdatetime.transaction()
+            SET ns.scanTimestamp = $timestamp, ns.scannedAt = $now
             """,
-            Map.of("timestamp", timestamp)
+            Map.of(
+                "timestamp", timestamp,
+                "now", Instant.now().toEpochMilli()
+            )
         );
     }
 
