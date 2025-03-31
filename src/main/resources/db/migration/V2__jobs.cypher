@@ -1,0 +1,1 @@
+CREATE CONSTRAINT job_id FOR (j:Job) REQUIRE j.id IS UNIQUE;
