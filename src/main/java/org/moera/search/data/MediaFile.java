@@ -19,7 +19,7 @@ public class MediaFile {
     private long fileSize;
     private boolean exposed;
     private byte[] digest;
-    private long createdAt;
+    private long createdAt = Instant.now().toEpochMilli();
 
     public MediaFile() {
     }
@@ -33,7 +33,7 @@ public class MediaFile {
         fileSize = node.get("fileSize").asLong(0);
         exposed = node.get("exposed").asBoolean(false);
         digest = node.get("digest").asByteArray(null);
-        createdAt = node.get("createdAt").asLong(Instant.now().toEpochMilli());
+        createdAt = node.get("createdAt").asLong(createdAt);
     }
 
     public Map<String, Object> asMap() {
