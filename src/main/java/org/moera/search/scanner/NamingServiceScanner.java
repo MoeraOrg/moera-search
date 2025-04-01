@@ -63,7 +63,7 @@ public class NamingServiceScanner {
                         }
                         for (var name : names) {
                             var nodeName = NodeName.toString(name.getName(), name.getGeneration());
-                            if (nodeRepository.existsName(nodeName)) {
+                            if (nodeName.equals(config.getNodeName()) || nodeRepository.existsName(nodeName)) {
                                 continue;
                             }
                             nodeRepository.createName(nodeName);
