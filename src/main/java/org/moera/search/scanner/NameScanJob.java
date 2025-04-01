@@ -8,7 +8,7 @@ import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
-import org.moera.search.data.NameRepository;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
 import org.moera.search.model.AvatarImageUtil;
 import org.moera.search.media.MediaManager;
@@ -66,7 +66,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
     private NodeApi nodeApi;
 
     @Inject
-    private NameRepository nameRepository;
+    private NodeRepository nodeRepository;
 
     @Inject
     private MediaManager mediaManager;
@@ -94,7 +94,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
         }
 
         if (!state.detailsUpdated) {
-            database.executeWriteWithoutResult(() -> nameRepository.updateName(parameters.nodeName, state.whoAmI));
+            database.executeWriteWithoutResult(() -> nodeRepository.updateName(parameters.nodeName, state.whoAmI));
             state.detailsUpdated = true;
             checkpoint();
         }
@@ -110,8 +110,8 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             var mediaFileId = AvatarImageUtil.getMediaFile(state.whoAmI.getAvatar()).getId();
             String shape = state.whoAmI.getAvatar().getShape();
             database.executeWriteWithoutResult(() -> {
-                nameRepository.removeAvatar(parameters.nodeName);
-                nameRepository.addAvatar(parameters.nodeName, mediaFileId, shape);
+                nodeRepository.removeAvatar(parameters.nodeName);
+                nodeRepository.addAvatar(parameters.nodeName, mediaFileId, shape);
             });
         }
     }
@@ -119,7 +119,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
     @Override
     protected void failed() {
         super.failed();
-        database.executeWriteWithoutResult(() -> nameRepository.scanFailed(parameters.nodeName));
+        database.executeWriteWithoutResult(() -> nodeRepository.scanFailed(parameters.nodeName));
     }
 
 }

@@ -8,7 +8,7 @@ import org.moera.lib.naming.NodeName;
 import org.moera.search.config.Config;
 import org.moera.search.data.Database;
 import org.moera.search.data.DatabaseInitializedEvent;
-import org.moera.search.data.NameRepository;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.data.NamingServiceRepository;
 import org.moera.search.global.RequestCounter;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public class NamingServiceScanner {
     private NamingServiceRepository namingServiceRepository;
 
     @Inject
-    private NameRepository nameRepository;
+    private NodeRepository nodeRepository;
 
     @EventListener(DatabaseInitializedEvent.class)
     @Scheduled(fixedDelayString = "PT6H")
@@ -63,10 +63,10 @@ public class NamingServiceScanner {
                         }
                         for (var name : names) {
                             var nodeName = NodeName.toString(name.getName(), name.getGeneration());
-                            if (nameRepository.existsName(nodeName)) {
+                            if (nodeRepository.existsName(nodeName)) {
                                 continue;
                             }
-                            nameRepository.createName(nodeName);
+                            nodeRepository.createName(nodeName);
                             total.incrementAndGet();
                             lastTimestamp = Math.max(lastTimestamp, name.getCreated());
                         }

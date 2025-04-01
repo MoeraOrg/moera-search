@@ -4,7 +4,7 @@ import java.util.UUID;
 import jakarta.inject.Inject;
 
 import org.moera.search.data.Database;
-import org.moera.search.data.NameRepository;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.global.RequestCounter;
 import org.moera.search.job.Jobs;
 import org.slf4j.Logger;
@@ -29,7 +29,7 @@ public class NameScanner {
     private Database database;
 
     @Inject
-    private NameRepository nameRepository;
+    private NodeRepository nodeRepository;
 
     @Scheduled(fixedDelayString = "PT1M")
     public void scan() {
@@ -43,13 +43,13 @@ public class NameScanner {
                 if (runningCount >= MAX_JOBS) {
                     return;
                 }
-                var names = database.executeRead(() -> nameRepository.findNamesToScan(MAX_JOBS - runningCount));
+                var names = database.executeRead(() -> nodeRepository.findNamesToScan(MAX_JOBS - runningCount));
                 for (var name : names) {
                     log.info("Starting scanning of {}", name);
                     try {
                         UUID jobId = jobs.run(NameScanJob.class, new NameScanJob.Parameters(name));
                         if (jobId != null) {
-                            database.executeWriteWithoutResult(() -> nameRepository.assignScanJob(name, jobId));
+                            database.executeWriteWithoutResult(() -> nodeRepository.assignScanJob(name, jobId));
                         }
                     } catch (Exception e) {
                         log.error("Error starting scanning of {}", name, e);

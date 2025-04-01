@@ -9,11 +9,13 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
+import org.moera.search.model.SearchNodeInfoUtil;
 import org.springframework.stereotype.Component;
 
 @Component
-public class NameRepository {
+public class NodeRepository {
 
     @Inject
     private Database database;
@@ -126,6 +128,47 @@ public class NameRepository {
                 "now", Instant.now().toEpochMilli()
             )
         );
+    }
+
+    public List<SearchNodeInfo> searchByNamePrefix(String prefix, int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE lower(n.name) STARTS WITH $prefix
+            LIMIT $limit
+            OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
+            RETURN n, a.shape AS shape, mf
+            """,
+            Map.of(
+                "prefix", prefix.toLowerCase(),
+                "limit", limit
+            )
+        ).stream().map(r -> {
+            var node = r.get("n").asNode();
+            var avatarShape = r.get("shape").asString(null);
+            var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
+            return SearchNodeInfoUtil.build(node, avatar, avatarShape);
+        }).toList();
+    }
+
+    public List<SearchNodeInfo> searchByFullNamePrefix(String prefix, int limit) {
+        return database.tx().run(
+            """
+            CALL db.index.fulltext.queryNodes("moera_node_full_name", $query) YIELD node AS n, score
+            LIMIT $limit
+            OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
+            RETURN n, a.shape AS shape, mf
+            """,
+            Map.of(
+                "query", prefix + "*",
+                "limit", limit
+            )
+        ).stream().map(r -> {
+            var node = r.get("n").asNode();
+            var avatarShape = r.get("shape").asString(null);
+            var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
+            return SearchNodeInfoUtil.build(node, avatar, avatarShape);
+        }).toList();
     }
 
 }
