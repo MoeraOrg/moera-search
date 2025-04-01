@@ -91,10 +91,13 @@ public class Database {
             String line;
             while ((line = reader.readLine()) != null) {
                 buf.append(line).append('\n');
+                if (line.endsWith(";")) {
+                    executeWriteWithoutResult(() ->
+                        tx().run(buf.toString())
+                    );
+                    buf.setLength(0);
+                }
             }
-            executeWriteWithoutResult(() ->
-                tx().run(buf.toString())
-            );
             setVersion(version);
         }
     }

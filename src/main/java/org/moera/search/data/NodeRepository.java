@@ -152,6 +152,8 @@ public class NodeRepository {
     }
 
     public List<SearchNodeInfo> searchByFullNamePrefix(String prefix, int limit) {
+        var terms = prefix.split("\\s+");
+        String query = String.join("* ", terms) + "*";
         return database.tx().run(
             """
             CALL db.index.fulltext.queryNodes("moera_node_full_name", $query) YIELD node AS n, score
@@ -160,7 +162,7 @@ public class NodeRepository {
             RETURN n, a.shape AS shape, mf
             """,
             Map.of(
-                "query", prefix + "*",
+                "query", query,
                 "limit", limit
             )
         ).stream().map(r -> {
