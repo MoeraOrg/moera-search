@@ -15,9 +15,7 @@ public class NamingServiceRepository {
     public long getScanTimestamp() {
         return database.tx().run(
             """
-            MERGE (ns:NamingService)
-                ON CREATE
-                    SET ns.scanTimestamp = 0
+            MATCH (ns:NamingService)
             RETURN ns.scanTimestamp AS scanTimestamp
             """
         ).single().get("scanTimestamp").asLong();

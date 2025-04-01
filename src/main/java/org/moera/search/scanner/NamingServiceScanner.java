@@ -1,5 +1,6 @@
 package org.moera.search.scanner;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.inject.Inject;
 
@@ -24,6 +25,8 @@ public class NamingServiceScanner {
 
     private static final int PAGE_SIZE = 100;
 
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
+
     @Inject
     private Config config;
 
@@ -40,12 +43,20 @@ public class NamingServiceScanner {
     private NodeRepository nodeRepository;
 
     @EventListener(DatabaseInitializedEvent.class)
+    public void init() {
+        scan();
+        initialized.set(true);
+    }
+
     @Scheduled(fixedDelayString = "PT6H")
-    private void scan() {
-        if (!database.isReady()) {
+    private void scheduledScan() {
+        if (!initialized.get()) {
             return;
         }
+        scan();
+    }
 
+    private void scan() {
         try (var ignored = requestCounter.allot()) {
             log.info("Scanning naming service");
 
