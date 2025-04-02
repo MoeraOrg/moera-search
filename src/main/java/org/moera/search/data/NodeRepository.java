@@ -44,25 +44,16 @@ public class NodeRepository {
     }
 
     public void updateName(String name, WhoAmI whoAmI) {
-        String avatar;
-        try {
-            avatar = objectMapper.writeValueAsString(whoAmI.getAvatar());
-        } catch (JsonProcessingException e) {
-            throw new DatabaseException("Error encoding MoeraNode.avatar", e);
-        }
-
         var args = new HashMap<String, Object>();
         args.put("name", name);
         args.put("fullName", whoAmI.getFullName());
         args.put("title", whoAmI.getTitle());
-        args.put("avatar", avatar);
         args.put("now", Instant.now().toEpochMilli());
 
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})
-            SET n.fullName = $fullName, n.title = $title, n.avatar = $avatar, n.scanProfile = null,
-                n.profileScannedAt = $now
+            SET n.fullName = $fullName, n.title = $title, n.scanProfile = null, n.profileScannedAt = $now
             """,
             args
         );
