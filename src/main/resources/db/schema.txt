@@ -1,0 +1,44 @@
+Nodes
+=====
+
+(:Job)
+id: string NOT NULL UNIQUE
+jobType: string NOT NULL
+parameters: string NOT NULL
+state: string
+retries: int
+waitUntil: int
+
+(:MediaFile)
+id: string NOT NULL UNIQUE
+mimeType: string NOT NULL
+sizeX: int
+sizeY: int
+orientation: int NOT NULL
+fileSize: int NOT NULL
+exposed: boolean NOT NULL
+digest: byte[]
+createdAt: int NOT NULL
+
+(:MoeraNode)
+name: string NOT NULL UNIQUE
+fullName: string FULLTEXT INDEX
+title: string
+scanProfile: boolean
+profileScannedAt: int
+profileScanFailed: boolean
+
+(:NamingService) UNIQUE
+scanTimestamp: int NOT NULL
+scannedAt: int
+
+(:Version) UNIQUE
+version: int NOT NULL
+
+Relationships
+=============
+
+()-[:AVATAR]->(:MediaFile)
+shape: string
+
+(:MoeraNode)<-[:SCANS]-(:Job)
