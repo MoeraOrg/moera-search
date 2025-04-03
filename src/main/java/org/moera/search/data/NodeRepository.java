@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
@@ -37,7 +36,6 @@ public class NodeRepository {
         database.tx().run(
             """
             MERGE (n:MoeraNode {name: $name})
-                ON CREATE SET n.scanProfile = true
             """,
             Map.of("name", name)
         );
@@ -53,7 +51,7 @@ public class NodeRepository {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})
-            SET n.fullName = $fullName, n.title = $title, n.scanProfile = null, n.profileScannedAt = $now
+            SET n.fullName = $fullName, n.title = $title, n.scanProfile = true, n.profileScannedAt = $now
             """,
             args
         );
@@ -86,8 +84,8 @@ public class NodeRepository {
     public List<String> findNamesToScan(int limit) {
         return database.tx().run(
             """
-            MATCH (n:MoeraNode {scanProfile: true})
-            WHERE NOT (n)<-[:SCANS]-(:Job)
+            MATCH (n:MoeraNode)
+            WHERE n.scanProfile IS NULL AND NOT (n)<-[:SCANS]-(:Job)
             LIMIT $limit
             RETURN n.name AS name
             """,
@@ -112,7 +110,7 @@ public class NodeRepository {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})
-            SET n.scanProfile = null, n.profileScannedAt = $now, n.profileScanFailed = true
+            SET n.scanProfile = false, n.profileScannedAt = $now
             """,
             Map.of(
                 "name", name,

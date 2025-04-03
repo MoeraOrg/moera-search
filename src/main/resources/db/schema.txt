@@ -2,43 +2,42 @@ Nodes
 =====
 
 (:Job)
-id: string NOT NULL UNIQUE
-jobType: string NOT NULL
-parameters: string NOT NULL
-state: string
-retries: int
-waitUntil: int
+id:                 string NOT NULL UNIQUE
+jobType:            string NOT NULL
+parameters:         string NOT NULL
+state:              string
+retries:            int
+waitUntil:          int                     (timestamp)
 
 (:MediaFile)
-id: string NOT NULL UNIQUE
-mimeType: string NOT NULL
+id:                 string NOT NULL UNIQUE
+mimeType:           string NOT NULL
 sizeX: int
 sizeY: int
-orientation: int NOT NULL
-fileSize: int NOT NULL
-exposed: boolean NOT NULL
+orientation:        int NOT NULL
+fileSize:           int NOT NULL
+exposed:            boolean NOT NULL
 digest: byte[]
-createdAt: int NOT NULL
+createdAt:          int NOT NULL            (timestamp)
 
 (:MoeraNode)
-name: string NOT NULL UNIQUE
-fullName: string FULLTEXT INDEX
+name:               string NOT NULL UNIQUE
+fullName:           string FULLTEXT INDEX
 title: string
-scanProfile: boolean
-profileScannedAt: int
-profileScanFailed: boolean
+scanProfile:        boolean/int             (ScanStatus)
+profileScannedAt:   int                     (timestamp)
 
 (:NamingService) UNIQUE
-scanTimestamp: int NOT NULL
-scannedAt: int
+scanTimestamp:      int NOT NULL
+scannedAt:          int                     (timestamp)
 
 (:Version) UNIQUE
-version: int NOT NULL
+version:            int NOT NULL
 
 Relationships
 =============
 
 ()-[:AVATAR]->(:MediaFile)
-shape: string
+shape:              string
 
 (:MoeraNode)<-[:SCANS]-(:Job)
