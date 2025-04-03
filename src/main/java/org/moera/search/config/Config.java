@@ -10,6 +10,8 @@ public class Config {
     private String nodeName;
     private String nodeFullName;
     private String nodeTitle;
+    private String signingKey;
+    private String address;
     private DatabaseConfig database = new DatabaseConfig();
     private String namingServer;
     private PoolsConfig pools = new PoolsConfig();
@@ -37,6 +39,22 @@ public class Config {
 
     public void setNodeTitle(String nodeTitle) {
         this.nodeTitle = nodeTitle;
+    }
+
+    public String getSigningKey() {
+        return signingKey;
+    }
+
+    public void setSigningKey(String signingKey) {
+        this.signingKey = signingKey;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public DatabaseConfig getDatabase() {

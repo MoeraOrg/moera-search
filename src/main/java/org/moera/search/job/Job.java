@@ -1,21 +1,27 @@
 package org.moera.search.job;
 
+import java.security.PrivateKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
-
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.crypto.CryptoUtil;
+import org.moera.lib.node.carte.Carte;
 import org.moera.lib.node.exception.MoeraNodeApiAuthenticationException;
 import org.moera.lib.node.exception.MoeraNodeApiNotFoundException;
 import org.moera.lib.node.exception.MoeraNodeApiOperationException;
 import org.moera.lib.node.exception.MoeraNodeApiValidationException;
 import org.moera.lib.node.exception.MoeraNodeException;
+import org.moera.lib.node.types.Scope;
 import org.moera.search.api.MoeraNodeUnknownNameException;
+import org.moera.search.config.Config;
+import org.moera.search.config.NotConfiguredException;
 import org.moera.search.data.Database;
 import org.moera.search.global.RequestCounter;
+import org.moera.search.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +33,9 @@ public abstract class Job<P, S> implements Runnable {
     protected S state;
 
     protected Jobs jobs;
+
+    @Inject
+    protected Config config;
 
     @Inject
     protected Database database;
@@ -235,6 +244,29 @@ public abstract class Job<P, S> implements Runnable {
 
     protected void failed() {
         done();
+    }
+
+    protected PrivateKey signingKey() {
+        if (config.getSigningKey() == null) {
+            throw new NotConfiguredException("Signing key is not set in the configuration file (node.signing-key)");
+        }
+        return CryptoUtil.rawToPrivateKey(Util.hexdecode(config.getSigningKey()));
+    }
+
+    protected String generateCarte(String targetNodeName, Scope clientScope) {
+        return generateCarte(targetNodeName, clientScope, Scope.NONE);
+    }
+
+    protected String generateCarte(String targetNodeName, Scope clientScope, Scope adminScope) {
+        try {
+            return Carte.generate(
+                config.getNodeName(), jobs.getLocalAddress(), Instant.now(), signingKey(), targetNodeName,
+                clientScope.getMask(), adminScope.getMask()
+            );
+        } catch (Exception e) {
+            log.error("Error generating carte");
+            throw e;
+        }
     }
 
 }

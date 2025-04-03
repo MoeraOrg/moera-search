@@ -119,6 +119,58 @@ public class NodeRepository {
         );
     }
 
+    public List<String> findNamesToSubscribe(int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.subscribe IS NULL AND NOT (n)<-[:SUBSCRIBES]-(:Job)
+            LIMIT $limit
+            RETURN n.name AS name
+            """,
+            Map.of("limit", limit)
+        ).list(r -> r.get("name").asString());
+    }
+
+    public void assignSubscribeJob(String name, UUID jobId) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (j:Job {id: $jobId})
+            MERGE (n)<-[:SUBSCRIBES]-(j)
+            """,
+            Map.of(
+                "name", name,
+                "jobId", jobId.toString()
+            )
+        );
+    }
+
+    public void subscribed(String name, String subscriberId) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.subscribe = true, n.subscribedAt = $now, n.subscriberId = $subscriberId
+            """,
+            Map.of(
+                "name", name,
+                "subscriberId", subscriberId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void subscribeFailed(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.subscribe = false, n.subscribedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
     public List<SearchNodeInfo> searchByNamePrefix(String prefix, int limit) {
         return database.tx().run(
             """

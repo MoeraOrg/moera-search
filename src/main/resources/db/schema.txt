@@ -26,6 +26,9 @@ fullName:           string FULLTEXT INDEX
 title: string
 scanProfile:        boolean/int             (ScanStatus)
 profileScannedAt:   int                     (timestamp)
+subscribe:          boolean/int             (ScanStatus)
+subscribedAt:       int                     (timestamp)
+subscriberId:       string
 
 (:NamingService) UNIQUE
 scanTimestamp:      int NOT NULL
@@ -41,3 +44,5 @@ Relationships
 shape:              string
 
 (:MoeraNode)<-[:SCANS]-(:Job)
+
+(:MoeraNode)<-[:SUBSCRIBES]-(:Job)

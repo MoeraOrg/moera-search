@@ -1,6 +1,9 @@
 package org.moera.search.job;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -15,6 +18,8 @@ import jakarta.inject.Inject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.config.Config;
+import org.moera.search.config.NotConfiguredException;
 import org.moera.search.data.Database;
 import org.moera.search.data.DatabaseInitializedEvent;
 import org.moera.search.data.JobRepository;
@@ -41,6 +46,11 @@ public class Jobs {
 
     private boolean ready = false;
 
+    private InetAddress localAddress;
+
+    @Inject
+    private Config config;
+
     @Inject
     private ApplicationEventPublisher applicationEventPublisher;
 
@@ -66,12 +76,50 @@ public class Jobs {
     @EventListener(DatabaseInitializedEvent.class)
     public void init() {
         ready = true;
+        localAddress = getLocalAddr();
         load();
         applicationEventPublisher.publishEvent(new JobsManagerInitializedEvent(this));
     }
 
+    private InetAddress getLocalAddr() {
+        if (config.getAddress() != null) {
+            if (Character.isDigit(config.getAddress().charAt(0))) {
+                try {
+                    return InetAddress.getByName(config.getAddress());
+                } catch (UnknownHostException e) {
+                    log.error("Configured IP address {} is invalid", LogUtil.format(config.getAddress()));
+                }
+            } else {
+                try {
+                    InetAddress[] ips = InetAddress.getAllByName(config.getAddress());
+                    if (ips != null && ips.length > 0) {
+                        return ips[0];
+                    }
+                } catch (UnknownHostException e) {
+                    log.error("Could not resolve the configured domain {}", LogUtil.format(config.getAddress()));
+                }
+            }
+        }
+
+        String local;
+        try {
+            local = Inet4Address.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            local = "127.0.0.1";
+        }
+        try {
+            return InetAddress.getByName(local);
+        } catch (UnknownHostException e) {
+            throw new NotConfiguredException("Cannot resolve local address and no address is configured (node.address)");
+        }
+    }
+
     public boolean isReady() {
         return ready;
+    }
+
+    public InetAddress getLocalAddress() {
+        return localAddress;
     }
 
     public <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters) {
