@@ -57,6 +57,16 @@ public class NodeRepository {
         );
     }
 
+    public void rescanName(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanProfile = null
+            """,
+            Map.of("name", name)
+        );
+    }
+
     public void addAvatar(String name, String mediaFileId, String shape) {
         database.tx().run(
             """

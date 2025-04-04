@@ -1,8 +1,14 @@
 package org.moera.search.util;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Base64;
 
 public class Util {
+
+    public static Timestamp toTimestamp(Long epochSecond) {
+        return epochSecond != null ? Timestamp.from(Instant.ofEpochSecond(epochSecond)) : null;
+    }
 
     public static byte[] hexdecode(String hex) {
         if (hex == null) {
