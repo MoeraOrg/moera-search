@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 
 import com.github.jknack.handlebars.springmvc.HandlebarsViewResolver;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.moera.search.auth.AuthenticationInterceptor;
 import org.moera.search.config.Config;
 import org.moera.search.global.CacheControlInterceptor;
 import org.moera.search.global.DatabaseSessionInterceptor;
@@ -42,6 +43,9 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
     private CacheControlInterceptor cacheControlInterceptor;
 
     @Inject
+    private AuthenticationInterceptor authenticationInterceptor;
+
+    @Inject
     private ApplicationContext applicationContext;
 
     @Bean
@@ -75,8 +79,9 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(requestRateInterceptor).order(-2);
-        registry.addInterceptor(databaseSessionInterceptor).order(-1);
+        registry.addInterceptor(requestRateInterceptor).order(-3);
+        registry.addInterceptor(databaseSessionInterceptor).order(-2);
+        registry.addInterceptor(authenticationInterceptor).order(-1);
         registry.addInterceptor(cacheControlInterceptor);
     }
 
