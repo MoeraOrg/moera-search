@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.model.SearchNodeInfoUtil;
@@ -18,9 +17,6 @@ public class NodeRepository {
 
     @Inject
     private Database database;
-
-    @Inject
-    private ObjectMapper objectMapper;
 
     public boolean existsName(String name) {
         return database.tx().run(

@@ -9,10 +9,13 @@ import jakarta.inject.Inject;
 import org.moera.lib.Rules;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.validate.ValidationUtil;
+import org.moera.lib.util.LogUtil;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +28,8 @@ public class SearchController {
 
     public static final int MAX_NODES_PER_REQUEST = 100;
 
+    private static final Logger log = LoggerFactory.getLogger(SearchController.class);
+
     @Inject
     private Database database;
 
@@ -36,6 +41,8 @@ public class SearchController {
         @RequestParam(defaultValue = "") String query,
         @RequestParam(required = false) Integer limit
     ) {
+        log.info("GET /search/nodes (query = {}, limit = {})", LogUtil.format(query), LogUtil.format(limit));
+
         limit = limit != null && limit <= MAX_NODES_PER_REQUEST ? limit : MAX_NODES_PER_REQUEST;
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
 
