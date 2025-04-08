@@ -148,7 +148,7 @@ public abstract class Job<P, S> implements Runnable {
 
     private void recover(Throwable e) {
         if (e != null) {
-            log.error("Error executing job {}: {}", this.getClass().getSimpleName(), e.getMessage());
+            log.error("Error executing job {}: {}", getJobDescription(), e.getMessage());
         }
 
         retries++;
@@ -183,7 +183,7 @@ public abstract class Job<P, S> implements Runnable {
         if (e instanceof MoeraNodeUnknownNameException ex) {
             log.error("Cannot find a node {}", ex.getNodeName());
         } else {
-            log.error("Error executing task {}: {}", this.getClass().getSimpleName(), e.getMessage());
+            log.error("Fatal error executing job {}: {}", getJobDescription(), e.getMessage());
         }
         failed();
     }
@@ -232,18 +232,23 @@ public abstract class Job<P, S> implements Runnable {
 
     protected void started() {
         if (retries == 0) {
-            log.info("Executing job {}", this.getClass().getSimpleName());
+            log.info("Executing job {}", getJobDescription());
         } else {
-            log.info("Executing job {}, retry {}", this.getClass().getSimpleName(), retries);
+            log.info("Executing job {}, retry {}", getJobDescription(), retries);
         }
     }
 
     protected void succeeded() {
+        log.info("Succeeded executing job {}", getJobDescription());
         done();
     }
 
     protected void failed() {
         done();
+    }
+
+    protected String getJobDescription() {
+        return this.getClass().getSimpleName();
     }
 
     protected PrivateKey signingKey() {

@@ -29,6 +29,8 @@ profileScannedAt:   int                     (timestamp)
 subscribe:          boolean/int             (ScanStatus)
 subscribedAt:       int                     (timestamp)
 subscriberId:       string
+scanPeople:         boolean/int             (ScanStatus)
+peopleScannedAt:    int                     (timestamp)
 
 (:NamingService) UNIQUE
 scanTimestamp:      int NOT NULL
@@ -43,6 +45,12 @@ Relationships
 ()-[:AVATAR]->(:MediaFile)
 shape:              string
 
+(:MoeraNode)-[:FRIEND]->(:MoeraNode)
+
 (:MoeraNode)<-[:SCANS]-(:Job)
+
+(:MoeraNode)<-[:SCANS_PEOPLE]-(:Job)
+
+(:MoeraNode)-[:SUBSCRIBED]->(:MoeraNode)
 
 (:MoeraNode)<-[:SUBSCRIBES]-(:Job)

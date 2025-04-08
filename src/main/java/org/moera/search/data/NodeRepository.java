@@ -177,6 +177,83 @@ public class NodeRepository {
         );
     }
 
+    public List<String> findNamesToScanPeople(int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.scanPeople IS NULL AND NOT (n)<-[:SCANS_PEOPLE]-(:Job)
+            LIMIT $limit
+            RETURN n.name AS name
+            """,
+            Map.of("limit", limit)
+        ).list(r -> r.get("name").asString());
+    }
+
+    public void assignScanPeopleJob(String name, UUID jobId) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (j:Job {id: $jobId})
+            MERGE (n)<-[:SCANS_PEOPLE]-(j)
+            """,
+            Map.of(
+                "name", name,
+                "jobId", jobId.toString()
+            )
+        );
+    }
+
+    public void scanPeopleSucceeded(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanPeople = true, n.peopleScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void scanPeopleFailed(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanPeople = false, n.peopleScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void addFriendship(String name, String peerName) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
+            MERGE (n)-[:FRIEND]->(p)
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName
+            )
+        );
+    }
+
+    public void addSubscription(String name, String peerName) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
+            MERGE (n)-[:SUBSCRIBED]->(p)
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName
+            )
+        );
+    }
+
     public List<SearchNodeInfo> searchByNamePrefix(String prefix, int limit) {
         return database.tx().run(
             """

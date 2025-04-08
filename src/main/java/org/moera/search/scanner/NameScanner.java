@@ -45,7 +45,7 @@ public class NameScanner {
                 }
                 var names = database.executeRead(() -> nodeRepository.findNamesToScan(MAX_JOBS - runningCount));
                 for (var name : names) {
-                    log.info("Starting scanning of {}", name);
+                    log.debug("Starting scanning of {}", name);
                     try {
                         UUID jobId = jobs.run(NameScanJob.class, new NameScanJob.Parameters(name));
                         if (jobId != null) {

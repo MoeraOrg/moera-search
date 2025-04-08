@@ -122,4 +122,9 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
         database.executeWriteWithoutResult(() -> nodeRepository.scanFailed(parameters.nodeName));
     }
 
+    @Override
+    protected String getJobDescription() {
+        return super.getJobDescription() + " for " + parameters.nodeName;
+    }
+
 }

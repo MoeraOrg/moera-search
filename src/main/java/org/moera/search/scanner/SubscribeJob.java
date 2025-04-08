@@ -92,4 +92,9 @@ public class SubscribeJob extends Job<SubscribeJob.Parameters, SubscribeJob.Stat
         database.executeWriteWithoutResult(() -> nodeRepository.subscribeFailed(parameters.nodeName));
     }
 
+    @Override
+    protected String getJobDescription() {
+        return super.getJobDescription() + " to " + parameters.nodeName;
+    }
+
 }
