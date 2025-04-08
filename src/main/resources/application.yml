@@ -2,9 +2,8 @@ server:
   port: 8082  # Server port
 
 spring:
-  jackson:
-    serialization:
-      fail-on-empty-beans: false
+  jackson.serialization.fail-on-empty-beans: false
+  task.scheduling.pool.size: 5
 
 springdoc:
   api-docs:
