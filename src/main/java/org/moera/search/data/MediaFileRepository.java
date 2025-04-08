@@ -1,11 +1,11 @@
 package org.moera.search.data;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
+import org.moera.search.Workload;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -67,7 +67,7 @@ public class MediaFileRepository {
             DELETE mf
             RETURN mf
             """,
-            Map.of("deadline", Instant.now().minus(3, ChronoUnit.HOURS).toEpochMilli())
+            Map.of("deadline", Instant.now().minus(Workload.MEDIA_FILES_TTL).toEpochMilli())
         ).stream().map(r -> new MediaFile(r.get("mf").asNode())).toList();
     }
 

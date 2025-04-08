@@ -36,6 +36,7 @@ import com.drew.metadata.exif.ExifIFD0Directory;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.moera.lib.crypto.CryptoUtil;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.Workload;
 import org.moera.search.config.Config;
 import org.moera.search.data.Database;
 import org.moera.search.data.MediaFile;
@@ -295,7 +296,7 @@ public class MediaOperations {
         }
     }
 
-    @Scheduled(fixedDelayString = "PT6H")
+    @Scheduled(fixedDelayString = Workload.MEDIA_FILES_PURGE_PERIOD)
     public void purgeUnused() {
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {

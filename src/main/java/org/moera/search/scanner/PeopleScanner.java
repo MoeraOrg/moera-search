@@ -3,6 +3,7 @@ package org.moera.search.scanner;
 import java.util.UUID;
 import jakarta.inject.Inject;
 
+import org.moera.search.Workload;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.global.RequestCounter;
@@ -17,8 +18,6 @@ public class PeopleScanner {
 
     private static final Logger log = LoggerFactory.getLogger(PeopleScanner.class);
 
-    private static final int MAX_JOBS = 200;
-
     @Inject
     private Jobs jobs;
 
@@ -31,7 +30,7 @@ public class PeopleScanner {
     @Inject
     private NodeRepository nodeRepository;
 
-    @Scheduled(fixedDelayString = "PT1M")
+    @Scheduled(fixedDelayString = Workload.PEOPLE_SCANNERS_START_PERIOD)
     public void scan() {
         if (!jobs.isReady()) {
             return;
@@ -40,10 +39,12 @@ public class PeopleScanner {
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
                 int runningCount = database.executeRead(() -> jobs.countRunning(PeopleScanJob.class));
-                if (runningCount >= MAX_JOBS) {
+                if (runningCount >= Workload.PEOPLE_SCANNERS_MAX_JOBS) {
                     return;
                 }
-                var names = database.executeRead(() -> nodeRepository.findNamesToScanPeople(MAX_JOBS - runningCount));
+                var names = database.executeRead(() ->
+                    nodeRepository.findNamesToScanPeople(Workload.PEOPLE_SCANNERS_MAX_JOBS - runningCount)
+                );
                 for (var name : names) {
                     log.debug("Starting people scan for {}", name);
                     try {

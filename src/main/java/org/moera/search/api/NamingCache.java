@@ -1,8 +1,6 @@
 package org.moera.search.api;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +12,7 @@ import jakarta.inject.Inject;
 import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.lib.naming.types.RegisteredNameInfo;
+import org.moera.search.Workload;
 import org.moera.search.config.Config;
 import org.moera.search.global.RequestCounter;
 import org.slf4j.Logger;
@@ -36,9 +35,6 @@ public class NamingCache {
     }
 
     private static final Logger log = LoggerFactory.getLogger(NamingCache.class);
-
-    private static final Duration NORMAL_TTL = Duration.of(6, ChronoUnit.HOURS);
-    private static final Duration ERROR_TTL = Duration.of(1, ChronoUnit.MINUTES);
 
     private MoeraNaming naming;
     private final ReadWriteLock cacheLock = new ReentrantReadWriteLock();
@@ -158,13 +154,15 @@ public class NamingCache {
         }
         record.details = info == null ? new RegisteredNameDetails() : new RegisteredNameDetails(info);
         record.error = error;
-        record.deadline = Instant.now().plus(error == null ? NORMAL_TTL : ERROR_TTL);
+        record.deadline = Instant.now().plus(
+            error == null ? Workload.NAMING_CACHE_NORMAL_TTL : Workload.NAMING_CACHE_ERROR_TTL
+        );
         synchronized (queryDone) {
             queryDone.notifyAll();
         }
     }
 
-    @Scheduled(fixedDelayString = "PT1M")
+    @Scheduled(fixedDelayString = Workload.NAMING_CACHE_PURGE_PERIOD)
     public void purge() {
         try (var ignored = requestCounter.allot()) {
             log.debug("Purging naming cache");
@@ -183,7 +181,7 @@ public class NamingCache {
                 cacheLock.writeLock().lock();
                 try {
                     remove.forEach(key -> {
-                        if (cache.get(key).accessed.plus(NORMAL_TTL).isAfter(Instant.now())) {
+                        if (cache.get(key).accessed.plus(Workload.NAMING_CACHE_NORMAL_TTL).isAfter(Instant.now())) {
                             run(key);
                         } else {
                             cache.remove(key);

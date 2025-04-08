@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 
 import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
+import org.moera.search.Workload;
 import org.moera.search.config.Config;
 import org.moera.search.data.Database;
 import org.moera.search.data.DatabaseInitializedEvent;
@@ -48,7 +49,7 @@ public class NamingServiceScanner {
         initialized.set(true);
     }
 
-    @Scheduled(fixedDelayString = "PT6H")
+    @Scheduled(fixedDelayString = Workload.NAMING_SERVICE_SCAN_PERIOD)
     private void scheduledScan() {
         if (!initialized.get()) {
             return;
