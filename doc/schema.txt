@@ -45,6 +45,8 @@ Relationships
 ()-[:AVATAR]->(:MediaFile)
 shape:              string
 
+(:MoeraNode)-[:BLOCKS]->(:MoeraNode)
+
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
 (:MoeraNode)<-[:SCANS]-(:Job)

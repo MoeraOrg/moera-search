@@ -254,6 +254,19 @@ public class NodeRepository {
         );
     }
 
+    public void addBlocks(String name, String peerName) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
+            MERGE (n)-[:BLOCKS]->(p)
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName
+            )
+        );
+    }
+
     public List<SearchNodeInfo> searchByNamePrefix(String prefix, int limit) {
         return database.tx().run(
             """

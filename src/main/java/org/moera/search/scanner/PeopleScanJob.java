@@ -1,11 +1,14 @@
 package org.moera.search.scanner;
 
+import java.util.List;
 import java.util.Objects;
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.exception.MoeraNodeApiAuthenticationException;
+import org.moera.lib.node.types.BlockedOperation;
+import org.moera.lib.node.types.BlockedUserFilter;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.SubscriptionType;
 import org.moera.search.api.NodeApi;
@@ -41,6 +44,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
 
         private boolean scannedFriends;
         private boolean scannedSubscriptions;
+        private boolean scannedBlockedUsers;
 
         public State() {
         }
@@ -59,6 +63,14 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
 
         public void setScannedSubscriptions(boolean scannedSubscriptions) {
             this.scannedSubscriptions = scannedSubscriptions;
+        }
+
+        public boolean isScannedBlockedUsers() {
+            return scannedBlockedUsers;
+        }
+
+        public void setScannedBlockedUsers(boolean scannedBlockedUsers) {
+            this.scannedBlockedUsers = scannedBlockedUsers;
         }
 
     }
@@ -122,6 +134,27 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                 log.info("Subscriptions list is not public for {}, skipping", parameters.nodeName);
             }
             state.scannedSubscriptions = true;
+            checkpoint();
+        }
+
+        if (!state.scannedBlockedUsers) {
+            try {
+                var filter = new BlockedUserFilter();
+                filter.setBlockedOperations(
+                    List.of(BlockedOperation.COMMENT, BlockedOperation.REACTION, BlockedOperation.VISIBILITY)
+                );
+                var blockedUsers = nodeApi
+                    .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
+                    .searchBlockedUsers(filter);
+                for (var blockedUser : blockedUsers) {
+                    database.executeWriteWithoutResult(
+                        () -> nodeRepository.addBlocks(parameters.nodeName, blockedUser.getNodeName())
+                    );
+                }
+            } catch (MoeraNodeApiAuthenticationException e) {
+                log.info("Blocked users' list is not public for {}, skipping", parameters.nodeName);
+            }
+            state.scannedBlockedUsers = true;
             checkpoint();
         }
 

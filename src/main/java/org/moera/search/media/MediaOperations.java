@@ -298,6 +298,10 @@ public class MediaOperations {
 
     @Scheduled(fixedDelayString = Workload.MEDIA_FILES_PURGE_PERIOD)
     public void purgeUnused() {
+        if (!database.isReady()) {
+            return;
+        }
+
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
                 log.info("Purging unused media files");
