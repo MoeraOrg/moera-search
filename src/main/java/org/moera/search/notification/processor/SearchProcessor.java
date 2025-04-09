@@ -1,6 +1,5 @@
 package org.moera.search.notification.processor;
 
-import java.util.HashSet;
 import java.util.Objects;
 import jakarta.inject.Inject;
 
@@ -79,15 +78,11 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(notification.getBlockedOperation())),
                     LogUtil.format(notification.getNodeName())
                 );
-                database.executeWriteWithoutResult(() -> {
-                    var blockedOperations = new HashSet<>(
-                        nodeRepository.getBlocks(notification.getSenderNodeName(), notification.getNodeName())
-                    );
-                    blockedOperations.add(notification.getBlockedOperation());
-                    nodeRepository.addOrUpdateBlocks(
-                        notification.getSenderNodeName(), notification.getNodeName(), blockedOperations
-                    );
-                });
+                database.executeWriteWithoutResult(() ->
+                    nodeRepository.addBlocks(
+                        notification.getSenderNodeName(), notification.getNodeName(), notification.getBlockedOperation()
+                    )
+                );
                 break;
             case UNBLOCK:
                 log.info(
@@ -96,22 +91,11 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(notification.getBlockedOperation())),
                     LogUtil.format(notification.getNodeName())
                 );
-                database.executeWriteWithoutResult(() -> {
-                    var blockedOperations = new HashSet<>(
-                        nodeRepository.getBlocks(notification.getSenderNodeName(), notification.getNodeName())
-                    );
-                    if (blockedOperations.isEmpty()) {
-                        return;
-                    }
-                    blockedOperations.remove(notification.getBlockedOperation());
-                    if (!blockedOperations.isEmpty()) {
-                        nodeRepository.addOrUpdateBlocks(
-                            notification.getSenderNodeName(), notification.getNodeName(), blockedOperations
-                        );
-                    } else {
-                        nodeRepository.deleteBlocks(notification.getSenderNodeName(), notification.getNodeName());
-                    }
-                });
+                database.executeWriteWithoutResult(() ->
+                    nodeRepository.deleteBlocks(
+                        notification.getSenderNodeName(), notification.getNodeName(), notification.getBlockedOperation()
+                    )
+                );
                 break;
         }
     }

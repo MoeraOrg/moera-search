@@ -1,6 +1,5 @@
 package org.moera.search.scanner;
 
-import java.util.HashSet;
 import java.util.List;
 import jakarta.inject.Inject;
 
@@ -145,19 +144,13 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                 var blockedUsers = nodeApi
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .searchBlockedUsers(filter);
-                for (var blockedUser : blockedUsers) {
-                    database.executeWriteWithoutResult(
-                        () -> {
-                            var blockedOperations = new HashSet<>(
-                                nodeRepository.getBlocks(parameters.nodeName, blockedUser.getNodeName())
-                            );
-                            blockedOperations.add(blockedUser.getBlockedOperation());
-                            nodeRepository.addOrUpdateBlocks(
-                                parameters.nodeName, blockedUser.getNodeName(), blockedOperations
-                            );
-                        }
-                    );
-                }
+                database.executeWriteWithoutResult(() -> {
+                    for (var blockedUser : blockedUsers) {
+                        nodeRepository.addBlocks(
+                            parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
+                        );
+                    }
+                });
             } catch (MoeraNodeApiAuthenticationException e) {
                 log.info("Blocked users' list is not public for {}, skipping", parameters.nodeName);
             }

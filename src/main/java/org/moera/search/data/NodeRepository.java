@@ -1,8 +1,6 @@
 package org.moera.search.data;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +11,6 @@ import org.moera.lib.node.types.BlockedOperation;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.model.SearchNodeInfoUtil;
-import org.neo4j.driver.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -286,49 +283,32 @@ public class NodeRepository {
         );
     }
 
-    public List<BlockedOperation> getBlocks(String name, String peerName) {
-        Value blockedOperations = database.tx().run(
-            """
-            OPTIONAL MATCH (:MoeraNode {name: $name})-[b:BLOCKS]->(:MoeraNode {name: $peerName})
-            RETURN b.blockedOperations AS blockedOperations
-            """,
-            Map.of(
-                "name", name,
-                "peerName", peerName
-            )
-        ).single().get("blockedOperations");
-        if (blockedOperations.isNull()) {
-            return Collections.emptyList();
-        }
-        return blockedOperations.asList(
-            blockedOperation -> BlockedOperation.forValue(blockedOperation.asString())
-        );
-    }
-
-    public void addOrUpdateBlocks(String name, String peerName, Collection<BlockedOperation> blockedOperations) {
+    public void addBlocks(String name, String peerName, BlockedOperation blockedOperation) {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
-            MERGE (n)-[b:BLOCKS]->(p)
-            SET b.blockedOperations = $blockedOperations
+            MERGE (n)-[b:BLOCKS {blockedOperation: $blockedOperation}]->(p)
             """,
             Map.of(
                 "name", name,
                 "peerName", peerName,
-                "blockedOperations", blockedOperations.stream().map(BlockedOperation::getValue).toList()
+                "blockedOperation", blockedOperation.getValue()
             )
         );
     }
 
-    public void deleteBlocks(String name, String peerName) {
+    public void deleteBlocks(String name, String peerName, BlockedOperation blockedOperation) {
         database.tx().run(
             """
-            MATCH (:MoeraNode {name: $name})-[b:BLOCKS]->(:MoeraNode {name: $peerName})
+            MATCH (:MoeraNode {name: $name})
+                  -[b:BLOCKS {blockedOperation: $blockedOperation}]->
+                  (:MoeraNode {name: $peerName})
             DELETE b
             """,
             Map.of(
                 "name", name,
-                "peerName", peerName
+                "peerName", peerName,
+                "blockedOperation", blockedOperation.getValue()
             )
         );
     }

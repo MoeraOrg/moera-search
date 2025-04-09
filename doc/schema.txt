@@ -46,7 +46,7 @@ Relationships
 shape:              string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
-blockedOperations:  list<string> NOT NULL   (BlockedOperation[])
+blockedOperation:   string NOT NULL         (BlockedOperation)
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
