@@ -1,15 +1,19 @@
 package org.moera.search.data;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import jakarta.inject.Inject;
 
+import org.moera.lib.node.types.BlockedOperation;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.model.SearchNodeInfoUtil;
+import org.neo4j.driver.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -241,11 +245,11 @@ public class NodeRepository {
         );
     }
 
-    public void addSubscription(String name, String peerName) {
+    public void deleteFriendship(String name, String peerName) {
         database.tx().run(
             """
-            MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
-            MERGE (n)-[:SUBSCRIBED]->(p)
+            MATCH (:MoeraNode {name: $name})-[f:FRIEND]->(:MoeraNode {name: $peerName})
+            DELETE f
             """,
             Map.of(
                 "name", name,
@@ -254,11 +258,73 @@ public class NodeRepository {
         );
     }
 
-    public void addBlocks(String name, String peerName) {
+    public void addSubscription(String name, String peerName, String feedName) {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
-            MERGE (n)-[:BLOCKS]->(p)
+            MERGE (n)-[:SUBSCRIBED {feedName: $feedName}]->(p)
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName,
+                "feedName", feedName
+            )
+        );
+    }
+
+    public void deleteSubscription(String name, String peerName, String feedName) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $name})-[s:SUBSCRIBED {feedName: $feedName}]->(:MoeraNode {name: $peerName})
+            DELETE s
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName,
+                "feedName", feedName
+            )
+        );
+    }
+
+    public List<BlockedOperation> getBlocks(String name, String peerName) {
+        Value blockedOperations = database.tx().run(
+            """
+            OPTIONAL MATCH (:MoeraNode {name: $name})-[b:BLOCKS]->(:MoeraNode {name: $peerName})
+            RETURN b.blockedOperations AS blockedOperations
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName
+            )
+        ).single().get("blockedOperations");
+        if (blockedOperations.isNull()) {
+            return Collections.emptyList();
+        }
+        return blockedOperations.asList(
+            blockedOperation -> BlockedOperation.forValue(blockedOperation.asString())
+        );
+    }
+
+    public void addOrUpdateBlocks(String name, String peerName, Collection<BlockedOperation> blockedOperations) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
+            MERGE (n)-[b:BLOCKS]->(p)
+            SET b.blockedOperations = $blockedOperations
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName,
+                "blockedOperations", blockedOperations.stream().map(BlockedOperation::getValue).toList()
+            )
+        );
+    }
+
+    public void deleteBlocks(String name, String peerName) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $name})-[b:BLOCKS]->(:MoeraNode {name: $peerName})
+            DELETE b
             """,
             Map.of(
                 "name", name,

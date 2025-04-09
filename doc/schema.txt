@@ -46,6 +46,7 @@ Relationships
 shape:              string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
+blockedOperations:  list<string> NOT NULL   (BlockedOperation[])
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
@@ -54,5 +55,6 @@ shape:              string
 (:MoeraNode)<-[:SCANS_PEOPLE]-(:Job)
 
 (:MoeraNode)-[:SUBSCRIBED]->(:MoeraNode)
+feedName:           string NOT NULL
 
 (:MoeraNode)<-[:SUBSCRIBES]-(:Job)

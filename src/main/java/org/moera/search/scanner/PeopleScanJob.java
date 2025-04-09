@@ -1,7 +1,7 @@
 package org.moera.search.scanner;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -123,11 +123,10 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getSubscriptions(null, SubscriptionType.FEED);
                 for (var subscription : subscriptions) {
-                    if (!Objects.equals(subscription.getRemoteFeedName(), "timeline")) {
-                        continue;
-                    }
-                    database.executeWriteWithoutResult(
-                        () -> nodeRepository.addSubscription(parameters.nodeName, subscription.getRemoteNodeName())
+                    database.executeWriteWithoutResult(() ->
+                        nodeRepository.addSubscription(
+                            parameters.nodeName, subscription.getRemoteNodeName(), subscription.getRemoteFeedName()
+                        )
                     );
                 }
             } catch (MoeraNodeApiAuthenticationException e) {
@@ -148,7 +147,15 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .searchBlockedUsers(filter);
                 for (var blockedUser : blockedUsers) {
                     database.executeWriteWithoutResult(
-                        () -> nodeRepository.addBlocks(parameters.nodeName, blockedUser.getNodeName())
+                        () -> {
+                            var blockedOperations = new HashSet<>(
+                                nodeRepository.getBlocks(parameters.nodeName, blockedUser.getNodeName())
+                            );
+                            blockedOperations.add(blockedUser.getBlockedOperation());
+                            nodeRepository.addOrUpdateBlocks(
+                                parameters.nodeName, blockedUser.getNodeName(), blockedOperations
+                            );
+                        }
                     );
                 }
             } catch (MoeraNodeApiAuthenticationException e) {
