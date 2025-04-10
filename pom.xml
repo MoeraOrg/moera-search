@@ -5,7 +5,7 @@
 
     <groupId>org.moera</groupId>
     <artifactId>moera-search</artifactId>
-    <version>0.1.0</version>
+    <version>0.0.1</version>
     <name>moera-search</name>
     <description>Moera search engine</description>
     <packaging>war</packaging>
@@ -111,7 +111,7 @@
         <dependency>
             <groupId>org.moera</groupId>
             <artifactId>moeralib</artifactId>
-            <version>0.16.2-SNAPSHOT</version>
+            <version>0.16.2</version>
         </dependency>
 
         <dependency>
