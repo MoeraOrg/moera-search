@@ -58,6 +58,10 @@ public class NamingServiceScanner {
     }
 
     private void scan() {
+        if (config.isDryRun()) {
+            return;
+        }
+
         try (var ignored = requestCounter.allot()) {
             log.info("Scanning naming service");
 

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("search")
 public class Config {
 
+    private boolean dryRun;
     private String nodeName;
     private String nodeFullName;
     private String nodeTitle;
@@ -16,6 +17,14 @@ public class Config {
     private String namingServer;
     private PoolsConfig pools = new PoolsConfig();
     private MediaConfig media = new MediaConfig();
+
+    public boolean isDryRun() {
+        return dryRun;
+    }
+
+    public void setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+    }
 
     public String getNodeName() {
         return nodeName;
