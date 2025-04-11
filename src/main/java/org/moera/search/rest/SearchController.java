@@ -7,9 +7,11 @@ import java.util.stream.Collectors;
 import jakarta.inject.Inject;
 
 import org.moera.lib.Rules;
+import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.auth.RequestContext;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.global.ApiController;
@@ -29,6 +31,9 @@ public class SearchController {
     public static final int MAX_NODES_PER_REQUEST = 100;
 
     private static final Logger log = LoggerFactory.getLogger(SearchController.class);
+
+    @Inject
+    private RequestContext requestContext;
 
     @Inject
     private Database database;
@@ -53,35 +58,42 @@ public class SearchController {
         int maxSize = limit;
 
         return database.executeRead(() -> {
-            List<SearchNodeInfo> byName = isValidNodeNamePrefix(query)
-                ? nodeRepository.searchByNamePrefix(query, maxSize)
-                : Collections.emptyList();
-            List<SearchNodeInfo> byFullName = nodeRepository.searchByFullNamePrefix(query, maxSize);
-
+            String clientName = requestContext.getClientName(Scope.IDENTIFY);
             var result = new ArrayList<SearchNodeInfo>();
-            if (byName.size() <= maxSize / 2 || byFullName.isEmpty()) {
-                result.addAll(byName);
-            } else {
-                float ratio = (float) byName.size() / (float) (byName.size() + byFullName.size());
-                result.addAll(byName.subList(0, (int) (ratio * maxSize)));
+            searchNodes(result, clientName, query, maxSize, false);
+            if (!ObjectUtils.isEmpty(clientName) && result.size() < maxSize) {
+                searchNodes(result, clientName, query, maxSize - result.size(), true);
             }
-
-            if (result.size() >= maxSize || byFullName.isEmpty()) {
-                return result;
-            }
-
-            var used = byName.stream().map(SearchNodeInfo::getNodeName).collect(Collectors.toSet());
-            for (SearchNodeInfo node : byFullName) {
-                if (result.size() >= maxSize) {
-                    break;
-                }
-                if (!used.contains(node.getNodeName())) {
-                    result.add(node);
-                }
-            }
-
             return result;
         });
+    }
+
+    private void searchNodes(List<SearchNodeInfo> result, String clientName, String query, int limit, boolean blocked) {
+        List<SearchNodeInfo> byName = isValidNodeNamePrefix(query)
+            ? nodeRepository.searchByNamePrefix(clientName, query, limit, blocked)
+            : Collections.emptyList();
+        List<SearchNodeInfo> byFullName = nodeRepository.searchByFullNamePrefix(clientName, query, limit, blocked);
+
+        if (byName.size() <= limit / 2 || byFullName.isEmpty()) {
+            result.addAll(byName);
+        } else {
+            float ratio = (float) byName.size() / (float) (byName.size() + byFullName.size());
+            result.addAll(byName.subList(0, (int) (ratio * limit)));
+        }
+
+        if (result.size() >= limit || byFullName.isEmpty()) {
+            return;
+        }
+
+        var used = byName.stream().map(SearchNodeInfo::getNodeName).collect(Collectors.toSet());
+        for (SearchNodeInfo node : byFullName) {
+            if (result.size() >= limit) {
+                break;
+            }
+            if (!used.contains(node.getNodeName())) {
+                result.add(node);
+            }
+        }
     }
 
     private boolean isValidNodeNamePrefix(String prefix) {

@@ -6,7 +6,7 @@ import org.neo4j.driver.types.Node;
 
 public class SearchNodeInfoUtil {
 
-    public static SearchNodeInfo build(Node node, MediaFile avatar, String avatarShape) {
+    public static SearchNodeInfo build(Node node, MediaFile avatar, String avatarShape, boolean blocked) {
         var info = new SearchNodeInfo();
         info.setNodeName(node.get("name").asString(null));
         info.setFullName(node.get("fullName").asString(null));
@@ -14,6 +14,7 @@ public class SearchNodeInfoUtil {
         if (avatar != null) {
             info.setAvatar(AvatarImageUtil.build(avatar, avatarShape));
         }
+        info.setDistance(!blocked ? 3 : 4);
         return info;
     }
 

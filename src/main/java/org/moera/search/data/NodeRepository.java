@@ -313,46 +313,67 @@ public class NodeRepository {
         );
     }
 
-    public List<SearchNodeInfo> searchByNamePrefix(String prefix, int limit) {
+    public List<SearchNodeInfo> searchByNamePrefix(String clientName, String prefix, int limit, boolean blocked) {
+        var args = new HashMap<String, Object>();
+        args.put("clientName", clientName);
+        args.put("prefix", prefix.toLowerCase());
+        args.put("limit", limit);
+        args.put("blocked", blocked);
+
         return database.tx().run(
             """
             MATCH (n:MoeraNode)
             WHERE lower(n.name) STARTS WITH $prefix
+            WITH
+                n,
+                CASE
+                    WHEN $clientName IS NULL THEN false
+                    ELSE EXISTS((n)<-[:BLOCKS]-(:MoeraNode {name: $clientName}))
+                END AS blocked
+            WHERE blocked = $blocked
             LIMIT $limit
             OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
             RETURN n, a.shape AS shape, mf
             """,
-            Map.of(
-                "prefix", prefix.toLowerCase(),
-                "limit", limit
-            )
+            args
         ).stream().map(r -> {
             var node = r.get("n").asNode();
             var avatarShape = r.get("shape").asString(null);
             var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
-            return SearchNodeInfoUtil.build(node, avatar, avatarShape);
+            return SearchNodeInfoUtil.build(node, avatar, avatarShape, blocked);
         }).toList();
     }
 
-    public List<SearchNodeInfo> searchByFullNamePrefix(String prefix, int limit) {
+    public List<SearchNodeInfo> searchByFullNamePrefix(String clientName, String prefix, int limit, boolean blocked) {
         var terms = prefix.split("\\s+");
         String query = String.join("* ", terms) + "*";
+
+        var args = new HashMap<String, Object>();
+        args.put("clientName", clientName);
+        args.put("query", query);
+        args.put("limit", limit);
+        args.put("blocked", blocked);
+
         return database.tx().run(
             """
             CALL db.index.fulltext.queryNodes("moera_node_full_name", $query) YIELD node AS n, score
+            WITH
+                n,
+                CASE
+                    WHEN $clientName IS NULL THEN false
+                    ELSE EXISTS((n)<-[:BLOCKS]-(:MoeraNode {name: $clientName}))
+                END AS blocked
+            WHERE blocked = $blocked
             LIMIT $limit
             OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
             RETURN n, a.shape AS shape, mf
             """,
-            Map.of(
-                "query", query,
-                "limit", limit
-            )
+            args
         ).stream().map(r -> {
             var node = r.get("n").asNode();
             var avatarShape = r.get("shape").asString(null);
             var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
-            return SearchNodeInfoUtil.build(node, avatar, avatarShape);
+            return SearchNodeInfoUtil.build(node, avatar, avatarShape, blocked);
         }).toList();
     }
 
