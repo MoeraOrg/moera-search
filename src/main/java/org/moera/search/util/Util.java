@@ -6,6 +6,8 @@ import java.util.Base64;
 
 public class Util {
 
+    private static final String LUCENE_SPECIAL_CHARS = "+-&|!(){}[]^\"~*?:\\/=";
+
     public static Timestamp toTimestamp(Long epochSecond) {
         return epochSecond != null ? Timestamp.from(Instant.ofEpochSecond(epochSecond)) : null;
     }
@@ -43,6 +45,17 @@ public class Util {
 
     public static byte[] base64urldecode(String s) {
         return s != null ? Base64.getUrlDecoder().decode(s) : null;
+    }
+
+    public static String escapeLucene(String s) {
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            if (LUCENE_SPECIAL_CHARS.indexOf(s.charAt(i)) >= 0) {
+                buf.append('\\');
+            }
+            buf.append(s.charAt(i));
+        }
+        return buf.toString();
     }
 
     public static Integer toInteger(Long value) {

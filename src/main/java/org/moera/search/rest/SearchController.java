@@ -2,8 +2,9 @@ package org.moera.search.rest;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 import jakarta.inject.Inject;
 
 import org.moera.lib.Rules;
@@ -60,40 +61,46 @@ public class SearchController {
         return database.executeRead(() -> {
             String clientName = requestContext.getClientName(Scope.IDENTIFY);
             var result = new ArrayList<SearchNodeInfo>();
-            searchNodes(result, clientName, query, maxSize, false);
+            var used = new HashSet<String>();
+            if (!ObjectUtils.isEmpty(clientName)) {
+                searchCloseNodes(result, used, clientName, query, maxSize);
+            }
+            if (result.size() < maxSize) {
+                searchNodes(result, used, clientName, query, maxSize, false);
+            }
             if (!ObjectUtils.isEmpty(clientName) && result.size() < maxSize) {
-                searchNodes(result, clientName, query, maxSize - result.size(), true);
+                searchNodes(result, used, clientName, query, maxSize, true);
             }
             return result;
         });
     }
 
-    private void searchNodes(List<SearchNodeInfo> result, String clientName, String query, int limit, boolean blocked) {
+    private void searchCloseNodes(
+        List<SearchNodeInfo> result, Set<String> used, String clientName, String query, int limit
+    ) {
+        List<SearchNodeInfo> byName = isValidNodeNamePrefix(query)
+            ? nodeRepository.searchCloseByNamePrefix(clientName, query, limit)
+            : Collections.emptyList();
+        List<SearchNodeInfo> byFullName = nodeRepository.searchCloseByFullNamePrefix(clientName, query, limit);
+
+        addToResult(result, used, byName, byFullName, limit);
+    }
+
+    private void searchNodes(
+        List<SearchNodeInfo> result, Set<String> used, String clientName, String query, int limit, boolean blocked
+    ) {
         List<SearchNodeInfo> byName = isValidNodeNamePrefix(query)
             ? nodeRepository.searchByNamePrefix(clientName, query, limit, blocked)
+                .stream()
+                .filter(info -> !used.contains(info.getNodeName()))
+                .toList()
             : Collections.emptyList();
-        List<SearchNodeInfo> byFullName = nodeRepository.searchByFullNamePrefix(clientName, query, limit, blocked);
+        List<SearchNodeInfo> byFullName = nodeRepository.searchByFullNamePrefix(clientName, query, limit, blocked)
+            .stream()
+            .filter(info -> !used.contains(info.getNodeName()))
+            .toList();
 
-        if (byName.size() <= limit / 2 || byFullName.isEmpty()) {
-            result.addAll(byName);
-        } else {
-            float ratio = (float) byName.size() / (float) (byName.size() + byFullName.size());
-            result.addAll(byName.subList(0, (int) (ratio * limit)));
-        }
-
-        if (result.size() >= limit || byFullName.isEmpty()) {
-            return;
-        }
-
-        var used = byName.stream().map(SearchNodeInfo::getNodeName).collect(Collectors.toSet());
-        for (SearchNodeInfo node : byFullName) {
-            if (result.size() >= limit) {
-                break;
-            }
-            if (!used.contains(node.getNodeName())) {
-                result.add(node);
-            }
-        }
+        addToResult(result, used, byName, byFullName, limit);
     }
 
     private boolean isValidNodeNamePrefix(String prefix) {
@@ -103,6 +110,37 @@ public class SearchController {
             }
         }
         return true;
+    }
+
+    private void addToResult(
+        List<SearchNodeInfo> result,
+        Set<String> used,
+        List<SearchNodeInfo> byName,
+        List<SearchNodeInfo> byFullName,
+        int limit
+    ) {
+        int freeSpace = limit - result.size();
+        if (byName.size() > freeSpace / 2 && !byFullName.isEmpty()) {
+            float ratio = (float) byName.size() / (float) (byName.size() + byFullName.size());
+            freeSpace = (int) (ratio * freeSpace);
+        }
+        addToResult(result, used, byName.subList(0, Math.min(byName.size(), freeSpace)), limit);
+
+        if (result.size() < limit && !byFullName.isEmpty()) {
+            addToResult(result, used, byFullName, limit);
+        }
+    }
+
+    private void addToResult(List<SearchNodeInfo> result, Set<String> used, List<SearchNodeInfo> list, int limit) {
+        for (SearchNodeInfo node : list) {
+            if (result.size() >= limit) {
+                break;
+            }
+            if (!used.contains(node.getNodeName())) {
+                result.add(node);
+                used.add(node.getNodeName());
+            }
+        }
     }
 
 }

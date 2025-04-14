@@ -78,11 +78,12 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(notification.getBlockedOperation())),
                     LogUtil.format(notification.getNodeName())
                 );
-                database.executeWriteWithoutResult(() ->
+                database.executeWriteWithoutResult(() -> {
                     nodeRepository.addBlocks(
                         notification.getSenderNodeName(), notification.getNodeName(), notification.getBlockedOperation()
-                    )
-                );
+                    );
+                    nodeRepository.deleteCloseTo(notification.getSenderNodeName(), notification.getNodeName());
+                });
                 break;
             case UNBLOCK:
                 log.info(
