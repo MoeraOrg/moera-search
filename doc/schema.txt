@@ -31,6 +31,7 @@ subscribedAt:       int                     (timestamp)
 subscriberId:       string
 scanPeople:         boolean/int             (ScanStatus)
 peopleScannedAt:    int                     (timestamp)
+closeToUpdatedAt:   int                     (timestamp)
 
 (:NamingService) UNIQUE
 scanTimestamp:      int NOT NULL
@@ -47,6 +48,9 @@ shape:              string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
 blockedOperation:   string NOT NULL         (BlockedOperation)
+
+(:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
+distance:           float NOT NULL
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 

@@ -23,4 +23,9 @@ public class Workload {
     public static final String PEOPLE_SCANNERS_START_PERIOD = "PT1M";
     public static final int PEOPLE_SCANNERS_MAX_JOBS = 200;
 
+    public static final String CLOSE_TO_CHECK_PERIOD = "PT15M";
+    public static final Duration CLOSE_TO_UPDATE_PERIOD = Duration.of(6, ChronoUnit.HOURS);
+    public static final int CLOSE_TO_UPDATE_MAX_NODES = 100;
+    public static final String CLOSE_TO_CLEANUP_PERIOD = "P1D";
+
 }

@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.BlockedOperation;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
+import org.moera.search.Workload;
 import org.moera.search.model.SearchNodeInfoUtil;
 import org.springframework.stereotype.Component;
 
@@ -375,6 +376,90 @@ public class NodeRepository {
             var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
             return SearchNodeInfoUtil.build(node, avatar, avatarShape, blocked);
         }).toList();
+    }
+
+    public List<String> findNamesForCloseToUpdate(int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.closeToUpdatedAt IS NULL OR n.closeToUpdatedAt < $deadline
+            ORDER BY n.closeToUpdatedAt ASC
+            LIMIT $limit
+            RETURN n.name AS name
+            """,
+            Map.of(
+                "deadline", Instant.now().minus(Workload.CLOSE_TO_UPDATE_PERIOD).toEpochMilli(),
+                "limit", limit
+            )
+        ).stream().map(r -> r.get("name").asString()).toList();
+    }
+
+    public void closeToUpdated(String name) {
+        database.tx().run(
+            """
+            MERGE (n:MoeraNode {name: $name})
+            SET n.closeToUpdatedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+
+    }
+
+    public record CloseNode(String name, boolean isFriend, boolean isSubscribed) {
+    }
+
+    public List<CloseNode> findCloseNodes(String name) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})-[:FRIEND|SUBSCRIBED]->{1,2}(m:MoeraNode)
+            WHERE n <> m
+            WITH DISTINCT n, m
+            RETURN
+                m.name AS name,
+                EXISTS((n)-[:FRIEND]->(m)) AS isFriend,
+                EXISTS((n)-[:SUBSCRIBED]->(m)) AS isSubscribed
+            """,
+            Map.of(
+                "name", name
+            )
+        )
+            .stream()
+            .map(r -> new CloseNode(
+                r.get("name").asString(),
+                r.get("isFriend").asBoolean(),
+                r.get("isSubscribed").asBoolean()
+            ))
+            .toList();
+    }
+
+    public void setDistance(String name, String peerName, float distance) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (m:MoeraNode {name: $peerName})
+            MERGE (n)-[c:CLOSE_TO]->(m)
+            SET c.distance = $distance
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName,
+                "distance", distance
+            )
+        );
+    }
+
+    public void cleanupCloseTo() {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode)-[c:CLOSE_TO]->(m:MoeraNode)
+            WHERE NOT EXISTS {
+                MATCH (n)-[:FRIEND|SUBSCRIBED]->{1,2}(m)
+            }
+            DELETE c
+            """
+        );
     }
 
 }
