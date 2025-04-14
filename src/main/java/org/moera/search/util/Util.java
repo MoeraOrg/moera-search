@@ -4,12 +4,22 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Base64;
 
+import com.github.jknack.handlebars.Handlebars.SafeString;
+import org.springframework.web.util.HtmlUtils;
+
 public class Util {
 
     private static final String LUCENE_SPECIAL_CHARS = "+-&|!(){}[]^\"~*?:\\/=";
 
     public static Timestamp toTimestamp(Long epochSecond) {
         return epochSecond != null ? Timestamp.from(Instant.ofEpochSecond(epochSecond)) : null;
+    }
+
+    public static SafeString he(Object s) {
+        if (s == null) {
+            return new SafeString("");
+        }
+        return s instanceof SafeString ss ? ss : new SafeString(HtmlUtils.htmlEscape(s.toString()));
     }
 
     public static byte[] hexdecode(String hex) {
