@@ -31,73 +31,85 @@ public class SearchProcessor {
                 log.info("Profile of {} was updated, rescanning", LogUtil.format(notification.getSenderNodeName()));
                 database.executeWriteWithoutResult(() -> nodeRepository.rescanName(notification.getSenderNodeName()));
                 break;
-            case FRIEND:
+            case FRIEND: {
+                var details = notification.getFriendUpdate();
                 log.info(
                     "Node {} added node {} to friends",
-                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(notification.getNodeName())
+                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.executeWriteWithoutResult(() ->
-                    nodeRepository.addFriendship(notification.getSenderNodeName(), notification.getNodeName())
+                    nodeRepository.addFriendship(notification.getSenderNodeName(), details.getNodeName())
                 );
                 break;
-            case UNFRIEND:
+            }
+            case UNFRIEND: {
+                var details = notification.getFriendUpdate();
                 log.info(
                     "Node {} removed node {} from friends",
-                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(notification.getNodeName())
+                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.executeWriteWithoutResult(() ->
-                    nodeRepository.deleteFriendship(notification.getSenderNodeName(), notification.getNodeName())
+                    nodeRepository.deleteFriendship(notification.getSenderNodeName(), details.getNodeName())
                 );
                 break;
-            case SUBSCRIBE:
+            }
+            case SUBSCRIBE: {
+                var details = notification.getSubscriptionUpdate();
                 log.info(
                     "Node {} subscribed to node {}",
-                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(notification.getNodeName())
+                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.executeWriteWithoutResult(() ->
                     nodeRepository.addSubscription(
-                        notification.getSenderNodeName(), notification.getNodeName(), notification.getFeedName()
+                        notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
                     )
                 );
                 break;
-            case UNSUBSCRIBE:
+            }
+            case UNSUBSCRIBE: {
+                var details = notification.getSubscriptionUpdate();
                 log.info(
                     "Node {} unsubscribed from node {}",
-                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(notification.getNodeName())
+                    LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.executeWriteWithoutResult(() ->
                     nodeRepository.deleteSubscription(
-                        notification.getSenderNodeName(), notification.getNodeName(), notification.getFeedName()
+                        notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
                     )
                 );
                 break;
-            case BLOCK:
+            }
+            case BLOCK: {
+                var details = notification.getBlockUpdate();
                 log.info(
                     "Node {} blocked {} from node {}",
                     LogUtil.format(notification.getSenderNodeName()),
-                    LogUtil.format(Objects.toString(notification.getBlockedOperation())),
-                    LogUtil.format(notification.getNodeName())
+                    LogUtil.format(Objects.toString(details.getBlockedOperation())),
+                    LogUtil.format(details.getNodeName())
                 );
                 database.executeWriteWithoutResult(() -> {
                     nodeRepository.addBlocks(
-                        notification.getSenderNodeName(), notification.getNodeName(), notification.getBlockedOperation()
+                        notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
                     );
-                    nodeRepository.deleteCloseTo(notification.getSenderNodeName(), notification.getNodeName());
+                    nodeRepository.deleteCloseTo(notification.getSenderNodeName(), details.getNodeName());
                 });
                 break;
-            case UNBLOCK:
+            }
+            case UNBLOCK: {
+                var details = notification.getBlockUpdate();
                 log.info(
                     "Node {} unblocked {} from node {}",
                     LogUtil.format(notification.getSenderNodeName()),
-                    LogUtil.format(Objects.toString(notification.getBlockedOperation())),
-                    LogUtil.format(notification.getNodeName())
+                    LogUtil.format(Objects.toString(details.getBlockedOperation())),
+                    LogUtil.format(details.getNodeName())
                 );
                 database.executeWriteWithoutResult(() ->
                     nodeRepository.deleteBlocks(
-                        notification.getSenderNodeName(), notification.getNodeName(), notification.getBlockedOperation()
+                        notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
                     )
                 );
                 break;
+            }
         }
     }
 
