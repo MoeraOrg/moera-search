@@ -1,4 +1,4 @@
-package org.moera.search.model;
+package org.moera.search.api.model;
 
 import org.moera.lib.node.types.PublicMediaFileInfo;
 import org.moera.search.data.MediaFile;

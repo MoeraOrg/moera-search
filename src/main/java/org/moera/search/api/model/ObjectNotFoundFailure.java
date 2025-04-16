@@ -1,4 +1,4 @@
-package org.moera.search.model;
+package org.moera.search.api.model;
 
 public class ObjectNotFoundFailure extends OperationFailure {
 

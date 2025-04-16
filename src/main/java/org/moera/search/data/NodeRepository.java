@@ -12,7 +12,7 @@ import org.moera.lib.node.types.BlockedOperation;
 import org.moera.lib.node.types.SearchNodeInfo;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.Workload;
-import org.moera.search.model.SearchNodeInfoUtil;
+import org.moera.search.api.model.SearchNodeInfoUtil;
 import org.moera.search.util.Util;
 import org.springframework.stereotype.Component;
 

@@ -1,4 +1,4 @@
-package org.moera.search.notification;
+package org.moera.search.rest.notification;
 
 import java.lang.reflect.Method;
 

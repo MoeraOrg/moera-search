@@ -1,4 +1,4 @@
-package org.moera.search.notification.processor;
+package org.moera.search.rest.notification.processor;
 
 import java.util.Objects;
 import jakarta.inject.Inject;
@@ -8,8 +8,8 @@ import org.moera.lib.node.types.notifications.SearchContentUpdatedNotification;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
-import org.moera.search.notification.NotificationMapping;
-import org.moera.search.notification.NotificationProcessor;
+import org.moera.search.rest.notification.NotificationMapping;
+import org.moera.search.rest.notification.NotificationProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

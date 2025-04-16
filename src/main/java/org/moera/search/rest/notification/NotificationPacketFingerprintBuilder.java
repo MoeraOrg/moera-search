@@ -1,4 +1,4 @@
-package org.moera.search.notification;
+package org.moera.search.rest.notification;
 
 import org.moera.lib.crypto.FingerprintException;
 import org.moera.lib.node.Fingerprints;
