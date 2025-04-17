@@ -14,6 +14,7 @@ public class Config {
     private String signingKey;
     private String address;
     private DatabaseConfig database = new DatabaseConfig();
+    private IndexConfig index = new IndexConfig();
     private String namingServer;
     private PoolsConfig pools = new PoolsConfig();
     private MediaConfig media = new MediaConfig();
@@ -72,6 +73,14 @@ public class Config {
 
     public void setDatabase(DatabaseConfig database) {
         this.database = database;
+    }
+
+    public IndexConfig getIndex() {
+        return index;
+    }
+
+    public void setIndex(IndexConfig index) {
+        this.index = index;
     }
 
     public String getNamingServer() {
