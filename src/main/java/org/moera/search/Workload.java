@@ -28,4 +28,7 @@ public class Workload {
     public static final int CLOSE_TO_UPDATE_MAX_NODES = 100;
     public static final String CLOSE_TO_CLEANUP_PERIOD = "P1D";
 
+    public static final String TIMELINE_SCANNERS_START_PERIOD = "PT1M";
+    public static final int TIMELINE_SCANNERS_MAX_JOBS = 25;
+
 }

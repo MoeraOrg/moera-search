@@ -4,13 +4,10 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.WhoAmI;
-import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
-import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.media.MediaManager;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {
@@ -99,21 +96,14 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             checkpoint();
         }
 
-        database.executeWriteWithoutResult(() -> {
-            try {
-                mediaManager.downloadAvatar(parameters.nodeName, state.whoAmI.getAvatar());
-            } catch (MoeraNodeException e) {
-                throw new MoeraNodeUncheckedException(e);
-            }
-        });
-        if (state.whoAmI.getAvatar() != null && AvatarImageUtil.getMediaFile(state.whoAmI.getAvatar()) != null) {
-            var mediaFileId = AvatarImageUtil.getMediaFile(state.whoAmI.getAvatar()).getId();
-            String shape = state.whoAmI.getAvatar().getShape();
-            database.executeWriteWithoutResult(() -> {
+        mediaManager.downloadAndSaveAvatar(
+            parameters.nodeName,
+            state.whoAmI.getAvatar(),
+            (avatarId, shape) -> {
                 nodeRepository.removeAvatar(parameters.nodeName);
-                nodeRepository.addAvatar(parameters.nodeName, mediaFileId, shape);
-            });
-        }
+                nodeRepository.addAvatar(parameters.nodeName, avatarId, shape);
+            }
+        );
     }
 
     @Override

@@ -10,11 +10,13 @@ import okhttp3.ResponseBody;
 import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.AvatarImage;
 import org.moera.search.api.MoeraNodeLocalStorageException;
+import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
+import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.config.Config;
+import org.moera.search.data.Database;
 import org.moera.search.data.MediaFile;
 import org.moera.search.data.MediaFileRepository;
-import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.util.DigestingOutputStream;
 import org.moera.search.util.ParametrizedLock;
 import org.slf4j.Logger;
@@ -28,6 +30,9 @@ public class MediaManager {
 
     @Inject
     private Config config;
+
+    @Inject
+    private Database database;
 
     @Inject
     private MediaFileRepository mediaFileRepository;
@@ -152,6 +157,27 @@ public class MediaManager {
             for (AvatarImage avatarImage : avatarImages) {
                 downloadAvatar(nodeName, avatarImage);
             }
+        }
+    }
+
+    public interface AvatarSaver {
+
+        void save(String avatarId, String shape);
+
+    }
+
+    public void downloadAndSaveAvatar(String nodeName, AvatarImage avatar, AvatarSaver avatarSaver) {
+        database.executeWriteWithoutResult(() -> {
+            try {
+                downloadAvatar(nodeName, avatar);
+            } catch (MoeraNodeException e) {
+                throw new MoeraNodeUncheckedException(e);
+            }
+        });
+        if (avatar != null && AvatarImageUtil.getMediaFile(avatar) != null) {
+            database.executeWriteWithoutResult(() ->
+                avatarSaver.save(AvatarImageUtil.getMediaFile(avatar).getId(), avatar.getShape())
+            );
         }
     }
 

@@ -7,7 +7,7 @@ jobType:            string NOT NULL
 parameters:         string NOT NULL
 state:              string
 retries:            int
-waitUntil:          int                     (timestamp)
+waitUntil:          int                     (ms timestamp)
 
 (:MediaFile)
 id:                 string NOT NULL UNIQUE
@@ -18,24 +18,44 @@ orientation:        int NOT NULL
 fileSize:           int NOT NULL
 exposed:            boolean NOT NULL
 digest: byte[]
-createdAt:          int NOT NULL            (timestamp)
+createdAt:          int NOT NULL            (ms timestamp)
 
 (:MoeraNode)
 name:               string NOT NULL UNIQUE
 fullName:           string FULLTEXT INDEX
 title: string
 scanProfile:        boolean/int             (ScanStatus)
-profileScannedAt:   int                     (timestamp)
+profileScannedAt:   int                     (ms timestamp)
 subscribe:          boolean/int             (ScanStatus)
-subscribedAt:       int                     (timestamp)
+subscribedAt:       int                     (ms timestamp)
 subscriberId:       string
 scanPeople:         boolean/int             (ScanStatus)
-peopleScannedAt:    int                     (timestamp)
-closeToUpdatedAt:   int                     (timestamp)
+peopleScannedAt:    int                     (ms timestamp)
+closeToUpdatedAt:   int                     (ms timestamp)
+scanTimeline:       boolean/int             (ScanStatus)
+timelineScannedAt:  int                     (ms timestamp)
+INDEX ON (scanProfile, profileScannedAt);
+INDEX ON (subscribe, subscribedAt);
+INDEX ON (scanPeople, peopleScannedAt);
+INDEX ON (closeToUpdatedAt);
+INDEX ON (scanTimeline, timelineScannedAt);
 
 (:NamingService) UNIQUE
 scanTimestamp:      int NOT NULL
-scannedAt:          int                     (timestamp)
+scannedAt:          int                     (ms timestamp)
+
+(:Posting)
+id:                 string NOT NULL INDEX
+revisionId:         string
+ownerFullName:      string
+heading:            string
+bodyPreview:        string                  (Body)
+createdAt:          int                     (sec timestamp)
+editedAt:           int                     (sec timestamp)
+viewPrincipal:      string
+scan:               boolean/int             (ScanStatus)
+scannedAt:          int                     (ms timestamp)
+INDEX ON (scan, scannedAt);
 
 (:Version) UNIQUE
 version:            int NOT NULL
@@ -43,7 +63,7 @@ version:            int NOT NULL
 Relationships
 =============
 
-()-[:AVATAR]->(:MediaFile)
+(:MoeraNode|Posting)-[:AVATAR]->(:MediaFile)
 shape:              string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
@@ -54,9 +74,19 @@ distance:           float NOT NULL
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
+(:MoeraNode)<-[:OWNER]-(:Posting)
+
+(:MoeraNode)-[:PUBLISHED]->(:Posting)
+storyId:            string NOT NULL
+publishedAt:        int NOT NULL INDEX      (sec timestamp)
+
 (:MoeraNode)<-[:SCANS]-(:Job)
 
 (:MoeraNode)<-[:SCANS_PEOPLE]-(:Job)
+
+(:MoeraNode)<-[:SCANS_TIMELINE]-(:Job)
+
+(:MoeraNode)<-[:SOURCE]-(:Posting)
 
 (:MoeraNode)-[:SUBSCRIBED]->(:MoeraNode)
 feedName:           string NOT NULL

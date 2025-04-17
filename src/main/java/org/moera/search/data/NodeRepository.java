@@ -14,6 +14,7 @@ import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.Workload;
 import org.moera.search.api.model.SearchNodeInfoUtil;
 import org.moera.search.util.Util;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,12 +34,18 @@ public class NodeRepository {
     }
 
     public void createName(String name) {
-        database.tx().run(
-            """
-            MERGE (n:MoeraNode {name: $name})
-            """,
-            Map.of("name", name)
-        );
+        try {
+            database.tx().run(
+                """
+                MERGE (n:MoeraNode {name: $name})
+                """,
+                Map.of("name", name)
+            );
+        } catch (Neo4jException e) {
+            if (!e.code().equals("Neo.ClientError.Schema.ConstraintValidationFailed")) {
+                throw e;
+            }
+        }
     }
 
     public void updateName(String name, WhoAmI whoAmI) {
@@ -576,6 +583,57 @@ public class NodeRepository {
             }
             DELETE c
             """
+        );
+    }
+
+    public List<String> findNamesToScanTimeline(int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.scanTimeline IS NULL AND NOT (n)<-[:SCANS_TIMELINE]-(:Job)
+            LIMIT $limit
+            RETURN n.name AS name
+            """,
+            Map.of("limit", limit)
+        ).list(r -> r.get("name").asString());
+    }
+
+    public void assignScanTimelineJob(String name, UUID jobId) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (j:Job {id: $jobId})
+            MERGE (n)<-[:SCANS_TIMELINE]-(j)
+            """,
+            Map.of(
+                "name", name,
+                "jobId", jobId.toString()
+            )
+        );
+    }
+
+    public void scanTimelineSucceeded(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanTimeline = true, n.timelineScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void scanTimelineFailed(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanTimeline = false, n.timelineScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
         );
     }
 
