@@ -14,7 +14,6 @@ import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.Workload;
 import org.moera.search.api.model.SearchNodeInfoUtil;
 import org.moera.search.util.Util;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,18 +33,12 @@ public class NodeRepository {
     }
 
     public void createName(String name) {
-        try {
-            database.tx().run(
-                """
-                MERGE (n:MoeraNode {name: $name})
-                """,
-                Map.of("name", name)
-            );
-        } catch (Neo4jException e) {
-            if (!e.code().equals("Neo.ClientError.Schema.ConstraintValidationFailed")) {
-                throw e;
-            }
-        }
+        database.tx().run(
+            """
+            MERGE (n:MoeraNode {name: $name})
+            """,
+            Map.of("name", name)
+        );
     }
 
     public void updateName(String name, WhoAmI whoAmI) {

@@ -14,6 +14,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionContext;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -194,6 +195,16 @@ public class Database {
                 tx.remove();
             }
         });
+    }
+
+    public void executeWriteIgnoreConflict(Runnable callback) {
+        try {
+            executeWriteWithoutResult(callback);
+        } catch (Neo4jException e) {
+            if (!e.code().equals("Neo.ClientError.Schema.ConstraintValidationFailed")) {
+                throw e;
+            }
+        }
     }
 
     public TransactionContext tx() {

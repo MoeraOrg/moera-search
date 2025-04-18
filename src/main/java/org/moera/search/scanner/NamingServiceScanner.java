@@ -67,30 +67,35 @@ public class NamingServiceScanner {
 
             var total = new AtomicInteger(0);
             try (var ignored2 = database.open()) {
-                database.executeWriteWithoutResult(() -> {
-                    long scanTimestamp = namingServiceRepository.getScanTimestamp();
-                    long lastTimestamp = scanTimestamp;
-                    var naming = new MoeraNaming(config.getNamingServer());
-                    int page = 0;
-                    while (true) {
-                        var names = naming.getAllNewer(scanTimestamp, page++, PAGE_SIZE);
-                        if (names.isEmpty()) {
-                            break;
-                        }
-                        for (var name : names) {
-                            var nodeName = NodeName.toString(name.getName(), name.getGeneration());
-                            if (nodeName.equals(config.getNodeName()) || nodeRepository.existsName(nodeName)) {
-                                continue;
-                            }
-                            nodeRepository.createName(nodeName);
-                            total.incrementAndGet();
-                            lastTimestamp = Math.max(lastTimestamp, name.getCreated());
-                        }
+                long scanTimestamp = database.executeRead(() -> namingServiceRepository.getScanTimestamp());
+                long lastTimestamp = scanTimestamp;
+                var naming = new MoeraNaming(config.getNamingServer());
+                int page = 0;
+                while (true) {
+                    var names = naming.getAllNewer(scanTimestamp, page++, PAGE_SIZE);
+                    if (names.isEmpty()) {
+                        break;
                     }
-                    if (lastTimestamp > scanTimestamp) {
-                        namingServiceRepository.updateScanTimestamp(lastTimestamp);
+                    for (var name : names) {
+                        var nodeName = NodeName.toString(name.getName(), name.getGeneration());
+                        if (nodeName.equals(config.getNodeName())) {
+                            continue;
+                        }
+                        boolean exists = database.executeRead(() -> nodeRepository.existsName(nodeName));
+                        if (exists) {
+                            continue;
+                        }
+                        database.executeWriteIgnoreConflict(() -> nodeRepository.createName(nodeName));
+                        total.incrementAndGet();
+                        lastTimestamp = Math.max(lastTimestamp, name.getCreated());
                     }
-                });
+                }
+                if (lastTimestamp > scanTimestamp) {
+                    var updatedTimestamp = lastTimestamp;
+                    database.executeWriteWithoutResult(() ->
+                        namingServiceRepository.updateScanTimestamp(updatedTimestamp)
+                    );
+                }
             }
 
             log.info("{} new names added", total.get());

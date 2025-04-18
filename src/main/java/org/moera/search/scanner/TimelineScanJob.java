@@ -96,7 +96,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
         while (state.before > 0) {
             var feedSlice = nodeApi
                 .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
-                .getFeedSlice("timeline", null, Long.MAX_VALUE, PAGE_SIZE);
+                .getFeedSlice("timeline", null, state.before, PAGE_SIZE);
             for (var story : feedSlice.getStories()) {
                 state.before = story.getMoment();
                 checkpoint();
@@ -109,14 +109,14 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 boolean isOriginal = ObjectUtils.isEmpty(posting.getReceiverName());
                 var sourceNodeName = isOriginal ? parameters.nodeName : posting.getReceiverName();
                 var sourcePostingId = isOriginal ? posting.getId() : posting.getReceiverPostingId();
+                if (!sourceNodeName.equals(parameters.nodeName)) {
+                    database.executeWriteIgnoreConflict(() -> nodeRepository.createName(sourceNodeName));
+                }
+                if (!posting.getOwnerName().equals(parameters.nodeName)) {
+                    database.executeWriteIgnoreConflict(() -> nodeRepository.createName(posting.getOwnerName()));
+                }
                 database.executeWriteWithoutResult(() -> {
-                    if (!sourceNodeName.equals(parameters.nodeName)) {
-                        nodeRepository.createName(sourceNodeName);
-                    }
                     postingRepository.createPosting(sourceNodeName, sourcePostingId);
-                    if (!posting.getOwnerName().equals(parameters.nodeName)) {
-                        nodeRepository.createName(posting.getOwnerName());
-                    }
                     postingRepository.assignPostingOwner(sourceNodeName, sourcePostingId, posting.getOwnerName());
                     postingRepository.addPublication(
                         sourceNodeName, sourcePostingId, parameters.nodeName, story.getId(), story.getPublishedAt()
