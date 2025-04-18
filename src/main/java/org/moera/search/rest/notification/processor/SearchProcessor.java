@@ -37,6 +37,7 @@ public class SearchProcessor {
                     "Node {} added node {} to friends",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
+                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
                 database.writeNoResult(() ->
                     nodeRepository.addFriendship(notification.getSenderNodeName(), details.getNodeName())
                 );
@@ -48,6 +49,7 @@ public class SearchProcessor {
                     "Node {} removed node {} from friends",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
+                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
                 database.writeNoResult(() ->
                     nodeRepository.deleteFriendship(notification.getSenderNodeName(), details.getNodeName())
                 );
@@ -59,6 +61,7 @@ public class SearchProcessor {
                     "Node {} subscribed to node {}",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
+                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
                 database.writeNoResult(() ->
                     nodeRepository.addSubscription(
                         notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
@@ -72,6 +75,7 @@ public class SearchProcessor {
                     "Node {} unsubscribed from node {}",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
+                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
                 database.writeNoResult(() ->
                     nodeRepository.deleteSubscription(
                         notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
@@ -87,6 +91,7 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(details.getBlockedOperation())),
                     LogUtil.format(details.getNodeName())
                 );
+                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
                 database.writeNoResult(() -> {
                     nodeRepository.addBlocks(
                         notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
@@ -103,6 +108,7 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(details.getBlockedOperation())),
                     LogUtil.format(details.getNodeName())
                 );
+                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
                 database.writeNoResult(() ->
                     nodeRepository.deleteBlocks(
                         notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()

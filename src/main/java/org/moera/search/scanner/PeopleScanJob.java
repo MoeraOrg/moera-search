@@ -105,6 +105,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getFriends(null);
                 for (var friend : friends) {
+                    database.writeIgnoreConflict(() -> nodeRepository.createName(friend.getNodeName()));
                     database.writeNoResult(
                         () -> nodeRepository.addFriendship(parameters.nodeName, friend.getNodeName())
                     );
@@ -122,6 +123,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getSubscriptions(null, SubscriptionType.FEED);
                 for (var subscription : subscriptions) {
+                    database.writeIgnoreConflict(() -> nodeRepository.createName(subscription.getRemoteNodeName()));
                     database.writeNoResult(() ->
                         nodeRepository.addSubscription(
                             parameters.nodeName, subscription.getRemoteNodeName(), subscription.getRemoteFeedName()
@@ -144,13 +146,14 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                 var blockedUsers = nodeApi
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .searchBlockedUsers(filter);
-                database.writeNoResult(() -> {
-                    for (var blockedUser : blockedUsers) {
+                for (var blockedUser : blockedUsers) {
+                    database.writeIgnoreConflict(() -> nodeRepository.createName(blockedUser.getNodeName()));
+                    database.writeNoResult(() ->
                         nodeRepository.addBlocks(
                             parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
-                        );
-                    }
-                });
+                        )
+                    );
+                }
             } catch (MoeraNodeApiAuthenticationException e) {
                 log.info("Blocked users' list is not public for {}, skipping", parameters.nodeName);
             }

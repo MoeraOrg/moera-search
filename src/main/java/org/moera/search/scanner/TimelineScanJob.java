@@ -13,8 +13,6 @@ import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.job.Job;
 import org.moera.search.media.MediaManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
 
 public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineScanJob.State> {
@@ -56,8 +54,6 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
         }
 
     }
-
-    private static final Logger log = LoggerFactory.getLogger(TimelineScanJob.class);
 
     private static final int PAGE_SIZE = 50;
 
