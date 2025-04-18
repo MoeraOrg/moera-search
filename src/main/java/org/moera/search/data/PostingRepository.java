@@ -74,7 +74,9 @@ public class PostingRepository {
         args.put("revisionId", info.getRevisionId());
         args.put("ownerFullName", info.getOwnerFullName());
         args.put("heading", info.getHeading());
-        Body bodyPreview = info.getBodyPreview() != null ? info.getBodyPreview() : info.getBody();
+        Body bodyPreview = info.getBodyPreview() != null && !info.getBodyPreview().getEncoded().equals(Body.EMPTY)
+            ? info.getBodyPreview()
+            : info.getBody();
         String bodyPreviewEncoded = bodyPreview != null ? bodyPreview.getEncoded() : "";
         args.put("bodyPreview", bodyPreviewEncoded);
         args.put("createdAt", info.getCreatedAt());
