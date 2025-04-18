@@ -1,5 +1,6 @@
 package org.moera.search.index;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
@@ -18,6 +19,9 @@ import org.moera.search.data.DatabaseInitializedEvent;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +97,38 @@ public class Index {
 
     public boolean isReady() {
         return ready;
+    }
+
+    public String index(IndexedDocument document) throws IOException {
+        var response = client.index(
+            new IndexRequest.Builder<IndexedDocument>()
+                .index(config.getIndex().getIndexName())
+                .document(document)
+                .build()
+        );
+        return response.id();
+    }
+
+    public void update(String id, IndexedDocument document) throws IOException {
+        client.update(
+            new UpdateRequest.Builder<IndexedDocument, IndexedDocument>()
+                .index(config.getIndex().getIndexName())
+                .id(id)
+                .doc(document)
+                .build(),
+            IndexedDocument.class
+        );
+    }
+
+    public IndexedDocument get(String id) throws IOException {
+        var response = client.get(
+            new GetRequest.Builder()
+                .index(config.getIndex().getIndexName())
+                .id(id)
+                .build(),
+            IndexedDocument.class
+        );
+        return response.source();
     }
 
 }

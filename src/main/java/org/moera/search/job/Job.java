@@ -184,6 +184,7 @@ public abstract class Job<P, S> implements Runnable {
             log.error("Cannot find a node {}", ex.getNodeName());
         } else {
             log.error("Fatal error executing job {}: {}", getJobDescription(), e.getMessage());
+            log.debug("Fatal error executing job:", e);
         }
         failed();
     }

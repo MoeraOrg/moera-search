@@ -1,0 +1,31 @@
+OpenSearch Mappings
+===================
+
+{
+  "properties": {
+    "commentId": {
+      "type": "keyword"
+    },
+    "createdAt": {
+      "type": "date"
+    },
+    "nodeName": {
+      "type": "keyword"
+    },
+    "ownerName": {
+      "type": "keyword"
+    },
+    "postingId": {
+      "type": "keyword"
+    },
+    "publishers": {
+      "type": "keyword"
+    },
+    "subject": {
+      "type": "text"
+    },
+    "text": {
+      "type": "text"
+    }
+  }
+}

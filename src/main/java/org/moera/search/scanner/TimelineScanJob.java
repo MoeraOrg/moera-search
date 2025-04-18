@@ -9,6 +9,8 @@ import org.moera.lib.node.types.StoryType;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
+import org.moera.search.index.Index;
+import org.moera.search.index.IndexedDocument;
 import org.moera.search.job.Job;
 import org.moera.search.media.MediaManager;
 import org.slf4j.Logger;
@@ -71,6 +73,9 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
     @Inject
     private MediaManager mediaManager;
 
+    @Inject
+    private Index index;
+
     public TimelineScanJob() {
         state = new State();
         retryCount(5, "PT10M");
@@ -130,6 +135,28 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                             postingRepository.addAvatar(parameters.nodeName, posting.getId(), avatarId, shape);
                         }
                     );
+                }
+
+                String documentId = database.executeRead(() ->
+                    postingRepository.getDocumentId(parameters.nodeName, posting.getId())
+                );
+                if (isOriginal || documentId != null) {
+                    IndexedDocument document = isOriginal
+                        ? new IndexedDocument(parameters.nodeName, posting)
+                        : new IndexedDocument();
+                    var publishers = database.executeRead(() ->
+                        postingRepository.getPublishers(parameters.nodeName, posting.getId())
+                    );
+                    document.setPublishers(publishers);
+
+                    if (documentId == null) {
+                        var id = index.index(document);
+                        database.executeWriteWithoutResult(() ->
+                            postingRepository.setDocumentId(parameters.nodeName, posting.getId(), id)
+                        );
+                    } else {
+                        index.update(documentId, document);
+                    }
                 }
             }
             state.before = feedSlice.getAfter();

@@ -7,6 +7,7 @@ public class IndexConfig {
     private int port = 9200;
     private String user;
     private String password;
+    private String indexName;
 
     public String getScheme() {
         return scheme;
@@ -46,6 +47,14 @@ public class IndexConfig {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getIndexName() {
+        return indexName;
+    }
+
+    public void setIndexName(String indexName) {
+        this.indexName = indexName;
     }
 
 }

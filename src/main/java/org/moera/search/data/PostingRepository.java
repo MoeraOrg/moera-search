@@ -1,6 +1,8 @@
 package org.moera.search.data;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
@@ -66,8 +68,19 @@ public class PostingRepository {
     }
 
     public void fillPosting(String nodeName, String postingId, PostingInfo info) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("revisionId", info.getRevisionId());
+        args.put("ownerFullName", info.getOwnerFullName());
+        args.put("heading", info.getHeading());
         Body bodyPreview = info.getBodyPreview() != null ? info.getBodyPreview() : info.getBody();
         String bodyPreviewEncoded = bodyPreview != null ? bodyPreview.getEncoded() : "";
+        args.put("bodyPreview", bodyPreviewEncoded);
+        args.put("createdAt", info.getCreatedAt());
+        args.put("editedAt", info.getEditedAt());
+        args.put("viewPrincipal", PostingOperations.getView(info.getOperations(), Principal.PUBLIC).getValue());
+        args.put("now", Instant.now().toEpochMilli());
 
         database.tx().run(
             """
@@ -77,23 +90,12 @@ public class PostingRepository {
                 p.heading = $heading,
                 p.bodyPreview = $bodyPreview,
                 p.createdAt = $createdAt,
-                p.editedAt = $editedAt
-                p.viewPrincipal = $viewPrincipal
+                p.editedAt = $editedAt,
+                p.viewPrincipal = $viewPrincipal,
                 p.scan = true,
                 p.scannedAt = $now
             """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId,
-                "revisionId", info.getRevisionId(),
-                "ownerFullName", info.getOwnerFullName(),
-                "heading", info.getHeading(),
-                "bodyPreview", bodyPreviewEncoded,
-                "createdAt", info.getCreatedAt(),
-                "editedAt", info.getEditedAt(),
-                "viewPrincipal", PostingOperations.getView(info.getOperations(), Principal.PUBLIC).getValue(),
-                "now", Instant.now().toEpochMilli()
-            )
+            args
         );
     }
 
@@ -124,6 +126,46 @@ public class PostingRepository {
                 "postingId", postingId
             )
         );
+    }
+
+    public String getDocumentId(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            RETURN p.documentId AS id
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).single().get("id").asString(null);
+    }
+
+    public void setDocumentId(String nodeName, String postingId, String documentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            SET p.documentId = $documentId
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "documentId", documentId
+            )
+        );
+    }
+
+    public List<String> getPublishers(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})<-[:PUBLISHED]-(n:MoeraNode)
+            RETURN n.name AS name
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).stream().map(r -> r.get("name").asString()).toList();
     }
 
 }

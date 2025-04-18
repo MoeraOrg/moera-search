@@ -1,5 +1,8 @@
+Neo4j Database Schema
+=====================
+
 Nodes
-=====
+-----
 
 (:Job)
 id:                 string NOT NULL UNIQUE
@@ -55,13 +58,14 @@ editedAt:           int                     (sec timestamp)
 viewPrincipal:      string
 scan:               boolean/int             (ScanStatus)
 scannedAt:          int                     (ms timestamp)
+documentId:         string
 INDEX ON (scan, scannedAt);
 
 (:Version) UNIQUE
 version:            int NOT NULL
 
 Relationships
-=============
+-------------
 
 (:MoeraNode|Posting)-[:AVATAR]->(:MediaFile)
 shape:              string
