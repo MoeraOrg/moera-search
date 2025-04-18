@@ -57,7 +57,7 @@ public class PreparePublicDirectServingJob extends Job<PreparePublicDirectServin
         List<MediaFile> page;
         do {
             int pageStart = offset;
-            page = database.executeRead(() -> mediaFileRepository.findAllExposed(pageStart, PAGE_SIZE));
+            page = database.read(() -> mediaFileRepository.findAllExposed(pageStart, PAGE_SIZE));
             log.info("Processing page {} of public media files", pageNumber++);
             for (MediaFile mediaFile : page) {
                 try {

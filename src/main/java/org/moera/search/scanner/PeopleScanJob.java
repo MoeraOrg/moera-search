@@ -105,7 +105,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getFriends(null);
                 for (var friend : friends) {
-                    database.executeWriteWithoutResult(
+                    database.writeNoResult(
                         () -> nodeRepository.addFriendship(parameters.nodeName, friend.getNodeName())
                     );
                 }
@@ -122,7 +122,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getSubscriptions(null, SubscriptionType.FEED);
                 for (var subscription : subscriptions) {
-                    database.executeWriteWithoutResult(() ->
+                    database.writeNoResult(() ->
                         nodeRepository.addSubscription(
                             parameters.nodeName, subscription.getRemoteNodeName(), subscription.getRemoteFeedName()
                         )
@@ -144,7 +144,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                 var blockedUsers = nodeApi
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .searchBlockedUsers(filter);
-                database.executeWriteWithoutResult(() -> {
+                database.writeNoResult(() -> {
                     for (var blockedUser : blockedUsers) {
                         nodeRepository.addBlocks(
                             parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
@@ -158,13 +158,13 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
             checkpoint();
         }
 
-        database.executeWriteWithoutResult(() -> nodeRepository.scanPeopleSucceeded(parameters.nodeName));
+        database.writeNoResult(() -> nodeRepository.scanPeopleSucceeded(parameters.nodeName));
     }
 
     @Override
     protected void failed() {
         super.failed();
-        database.executeWriteWithoutResult(() -> nodeRepository.scanPeopleFailed(parameters.nodeName));
+        database.writeNoResult(() -> nodeRepository.scanPeopleFailed(parameters.nodeName));
     }
 
     @Override

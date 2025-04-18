@@ -38,11 +38,11 @@ public class NameScanner {
 
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
-                int runningCount = database.executeRead(() -> jobs.countRunning(NameScanJob.class));
+                int runningCount = database.read(() -> jobs.countRunning(NameScanJob.class));
                 if (runningCount >= Workload.NAME_SCANNERS_MAX_JOBS) {
                     return;
                 }
-                var names = database.executeRead(() ->
+                var names = database.read(() ->
                     nodeRepository.findNamesToScan(Workload.NAME_SCANNERS_MAX_JOBS - runningCount)
                 );
                 for (var name : names) {
@@ -50,7 +50,7 @@ public class NameScanner {
                     try {
                         UUID jobId = jobs.run(NameScanJob.class, new NameScanJob.Parameters(name));
                         if (jobId != null) {
-                            database.executeWriteWithoutResult(() -> nodeRepository.assignScanJob(name, jobId));
+                            database.writeNoResult(() -> nodeRepository.assignScanJob(name, jobId));
                         }
                     } catch (Exception e) {
                         log.error("Error starting scanning of {}", name, e);

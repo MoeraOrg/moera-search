@@ -38,11 +38,11 @@ public class PeopleScanner {
 
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
-                int runningCount = database.executeRead(() -> jobs.countRunning(PeopleScanJob.class));
+                int runningCount = database.read(() -> jobs.countRunning(PeopleScanJob.class));
                 if (runningCount >= Workload.PEOPLE_SCANNERS_MAX_JOBS) {
                     return;
                 }
-                var names = database.executeRead(() ->
+                var names = database.read(() ->
                     nodeRepository.findNamesToScanPeople(Workload.PEOPLE_SCANNERS_MAX_JOBS - runningCount)
                 );
                 for (var name : names) {
@@ -50,7 +50,7 @@ public class PeopleScanner {
                     try {
                         UUID jobId = jobs.run(PeopleScanJob.class, new PeopleScanJob.Parameters(name));
                         if (jobId != null) {
-                            database.executeWriteWithoutResult(() -> nodeRepository.assignScanPeopleJob(name, jobId));
+                            database.writeNoResult(() -> nodeRepository.assignScanPeopleJob(name, jobId));
                         }
                     } catch (Exception e) {
                         log.error("Error starting people scan job for {}", name, e);

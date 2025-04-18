@@ -38,11 +38,11 @@ public class SubscribeScanner {
 
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
-                int runningCount = database.executeRead(() -> jobs.countRunning(SubscribeJob.class));
+                int runningCount = database.read(() -> jobs.countRunning(SubscribeJob.class));
                 if (runningCount >= Workload.NAME_SUBSCRIBERS_MAX_JOBS) {
                     return;
                 }
-                var names = database.executeRead(() ->
+                var names = database.read(() ->
                     nodeRepository.findNamesToSubscribe(Workload.NAME_SUBSCRIBERS_MAX_JOBS - runningCount)
                 );
                 for (var name : names) {
@@ -50,7 +50,7 @@ public class SubscribeScanner {
                     try {
                         UUID jobId = jobs.run(SubscribeJob.class, new SubscribeJob.Parameters(name));
                         if (jobId != null) {
-                            database.executeWriteWithoutResult(() -> nodeRepository.assignSubscribeJob(name, jobId));
+                            database.writeNoResult(() -> nodeRepository.assignSubscribeJob(name, jobId));
                         }
                     } catch (Exception e) {
                         log.error("Error starting subscription to {}", name, e);

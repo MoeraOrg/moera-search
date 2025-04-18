@@ -182,7 +182,7 @@ public class Jobs {
                 log.info("Loading pending jobs");
 
                 long timestamp = Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli();
-                database.executeRead(() -> jobRepository.findAllBefore(timestamp)).forEach(this::load);
+                database.read(() -> jobRepository.findAllBefore(timestamp)).forEach(this::load);
             }
         }
     }
@@ -239,7 +239,7 @@ public class Jobs {
         try {
             String parameters = objectMapper.writeValueAsString(job.getParameters());
             String state = job.getState() != null ? objectMapper.writeValueAsString(job.getState()) : null;
-            var id = database.executeWrite(
+            var id = database.write(
                 () -> jobRepository.create(job.getClass().getCanonicalName(), parameters, state)
             );
             job.setId(id);
@@ -255,7 +255,7 @@ public class Jobs {
         try {
             String state = job.getState() != null ? objectMapper.writeValueAsString(job.getState()) : null;
             Long waitUntil = job.getWaitUntil() != null ? job.getWaitUntil().toEpochMilli() : null;
-            database.executeWriteWithoutResult(
+            database.writeNoResult(
                 () -> jobRepository.updateState(job.getId(), state, job.getRetries(), waitUntil)
             );
         } catch (Exception e) {
@@ -269,7 +269,7 @@ public class Jobs {
         }
         all.remove(job.getId());
         try {
-            database.executeWriteWithoutResult(
+            database.writeNoResult(
                 () -> jobRepository.delete(job.getId())
             );
         } catch (Exception e) {

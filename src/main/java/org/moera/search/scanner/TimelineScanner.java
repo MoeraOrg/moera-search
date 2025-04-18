@@ -42,11 +42,11 @@ public class TimelineScanner {
 
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
-                int runningCount = database.executeRead(() -> jobs.countRunning(TimelineScanJob.class));
+                int runningCount = database.read(() -> jobs.countRunning(TimelineScanJob.class));
                 if (runningCount >= Workload.TIMELINE_SCANNERS_MAX_JOBS) {
                     return;
                 }
-                var names = database.executeRead(() ->
+                var names = database.read(() ->
                     nodeRepository.findNamesToScanTimeline(Workload.TIMELINE_SCANNERS_MAX_JOBS - runningCount)
                 );
                 for (var name : names) {
@@ -54,7 +54,7 @@ public class TimelineScanner {
                     try {
                         UUID jobId = jobs.run(TimelineScanJob.class, new TimelineScanJob.Parameters(name));
                         if (jobId != null) {
-                            database.executeWriteWithoutResult(() -> nodeRepository.assignScanTimelineJob(name, jobId));
+                            database.writeNoResult(() -> nodeRepository.assignScanTimelineJob(name, jobId));
                         }
                     } catch (Exception e) {
                         log.error("Error starting timeline scan job for {}", name, e);

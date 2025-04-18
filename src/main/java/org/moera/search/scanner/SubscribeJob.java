@@ -83,13 +83,13 @@ public class SubscribeJob extends Job<SubscribeJob.Parameters, SubscribeJob.Stat
             checkpoint();
         }
 
-        database.executeWriteWithoutResult(() -> nodeRepository.subscribed(parameters.nodeName, state.subscriberId));
+        database.writeNoResult(() -> nodeRepository.subscribed(parameters.nodeName, state.subscriberId));
     }
 
     @Override
     protected void failed() {
         super.failed();
-        database.executeWriteWithoutResult(() -> nodeRepository.subscribeFailed(parameters.nodeName));
+        database.writeNoResult(() -> nodeRepository.subscribeFailed(parameters.nodeName));
     }
 
     @Override

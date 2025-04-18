@@ -67,7 +67,7 @@ public class NamingServiceScanner {
 
             var total = new AtomicInteger(0);
             try (var ignored2 = database.open()) {
-                long scanTimestamp = database.executeRead(() -> namingServiceRepository.getScanTimestamp());
+                long scanTimestamp = database.read(() -> namingServiceRepository.getScanTimestamp());
                 long lastTimestamp = scanTimestamp;
                 var naming = new MoeraNaming(config.getNamingServer());
                 int page = 0;
@@ -81,18 +81,18 @@ public class NamingServiceScanner {
                         if (nodeName.equals(config.getNodeName())) {
                             continue;
                         }
-                        boolean exists = database.executeRead(() -> nodeRepository.existsName(nodeName));
+                        boolean exists = database.read(() -> nodeRepository.existsName(nodeName));
                         if (exists) {
                             continue;
                         }
-                        database.executeWriteIgnoreConflict(() -> nodeRepository.createName(nodeName));
+                        database.writeIgnoreConflict(() -> nodeRepository.createName(nodeName));
                         total.incrementAndGet();
                         lastTimestamp = Math.max(lastTimestamp, name.getCreated());
                     }
                 }
                 if (lastTimestamp > scanTimestamp) {
                     var updatedTimestamp = lastTimestamp;
-                    database.executeWriteWithoutResult(() ->
+                    database.writeNoResult(() ->
                         namingServiceRepository.updateScanTimestamp(updatedTimestamp)
                     );
                 }

@@ -29,7 +29,7 @@ public class SearchProcessor {
         switch (notification.getUpdateType()) {
             case PROFILE:
                 log.info("Profile of {} was updated, rescanning", LogUtil.format(notification.getSenderNodeName()));
-                database.executeWriteWithoutResult(() -> nodeRepository.rescanName(notification.getSenderNodeName()));
+                database.writeNoResult(() -> nodeRepository.rescanName(notification.getSenderNodeName()));
                 break;
             case FRIEND: {
                 var details = notification.getFriendUpdate();
@@ -37,7 +37,7 @@ public class SearchProcessor {
                     "Node {} added node {} to friends",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.executeWriteWithoutResult(() ->
+                database.writeNoResult(() ->
                     nodeRepository.addFriendship(notification.getSenderNodeName(), details.getNodeName())
                 );
                 break;
@@ -48,7 +48,7 @@ public class SearchProcessor {
                     "Node {} removed node {} from friends",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.executeWriteWithoutResult(() ->
+                database.writeNoResult(() ->
                     nodeRepository.deleteFriendship(notification.getSenderNodeName(), details.getNodeName())
                 );
                 break;
@@ -59,7 +59,7 @@ public class SearchProcessor {
                     "Node {} subscribed to node {}",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.executeWriteWithoutResult(() ->
+                database.writeNoResult(() ->
                     nodeRepository.addSubscription(
                         notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
                     )
@@ -72,7 +72,7 @@ public class SearchProcessor {
                     "Node {} unsubscribed from node {}",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.executeWriteWithoutResult(() ->
+                database.writeNoResult(() ->
                     nodeRepository.deleteSubscription(
                         notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
                     )
@@ -87,7 +87,7 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(details.getBlockedOperation())),
                     LogUtil.format(details.getNodeName())
                 );
-                database.executeWriteWithoutResult(() -> {
+                database.writeNoResult(() -> {
                     nodeRepository.addBlocks(
                         notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
                     );
@@ -103,7 +103,7 @@ public class SearchProcessor {
                     LogUtil.format(Objects.toString(details.getBlockedOperation())),
                     LogUtil.format(details.getNodeName())
                 );
-                database.executeWriteWithoutResult(() ->
+                database.writeNoResult(() ->
                     nodeRepository.deleteBlocks(
                         notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
                     )

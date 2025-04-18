@@ -167,7 +167,7 @@ public class MediaManager {
     }
 
     public void downloadAndSaveAvatar(String nodeName, AvatarImage avatar, AvatarSaver avatarSaver) {
-        database.executeWriteWithoutResult(() -> {
+        database.writeNoResult(() -> {
             try {
                 downloadAvatar(nodeName, avatar);
             } catch (MoeraNodeException e) {
@@ -175,7 +175,7 @@ public class MediaManager {
             }
         });
         if (avatar != null && AvatarImageUtil.getMediaFile(avatar) != null) {
-            database.executeWriteWithoutResult(() ->
+            database.writeNoResult(() ->
                 avatarSaver.save(AvatarImageUtil.getMediaFile(avatar).getId(), avatar.getShape())
             );
         }

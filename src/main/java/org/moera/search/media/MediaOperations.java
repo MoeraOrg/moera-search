@@ -306,7 +306,7 @@ public class MediaOperations {
             try (var ignored2 = database.open()) {
                 log.info("Purging unused media files");
 
-                Collection<MediaFile> mediaFiles = database.executeWrite(() -> mediaFileRepository.deleteUnused());
+                Collection<MediaFile> mediaFiles = database.write(() -> mediaFileRepository.deleteUnused());
                 for (MediaFile mediaFile : mediaFiles) {
                     Path path = getPath(mediaFile);
                     try {

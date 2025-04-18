@@ -58,7 +58,7 @@ public class SearchController {
 
         int maxSize = limit;
 
-        return database.executeRead(() -> {
+        return database.read(() -> {
             String clientName = requestContext.getClientName(Scope.IDENTIFY);
             var result = new ArrayList<SearchNodeInfo>();
             var used = new HashSet<String>();

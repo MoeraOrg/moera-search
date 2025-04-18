@@ -110,12 +110,12 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 var sourceNodeName = isOriginal ? parameters.nodeName : posting.getReceiverName();
                 var sourcePostingId = isOriginal ? posting.getId() : posting.getReceiverPostingId();
                 if (!sourceNodeName.equals(parameters.nodeName)) {
-                    database.executeWriteIgnoreConflict(() -> nodeRepository.createName(sourceNodeName));
+                    database.writeIgnoreConflict(() -> nodeRepository.createName(sourceNodeName));
                 }
                 if (!posting.getOwnerName().equals(parameters.nodeName)) {
-                    database.executeWriteIgnoreConflict(() -> nodeRepository.createName(posting.getOwnerName()));
+                    database.writeIgnoreConflict(() -> nodeRepository.createName(posting.getOwnerName()));
                 }
-                database.executeWriteWithoutResult(() -> {
+                database.writeNoResult(() -> {
                     postingRepository.createPosting(sourceNodeName, sourcePostingId);
                     postingRepository.assignPostingOwner(sourceNodeName, sourcePostingId, posting.getOwnerName());
                     postingRepository.addPublication(
@@ -124,7 +124,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 });
 
                 if (isOriginal) {
-                    database.executeWriteWithoutResult(() ->
+                    database.writeNoResult(() ->
                         postingRepository.fillPosting(sourceNodeName, sourcePostingId, posting)
                     );
                     mediaManager.downloadAndSaveAvatar(
@@ -137,21 +137,21 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                     );
                 }
 
-                String documentId = database.executeRead(() ->
+                String documentId = database.read(() ->
                     postingRepository.getDocumentId(parameters.nodeName, posting.getId())
                 );
                 if (isOriginal || documentId != null) {
                     IndexedDocument document = isOriginal
                         ? new IndexedDocument(parameters.nodeName, posting)
                         : new IndexedDocument();
-                    var publishers = database.executeRead(() ->
+                    var publishers = database.read(() ->
                         postingRepository.getPublishers(parameters.nodeName, posting.getId())
                     );
                     document.setPublishers(publishers);
 
                     if (documentId == null) {
                         var id = index.index(document);
-                        database.executeWriteWithoutResult(() ->
+                        database.writeNoResult(() ->
                             postingRepository.setDocumentId(parameters.nodeName, posting.getId(), id)
                         );
                     } else {
@@ -163,13 +163,13 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
             checkpoint();
         }
 
-        database.executeWriteWithoutResult(() -> nodeRepository.scanTimelineSucceeded(parameters.nodeName));
+        database.writeNoResult(() -> nodeRepository.scanTimelineSucceeded(parameters.nodeName));
     }
 
     @Override
     protected void failed() {
         super.failed();
-        database.executeWriteWithoutResult(() -> nodeRepository.scanTimelineFailed(parameters.nodeName));
+        database.writeNoResult(() -> nodeRepository.scanTimelineFailed(parameters.nodeName));
     }
 
     @Override

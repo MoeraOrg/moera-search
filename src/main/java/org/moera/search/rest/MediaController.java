@@ -36,7 +36,7 @@ public class MediaController {
     private MediaOperations mediaOperations;
 
     private MediaFile getMediaFile(String id) {
-        MediaFile mediaFile = database.executeRead(() -> mediaFileRepository.findById(id));
+        MediaFile mediaFile = database.read(() -> mediaFileRepository.findById(id));
         if (mediaFile == null || !mediaFile.isExposed()) {
             throw new ObjectNotFoundFailure("media.not-found");
         }

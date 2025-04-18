@@ -93,7 +93,7 @@ public class Database {
             while ((line = reader.readLine()) != null) {
                 buf.append(line).append('\n');
                 if (line.endsWith(";")) {
-                    executeWriteWithoutResult(() ->
+                    writeNoResult(() ->
                         tx().run(buf.toString())
                     );
                     buf.setLength(0);
@@ -104,7 +104,7 @@ public class Database {
     }
 
     private Integer getVersion() {
-        return executeWrite(() ->
+        return write(() ->
             tx().run(
                 """
                 MERGE (v:Version)
@@ -117,7 +117,7 @@ public class Database {
     }
 
     private void setVersion(int version) {
-        executeWriteWithoutResult(() ->
+        writeNoResult(() ->
             tx().run(
                 """
                 MATCH (v:Version)
@@ -155,7 +155,7 @@ public class Database {
         return session.get();
     }
 
-    public <T> T executeRead(Supplier<T> callback) {
+    public <T> T read(Supplier<T> callback) {
         if (tx.get() != null) {
             throw new DatabaseException("Transaction is running already");
         }
@@ -169,7 +169,7 @@ public class Database {
         });
     }
 
-    public <T> T executeWrite(Supplier<T> callback) {
+    public <T> T write(Supplier<T> callback) {
         if (tx.get() != null) {
             throw new DatabaseException("Transaction is running already");
         }
@@ -183,7 +183,7 @@ public class Database {
         });
     }
 
-    public void executeWriteWithoutResult(Runnable callback) {
+    public void writeNoResult(Runnable callback) {
         if (tx.get() != null) {
             throw new DatabaseException("Transaction is running already");
         }
@@ -197,9 +197,9 @@ public class Database {
         });
     }
 
-    public void executeWriteIgnoreConflict(Runnable callback) {
+    public void writeIgnoreConflict(Runnable callback) {
         try {
-            executeWriteWithoutResult(callback);
+            writeNoResult(callback);
         } catch (Neo4jException e) {
             if (!e.code().equals("Neo.ClientError.Schema.ConstraintValidationFailed")) {
                 throw e;

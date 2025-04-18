@@ -39,21 +39,21 @@ public class CloseToUpdater {
     }
 
     public void update() {
-        var names = database.executeRead(
+        var names = database.read(
             () -> nodeRepository.findNamesForCloseToUpdate(Workload.CLOSE_TO_UPDATE_MAX_NODES)
         );
 
         for (var name : names) {
             log.info("Updating close-tos for {}", name);
 
-            var closeNodes = database.executeRead(() -> nodeRepository.findCloseNodes(name));
+            var closeNodes = database.read(() -> nodeRepository.findCloseNodes(name));
             for (var closeNode : closeNodes) {
                 float distance = closeNode.isFriend() ? .75f : (closeNode.isSubscribed() ? 1 : 2);
-                database.executeWriteWithoutResult(() ->
+                database.writeNoResult(() ->
                     nodeRepository.setDistance(name, closeNode.name(), distance)
                 );
             }
-            database.executeWriteWithoutResult(() -> nodeRepository.closeToUpdated(name));
+            database.writeNoResult(() -> nodeRepository.closeToUpdated(name));
         }
     }
 
@@ -72,7 +72,7 @@ public class CloseToUpdater {
 
     public void cleanup() {
         log.info("Cleaning up close-tos");
-        database.executeWriteWithoutResult(() -> nodeRepository.cleanupCloseTo());
+        database.writeNoResult(() -> nodeRepository.cleanupCloseTo());
         log.info("Cleanup of close-tos finished");
     }
 

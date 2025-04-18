@@ -91,7 +91,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
         }
 
         if (!state.detailsUpdated) {
-            database.executeWriteWithoutResult(() -> nodeRepository.updateName(parameters.nodeName, state.whoAmI));
+            database.writeNoResult(() -> nodeRepository.updateName(parameters.nodeName, state.whoAmI));
             state.detailsUpdated = true;
             checkpoint();
         }
@@ -109,7 +109,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
     @Override
     protected void failed() {
         super.failed();
-        database.executeWriteWithoutResult(() -> nodeRepository.scanFailed(parameters.nodeName));
+        database.writeNoResult(() -> nodeRepository.scanFailed(parameters.nodeName));
     }
 
     @Override

@@ -45,7 +45,7 @@ public class MediaUiController {
     ) {
         log.info("GET MEDIA /media/public/{id}.ext (id = {})", LogUtil.format(id));
 
-        MediaFile mediaFile = database.executeRead(() -> mediaFileRepository.findById(id));
+        MediaFile mediaFile = database.read(() -> mediaFileRepository.findById(id));
         if (mediaFile == null || !mediaFile.isExposed()) {
             throw new PageNotFoundException();
         }
