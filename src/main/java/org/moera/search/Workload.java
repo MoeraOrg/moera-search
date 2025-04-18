@@ -31,4 +31,7 @@ public class Workload {
     public static final String TIMELINE_SCANNERS_START_PERIOD = "PT1M";
     public static final int TIMELINE_SCANNERS_MAX_JOBS = 25;
 
+    public static final String POSTING_SCANNERS_START_PERIOD = "PT1M";
+    public static final int POSTING_SCANNERS_MAX_JOBS = 50;
+
 }

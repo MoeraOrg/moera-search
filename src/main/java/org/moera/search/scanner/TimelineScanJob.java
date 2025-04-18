@@ -8,12 +8,7 @@ import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.StoryType;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
-import org.moera.search.data.PostingRepository;
-import org.moera.search.index.Index;
-import org.moera.search.index.IndexedDocument;
 import org.moera.search.job.Job;
-import org.moera.search.media.MediaManager;
-import org.springframework.util.ObjectUtils;
 
 public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineScanJob.State> {
 
@@ -64,13 +59,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
     private NodeRepository nodeRepository;
 
     @Inject
-    private PostingRepository postingRepository;
-
-    @Inject
-    private MediaManager mediaManager;
-
-    @Inject
-    private Index index;
+    private PostingIngest postingIngest;
 
     public TimelineScanJob() {
         state = new State();
@@ -97,62 +86,8 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 state.before = story.getMoment();
                 checkpoint();
 
-                if (story.getStoryType() != StoryType.POSTING_ADDED) {
-                    continue;
-                }
-
-                var posting = story.getPosting();
-                boolean isOriginal = ObjectUtils.isEmpty(posting.getReceiverName());
-                var sourceNodeName = isOriginal ? parameters.nodeName : posting.getReceiverName();
-                var sourcePostingId = isOriginal ? posting.getId() : posting.getReceiverPostingId();
-                if (!sourceNodeName.equals(parameters.nodeName)) {
-                    database.writeIgnoreConflict(() -> nodeRepository.createName(sourceNodeName));
-                }
-                if (!posting.getOwnerName().equals(parameters.nodeName)) {
-                    database.writeIgnoreConflict(() -> nodeRepository.createName(posting.getOwnerName()));
-                }
-                database.writeNoResult(() -> {
-                    postingRepository.createPosting(sourceNodeName, sourcePostingId);
-                    postingRepository.assignPostingOwner(sourceNodeName, sourcePostingId, posting.getOwnerName());
-                    postingRepository.addPublication(
-                        sourceNodeName, sourcePostingId, parameters.nodeName, story.getId(), story.getPublishedAt()
-                    );
-                });
-
-                if (isOriginal) {
-                    database.writeNoResult(() ->
-                        postingRepository.fillPosting(sourceNodeName, sourcePostingId, posting)
-                    );
-                    mediaManager.downloadAndSaveAvatar(
-                        parameters.nodeName,
-                        posting.getOwnerAvatar(),
-                        (avatarId, shape) -> {
-                            postingRepository.removeAvatar(parameters.nodeName, posting.getId());
-                            postingRepository.addAvatar(parameters.nodeName, posting.getId(), avatarId, shape);
-                        }
-                    );
-                }
-
-                String documentId = database.read(() ->
-                    postingRepository.getDocumentId(parameters.nodeName, posting.getId())
-                );
-                if (isOriginal || documentId != null) {
-                    IndexedDocument document = isOriginal
-                        ? new IndexedDocument(parameters.nodeName, posting)
-                        : new IndexedDocument();
-                    var publishers = database.read(() ->
-                        postingRepository.getPublishers(parameters.nodeName, posting.getId())
-                    );
-                    document.setPublishers(publishers);
-
-                    if (documentId == null) {
-                        var id = index.index(document);
-                        database.writeNoResult(() ->
-                            postingRepository.setDocumentId(parameters.nodeName, posting.getId(), id)
-                        );
-                    } else {
-                        index.update(documentId, document);
-                    }
+                if (story.getStoryType() == StoryType.POSTING_ADDED) {
+                    postingIngest.ingest(parameters.nodeName, story.getPosting());
                 }
             }
             state.before = feedSlice.getAfter();

@@ -40,7 +40,7 @@ public class PreparePublicDirectServingJob extends Job<PreparePublicDirectServin
     }
 
     @Override
-    protected void setState(String state, ObjectMapper objectMapper) throws JsonProcessingException {
+    protected void setState(String state, ObjectMapper objectMapper) {
         this.state = null;
     }
 

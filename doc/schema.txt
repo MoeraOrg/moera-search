@@ -88,6 +88,8 @@ publishedAt:        int NOT NULL INDEX      (sec timestamp)
 
 (:MoeraNode)<-[:SCANS_PEOPLE]-(:Job)
 
+(:Posting)<-[:SCANS_POSTING]-(:Job)
+
 (:MoeraNode)<-[:SCANS_TIMELINE]-(:Job)
 
 (:MoeraNode)<-[:SOURCE]-(:Posting)
