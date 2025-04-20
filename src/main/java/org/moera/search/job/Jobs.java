@@ -240,7 +240,7 @@ public class Jobs {
             String parameters = objectMapper.writeValueAsString(job.getParameters());
             String state = job.getState() != null ? objectMapper.writeValueAsString(job.getState()) : null;
             var id = database.write(
-                () -> jobRepository.create(job.getClass().getCanonicalName(), parameters, state)
+                () -> jobRepository.create(job.getClass().getCanonicalName(), job.getJobKey(), parameters, state)
             );
             job.setId(id);
         } catch (Exception e) {

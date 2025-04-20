@@ -7,6 +7,7 @@ Nodes
 (:Job)
 id:                 string NOT NULL UNIQUE
 jobType:            string NOT NULL
+jobKey:             string INDEX
 parameters:         string NOT NULL
 state:              string
 retries:            int

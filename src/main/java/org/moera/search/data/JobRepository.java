@@ -27,17 +27,18 @@ public class JobRepository {
         ).stream().map(r -> new PendingJob(r.get("j").asNode())).toList();
     }
 
-    public UUID create(String jobType, String parameters, String state) {
+    public UUID create(String jobType, String jobKey, String parameters, String state) {
         UUID id = UUID.randomUUID();
         var args = new HashMap<String, Object>();
         args.put("id", id.toString());
         args.put("jobType", jobType);
+        args.put("jobKey", jobKey);
         args.put("parameters", parameters);
         args.put("state", state);
 
         database.tx().run(
             """
-            CREATE (:Job {id: $id, jobType: $jobType, parameters: $parameters, state: $state})
+            CREATE (:Job {id: $id, jobType: $jobType, jobKey: $jobKey, parameters: $parameters, state: $state})
             """,
             args
         );

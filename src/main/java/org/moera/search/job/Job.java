@@ -52,6 +52,10 @@ public abstract class Job<P, S> implements Runnable {
         exponentialRetry("PT10S", "PT3H");
     }
 
+    public String getJobKey() {
+        return null;
+    }
+
     P getParameters() {
         return parameters;
     }
