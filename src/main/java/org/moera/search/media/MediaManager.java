@@ -91,8 +91,7 @@ public class MediaManager {
             return mediaFile;
         }
 
-        mediaFileLocks.lock(id);
-        try {
+        try (var ignored = mediaFileLocks.lock(id)) {
             // Could appear in the meantime
             mediaFile = mediaFileRepository.findById(id);
             if (mediaFile != null && mediaFile.isExposed()) {
@@ -120,8 +119,6 @@ public class MediaManager {
                     log.warn("Error removing temporary media file {}: {}", tmp.path(), e.getMessage());
                 }
             }
-        } finally {
-            mediaFileLocks.unlock(id);
         }
     }
 
