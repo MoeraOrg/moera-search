@@ -82,6 +82,9 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
     @Inject
     private NodeRepository nodeRepository;
 
+    @Inject
+    private NodeIngest nodeIngest;
+
     public PeopleScanJob() {
         state = new State();
         retryCount(3, "PT5M");
@@ -105,10 +108,8 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getFriends(null);
                 for (var friend : friends) {
-                    database.writeIgnoreConflict(() -> nodeRepository.createName(friend.getNodeName()));
-                    database.writeNoResult(
-                        () -> nodeRepository.addFriendship(parameters.nodeName, friend.getNodeName())
-                    );
+                    nodeIngest.newNode(friend.getNodeName());
+                    nodeIngest.friend(parameters.nodeName, friend.getNodeName());
                 }
             } catch (MoeraNodeApiAuthenticationException e) {
                 log.info("Friend list is not public for {}, skipping", parameters.nodeName);
@@ -123,11 +124,9 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .getSubscriptions(null, SubscriptionType.FEED);
                 for (var subscription : subscriptions) {
-                    database.writeIgnoreConflict(() -> nodeRepository.createName(subscription.getRemoteNodeName()));
-                    database.writeNoResult(() ->
-                        nodeRepository.addSubscription(
-                            parameters.nodeName, subscription.getRemoteNodeName(), subscription.getRemoteFeedName()
-                        )
+                    nodeIngest.newNode(subscription.getRemoteNodeName());
+                    nodeIngest.subscribed(
+                        parameters.nodeName, subscription.getRemoteNodeName(), subscription.getRemoteFeedName()
                     );
                 }
             } catch (MoeraNodeApiAuthenticationException e) {
@@ -147,11 +146,9 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_PEOPLE))
                     .searchBlockedUsers(filter);
                 for (var blockedUser : blockedUsers) {
-                    database.writeIgnoreConflict(() -> nodeRepository.createName(blockedUser.getNodeName()));
-                    database.writeNoResult(() ->
-                        nodeRepository.addBlocks(
-                            parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
-                        )
+                    nodeIngest.newNode(blockedUser.getNodeName());
+                    nodeIngest.blocks(
+                        parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
                     );
                 }
             } catch (MoeraNodeApiAuthenticationException e) {

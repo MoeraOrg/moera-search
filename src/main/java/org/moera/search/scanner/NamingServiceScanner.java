@@ -43,6 +43,9 @@ public class NamingServiceScanner {
     @Inject
     private NodeRepository nodeRepository;
 
+    @Inject
+    private NodeIngest nodeIngest;
+
     @EventListener(DatabaseInitializedEvent.class)
     public void init() {
         scan();
@@ -85,7 +88,7 @@ public class NamingServiceScanner {
                         if (exists) {
                             continue;
                         }
-                        database.writeIgnoreConflict(() -> nodeRepository.createName(nodeName));
+                        nodeIngest.newNode(nodeName);
                         total.incrementAndGet();
                         lastTimestamp = Math.max(lastTimestamp, name.getCreated());
                     }

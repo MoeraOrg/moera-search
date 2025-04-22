@@ -193,6 +193,16 @@ public class NodeRepository {
         ).list(r -> r.get("name").asString());
     }
 
+    public boolean isPeopleScanned(String name) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            RETURN n.scanPeople IS NOT NULL AS scanned
+            """,
+            Map.of("name", name)
+        ).single().get("scanned").asBoolean();
+    }
+
     public void assignScanPeopleJob(String name, UUID jobId) {
         database.tx().run(
             """

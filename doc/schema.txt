@@ -48,6 +48,14 @@ INDEX ON (scanTimeline, timelineScannedAt);
 scanTimestamp:      int NOT NULL
 scannedAt:          int                     (ms timestamp)
 
+(:PendingUpdate)
+id:                 string NOT NULL UNIQUE
+nodeName:           string NOT NULL
+type:               string NOT NULL
+details:            string NOT NULL
+createdAt:          int NOT NULL            (ms timestamp)
+jobKey:             string NOT NULL
+
 (:Posting)
 id:                 string NOT NULL INDEX
 revisionId:         string

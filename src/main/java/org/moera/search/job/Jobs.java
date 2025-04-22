@@ -171,6 +171,10 @@ public class Jobs {
         return jobRepository.countRunningByType(klass.getCanonicalName());
     }
 
+    public boolean keyExists(String jobKey) {
+        return jobRepository.keyExists(jobKey);
+    }
+
     @Scheduled(fixedDelayString = "PT1H")
     public void load() {
         if (!ready) {

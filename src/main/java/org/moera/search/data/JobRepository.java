@@ -86,4 +86,17 @@ public class JobRepository {
         ).single().get("count").asInt();
     }
 
+    public boolean keyExists(String jobKey) {
+        return database.tx().run(
+            """
+            RETURN EXISTS {
+                MATCH (j:Job {jobKey: $jobKey})
+            } AS e
+            """,
+            Map.of(
+                "jobKey", jobKey
+            )
+        ).single().get("e").asBoolean();
+    }
+
 }

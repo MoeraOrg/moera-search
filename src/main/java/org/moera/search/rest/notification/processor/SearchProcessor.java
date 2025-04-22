@@ -10,6 +10,8 @@ import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
+import org.moera.search.scanner.JobKeys;
+import org.moera.search.scanner.UpdateQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,9 @@ public class SearchProcessor {
 
     @Inject
     private NodeRepository nodeRepository;
+
+    @Inject
+    private UpdateQueue updateQueue;
 
     @NotificationMapping(NotificationType.SEARCH_CONTENT_UPDATED)
     public void searchContentUpdated(SearchContentUpdatedNotification notification) {
@@ -38,8 +43,11 @@ public class SearchProcessor {
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
-                database.writeNoResult(() ->
-                    nodeRepository.addFriendship(notification.getSenderNodeName(), details.getNodeName())
+                updateQueue.offer(
+                    notification.getSenderNodeName(),
+                    notification.getUpdateType(),
+                    details,
+                    JobKeys.nodeRelative(notification.getSenderNodeName())
                 );
                 break;
             }
@@ -50,8 +58,11 @@ public class SearchProcessor {
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
-                database.writeNoResult(() ->
-                    nodeRepository.deleteFriendship(notification.getSenderNodeName(), details.getNodeName())
+                updateQueue.offer(
+                    notification.getSenderNodeName(),
+                    notification.getUpdateType(),
+                    details,
+                    JobKeys.nodeRelative(notification.getSenderNodeName())
                 );
                 break;
             }
@@ -62,10 +73,11 @@ public class SearchProcessor {
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
-                database.writeNoResult(() ->
-                    nodeRepository.addSubscription(
-                        notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
-                    )
+                updateQueue.offer(
+                    notification.getSenderNodeName(),
+                    notification.getUpdateType(),
+                    details,
+                    JobKeys.nodeRelative(notification.getSenderNodeName())
                 );
                 break;
             }
@@ -76,10 +88,11 @@ public class SearchProcessor {
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
                 database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
-                database.writeNoResult(() ->
-                    nodeRepository.deleteSubscription(
-                        notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
-                    )
+                updateQueue.offer(
+                    notification.getSenderNodeName(),
+                    notification.getUpdateType(),
+                    details,
+                    JobKeys.nodeRelative(notification.getSenderNodeName())
                 );
                 break;
             }
@@ -92,12 +105,12 @@ public class SearchProcessor {
                     LogUtil.format(details.getNodeName())
                 );
                 database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
-                database.writeNoResult(() -> {
-                    nodeRepository.addBlocks(
-                        notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
-                    );
-                    nodeRepository.deleteCloseTo(notification.getSenderNodeName(), details.getNodeName());
-                });
+                updateQueue.offer(
+                    notification.getSenderNodeName(),
+                    notification.getUpdateType(),
+                    details,
+                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                );
                 break;
             }
             case UNBLOCK: {
@@ -109,10 +122,11 @@ public class SearchProcessor {
                     LogUtil.format(details.getNodeName())
                 );
                 database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
-                database.writeNoResult(() ->
-                    nodeRepository.deleteBlocks(
-                        notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
-                    )
+                updateQueue.offer(
+                    notification.getSenderNodeName(),
+                    notification.getUpdateType(),
+                    details,
+                    JobKeys.nodeRelative(notification.getSenderNodeName())
                 );
                 break;
             }

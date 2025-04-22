@@ -5,7 +5,6 @@ import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.search.data.Database;
-import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
@@ -20,10 +19,10 @@ public class PostingIngest {
     private Database database;
 
     @Inject
-    private NodeRepository nodeRepository;
+    private PostingRepository postingRepository;
 
     @Inject
-    private PostingRepository postingRepository;
+    private NodeIngest nodeIngest;
 
     @Inject
     private MediaManager mediaManager;
@@ -36,10 +35,10 @@ public class PostingIngest {
         var sourceNodeName = isOriginal ? nodeName : posting.getReceiverName();
         var sourcePostingId = isOriginal ? posting.getId() : posting.getReceiverPostingId();
         if (!sourceNodeName.equals(nodeName)) {
-            database.writeIgnoreConflict(() -> nodeRepository.createName(sourceNodeName));
+            nodeIngest.newNode(sourceNodeName);
         }
         if (!posting.getOwnerName().equals(nodeName)) {
-            database.writeIgnoreConflict(() -> nodeRepository.createName(posting.getOwnerName()));
+            nodeIngest.newNode(posting.getOwnerName());
         }
         database.writeNoResult(() -> {
             postingRepository.createPosting(sourceNodeName, sourcePostingId);
@@ -58,9 +57,7 @@ public class PostingIngest {
         });
 
         if (isOriginal) {
-            database.writeNoResult(() ->
-                postingRepository.fillPosting(sourceNodeName, sourcePostingId, posting)
-            );
+            database.writeNoResult(() -> postingRepository.fillPosting(sourceNodeName, sourcePostingId, posting));
             mediaManager.downloadAndSaveAvatar(
                 nodeName,
                 posting.getOwnerAvatar(),
@@ -71,23 +68,15 @@ public class PostingIngest {
             );
         }
 
-        String documentId = database.read(() ->
-            postingRepository.getDocumentId(nodeName, posting.getId())
-        );
+        String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, posting.getId()));
         if (isOriginal || documentId != null) {
-            IndexedDocument document = isOriginal
-                ? new IndexedDocument(nodeName, posting)
-                : new IndexedDocument();
-            var publishers = database.read(() ->
-                postingRepository.getPublishers(nodeName, posting.getId())
-            );
+            IndexedDocument document = isOriginal ? new IndexedDocument(nodeName, posting) : new IndexedDocument();
+            var publishers = database.read(() -> postingRepository.getPublishers(nodeName, posting.getId()));
             document.setPublishers(publishers);
 
             if (documentId == null) {
                 var id = index.index(document);
-                database.writeNoResult(() ->
-                    postingRepository.setDocumentId(nodeName, posting.getId(), id)
-                );
+                database.writeNoResult(() -> postingRepository.setDocumentId(nodeName, posting.getId(), id));
             } else {
                 index.update(documentId, document);
             }
