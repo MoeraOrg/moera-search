@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.data;
 
 import java.time.Instant;
 import java.util.UUID;

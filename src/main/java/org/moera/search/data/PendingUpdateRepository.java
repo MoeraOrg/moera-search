@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.data;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -13,7 +13,6 @@ import jakarta.inject.Inject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.SearchContentUpdateType;
-import org.moera.search.data.Database;
 import org.springframework.stereotype.Component;
 
 @Component
