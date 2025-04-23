@@ -20,6 +20,7 @@ import org.moera.search.data.DatabaseInitializedEvent;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -123,6 +124,19 @@ public class Index {
                     .doc(document)
                     .build(),
                 IndexedDocument.class
+            );
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
+    }
+
+    public void delete(String id) {
+        try {
+            client.delete(
+                new DeleteRequest.Builder()
+                    .index(config.getIndex().getIndexName())
+                    .id(id)
+                    .build()
             );
         } catch (IOException e) {
             throw new TransientIndexException(e);

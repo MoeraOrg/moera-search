@@ -8,6 +8,7 @@ import org.moera.lib.node.types.notifications.SearchContentUpdatedNotification;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
+import org.moera.search.data.PostingRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
 import org.moera.search.scanner.JobKeys;
@@ -27,6 +28,9 @@ public class SearchProcessor {
 
     @Inject
     private NodeRepository nodeRepository;
+
+    @Inject
+    private PostingRepository postingRepository;
 
     @Inject
     private NodeIngest nodeIngest;
@@ -156,6 +160,55 @@ public class SearchProcessor {
                 }
                 boolean isScanned = postingIngest.newPosting(details.getNodeName(), details.getPostingId());
                 if (isScanned || !isOriginal) {
+                    updateQueue.offer(
+                        notification.getSenderNodeName(),
+                        notification.getUpdateType(),
+                        details,
+                        JobKeys.posting(details.getNodeName(), details.getPostingId())
+                    );
+                }
+                break;
+            }
+            case POSTING_UPDATE: {
+                var details = notification.getPostingUpdate();
+                log.info(
+                    "Node {} updated posting {} from node {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getPostingId()),
+                    LogUtil.format(details.getNodeName())
+                );
+                boolean isOriginal = Objects.equals(details.getNodeName(), notification.getSenderNodeName());
+                if (!isOriginal) {
+                    nodeIngest.newNode(details.getNodeName());
+                    break; // other changes from non-original nodes are irrelevant
+                }
+                boolean isScanned = postingIngest.newPosting(details.getNodeName(), details.getPostingId());
+                if (isScanned) {
+                    updateQueue.offer(
+                        notification.getSenderNodeName(),
+                        notification.getUpdateType(),
+                        details,
+                        JobKeys.posting(details.getNodeName(), details.getPostingId())
+                    );
+                }
+                break;
+            }
+            case POSTING_DELETE: {
+                var details = notification.getPostingUpdate();
+                log.info(
+                    "Node {} deleted posting {} from node {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getPostingId()),
+                    LogUtil.format(details.getNodeName())
+                );
+                boolean isOriginal = Objects.equals(details.getNodeName(), notification.getSenderNodeName());
+                if (!isOriginal) {
+                    nodeIngest.newNode(details.getNodeName());
+                }
+                boolean exists = database.read(() ->
+                    postingRepository.exists(details.getNodeName(), details.getPostingId())
+                );
+                if (exists) {
                     updateQueue.offer(
                         notification.getSenderNodeName(),
                         notification.getUpdateType(),

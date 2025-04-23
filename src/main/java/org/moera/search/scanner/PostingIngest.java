@@ -105,12 +105,32 @@ public class PostingIngest {
         }
     }
 
+    public void delete(String nodeName, String postingId) {
+        // delete the document first, so in the case of failure we will not lose documentId
+        String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
+        if (documentId != null) {
+            index.delete(documentId);
+        }
+        database.writeNoResult(() -> postingRepository.deletePosting(nodeName, postingId));
+    }
+
     public void addPublication(
         String nodeName, String postingId, String publisherName, String feedName, String storyId, long publishedAt
     ) {
         database.writeNoResult(() ->
             postingRepository.addPublication(nodeName, postingId, publisherName, feedName, storyId, publishedAt)
         );
+        updatePublicationsInIndex(nodeName, postingId);
+    }
+
+    public void deletePublications(String nodeName, String postingId, String publisherName) {
+        database.writeNoResult(() ->
+            postingRepository.deletePublications(nodeName, postingId, publisherName)
+        );
+        updatePublicationsInIndex(nodeName, postingId);
+    }
+
+    private void updatePublicationsInIndex(String nodeName, String postingId) {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null) {
             var document = new IndexedDocument();

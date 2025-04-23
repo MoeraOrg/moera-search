@@ -5,12 +5,10 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.SearchPostingUpdate;
-import org.moera.search.api.NodeApi;
 import org.moera.search.job.Job;
 
-public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
+public class PostingDeleteJob extends Job<PostingDeleteJob.Parameters, Object> {
 
     public static class Parameters {
 
@@ -44,12 +42,9 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
     }
 
     @Inject
-    private NodeApi nodeApi;
-
-    @Inject
     private PostingIngest postingIngest;
 
-    public PostingUpdateJob() {
+    public PostingDeleteJob() {
         retryCount(5, "PT10M");
     }
 
@@ -60,7 +55,7 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
 
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) throws JsonProcessingException {
-        this.parameters = objectMapper.readValue(parameters, PostingUpdateJob.Parameters.class);
+        this.parameters = objectMapper.readValue(parameters, PostingDeleteJob.Parameters.class);
     }
 
     @Override
@@ -71,33 +66,20 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
     @Override
     protected void execute() throws Exception {
         if (Objects.equals(parameters.nodeName, parameters.details.getNodeName())) {
-            var posting = nodeApi
-                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
-                .getPosting(parameters.details.getPostingId(), false);
-            if (posting != null) {
-                postingIngest.update(parameters.nodeName, posting);
-            }
-        } else if (parameters.details.getStoryId() != null) {
-            postingIngest.addPublication(
+            postingIngest.delete(parameters.details.getNodeName(), parameters.details.getPostingId());
+        } else {
+            postingIngest.deletePublications(
                 parameters.details.getNodeName(),
                 parameters.details.getPostingId(),
-                parameters.nodeName,
-                parameters.details.getFeedName(),
-                parameters.details.getStoryId(),
-                parameters.details.getPublishedAt()
+                parameters.nodeName
             );
         }
     }
 
     @Override
     protected String getJobDescription() {
-        var jobDescription = super.getJobDescription() + " for posting " + parameters.details.getPostingId()
+        return super.getJobDescription() + " for posting " + parameters.details.getPostingId()
             + " from node " + parameters.details.getNodeName() + " published at node " + parameters.nodeName;
-        if (parameters.details.getStoryId() != null) {
-            jobDescription += " in feed " + parameters.details.getFeedName()
-                + " as story " + parameters.details.getStoryId();
-        }
-        return jobDescription;
     }
 
 }

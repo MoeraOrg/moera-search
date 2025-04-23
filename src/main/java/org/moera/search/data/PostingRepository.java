@@ -19,6 +19,20 @@ public class PostingRepository {
     @Inject
     private Database database;
 
+    public boolean exists(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            RETURN EXISTS {
+                MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+            } AS e
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).single().get("e").asBoolean();
+    }
+
     public boolean createPosting(String nodeName, String postingId) {
         return database.tx().run(
             """
@@ -31,6 +45,19 @@ public class PostingRepository {
                 "postingId", postingId
             )
         ).single().get("scanned").asBoolean();
+    }
+
+    public void deletePosting(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            DETACH DELETE p
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
     }
 
     public void assignPostingOwner(String nodeName, String postingId, String ownerName) {
@@ -49,12 +76,12 @@ public class PostingRepository {
     }
 
     public void addPublication(
-        String nodeName, String postingId, String receiverName, String feedName, String storyId, long publishedAt
+        String nodeName, String postingId, String publisherName, String feedName, String storyId, long publishedAt
     ) {
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
-                  (r:MoeraNode {name: $receiverName})
+                  (r:MoeraNode {name: $publisherName})
             MERGE (r)-[pb:PUBLISHED {feedName: $feedName, storyId: $storyId}]->(p)
                 ON CREATE
                     SET pb.publishedAt = $publishedAt
@@ -62,10 +89,25 @@ public class PostingRepository {
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId,
-                "receiverName", receiverName,
+                "publisherName", publisherName,
                 "feedName", feedName,
                 "storyId", storyId,
                 "publishedAt", publishedAt
+            )
+        );
+    }
+
+    public void deletePublications(String nodeName, String postingId, String publisherName) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[pb:PUBLISHED]-(:MoeraNode {name: $publisherName})
+            DELETE pb
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "publisherName", publisherName
             )
         );
     }
@@ -199,19 +241,6 @@ public class PostingRepository {
             """,
             Map.of("limit", limit)
         ).list(r -> new PostingAtNode(r.get("nodeName").asString(), r.get("postingId").asString()));
-    }
-
-    public boolean isScanned(String nodeName, String postingId) {
-        return database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            RETURN p.scan IS NOT NULL AS scanned
-            """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId
-            )
-        ).single().get("scanned").asBoolean();
     }
 
     public void assignScanJob(String nodeName, String postingId, UUID jobId) {

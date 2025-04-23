@@ -21,7 +21,6 @@ import org.moera.search.data.DatabaseInitializedEvent;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PendingUpdate;
 import org.moera.search.data.PendingUpdateRepository;
-import org.moera.search.data.PostingRepository;
 import org.moera.search.global.RequestCounter;
 import org.moera.search.job.Jobs;
 import org.slf4j.Logger;
@@ -50,7 +49,7 @@ public class UpdateQueue {
     private NodeRepository nodeRepository;
 
     @Inject
-    private PostingRepository postingRepository;
+    private PostingIngest postingIngest;
 
     @Inject
     private Jobs jobs;
@@ -110,17 +109,18 @@ public class UpdateQueue {
             case FRIEND, UNFRIEND -> SearchFriendUpdate.class;
             case SUBSCRIBE, UNSUBSCRIBE -> SearchSubscriptionUpdate.class;
             case BLOCK, UNBLOCK -> SearchBlockUpdate.class;
-            case POSTING_ADD -> SearchPostingUpdate.class;
+            case POSTING_ADD, POSTING_UPDATE, POSTING_DELETE -> SearchPostingUpdate.class;
         };
     }
 
     private boolean prepared(PendingUpdate update) {
         return switch (update.type()) {
             case FRIEND, UNFRIEND, SUBSCRIBE, UNSUBSCRIBE, BLOCK, UNBLOCK ->
-                nodeRepository.isPeopleScanned(update.nodeName());
-            case POSTING_ADD -> {
+                database.read(() -> nodeRepository.isPeopleScanned(update.nodeName()));
+            case POSTING_ADD, POSTING_UPDATE -> {
                 SearchPostingUpdate details = (SearchPostingUpdate) update.details();
-                yield postingRepository.isScanned(details.getNodeName(), details.getPostingId());
+                // if posting deletion happened shortly before posting creation, the (:Posting) node could disappear
+                yield postingIngest.newPosting(details.getNodeName(), details.getPostingId());
             }
             default -> true;
         };
@@ -172,11 +172,21 @@ public class UpdateQueue {
                 break;
             }
 
-            case POSTING_ADD: {
+            case POSTING_ADD:
+            case POSTING_UPDATE: {
                 var details = (SearchPostingUpdate) update.details();
                 jobs.run(
                     PostingUpdateJob.class,
                     new PostingUpdateJob.Parameters(update.nodeName(), details)
+                );
+                break;
+            }
+
+            case POSTING_DELETE: {
+                var details = (SearchPostingUpdate) update.details();
+                jobs.run(
+                    PostingDeleteJob.class,
+                    new PostingDeleteJob.Parameters(update.nodeName(), details)
                 );
                 break;
             }
@@ -215,9 +225,10 @@ public class UpdateQueue {
                 }
                 update = queue.get(i);
             }
-            boolean ready = database.read(() ->
-                !busy.contains(update.jobKey()) && !jobs.keyExists(update.jobKey()) && prepared(update)
-            );
+            boolean ready =
+                !busy.contains(update.jobKey())
+                && !database.read(() -> jobs.keyExists(update.jobKey()))
+                && prepared(update);
             if (ready) {
                 start(update);
                 synchronized (lock) {
