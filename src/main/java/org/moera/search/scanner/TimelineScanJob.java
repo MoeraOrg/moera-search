@@ -4,11 +4,16 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.Scope;
+import org.moera.lib.node.types.SearchContentUpdateType;
+import org.moera.lib.node.types.SearchPostingUpdate;
 import org.moera.lib.node.types.StoryType;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
+import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.springframework.util.ObjectUtils;
 
 public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineScanJob.State> {
 
@@ -59,7 +64,16 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
     private NodeRepository nodeRepository;
 
     @Inject
+    private PostingRepository postingRepository;
+
+    @Inject
+    private NodeIngest nodeIngest;
+
+    @Inject
     private PostingIngest postingIngest;
+
+    @Inject
+    private UpdateQueue updateQueue;
 
     public TimelineScanJob() {
         state = new State();
@@ -87,7 +101,35 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 checkpoint();
 
                 if (story.getStoryType() == StoryType.POSTING_ADDED) {
-                    postingIngest.ingest(parameters.nodeName, story.getPosting());
+                    PostingInfo posting = story.getPosting();
+                    if (ObjectUtils.isEmpty(posting.getReceiverName())) {
+                        boolean isScanned = postingIngest.newPosting(parameters.nodeName, posting.getId());
+                        if (!isScanned) {
+                            postingIngest.ingest(parameters.nodeName, posting);
+                        } else {
+                            postingIngest.update(parameters.nodeName, posting);
+                        }
+                        database.writeNoResult(() ->
+                            postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
+                        );
+                    } else {
+                        nodeIngest.newNode(posting.getReceiverName());
+                        postingIngest.newPosting(posting.getReceiverName(), posting.getReceiverPostingId());
+
+                        var details = new SearchPostingUpdate();
+                        details.setFeedName("timeline");
+                        details.setStoryId(story.getId());
+                        details.setPublishedAt(story.getPublishedAt());
+                        details.setNodeName(posting.getReceiverName());
+                        details.setPostingId(posting.getReceiverPostingId());
+
+                        updateQueue.offer(
+                            parameters.nodeName,
+                            SearchContentUpdateType.POSTING_ADD,
+                            details,
+                            JobKeys.posting(posting.getReceiverName(), posting.getReceiverPostingId())
+                        );
+                    }
                 }
             }
             state.before = feedSlice.getAfter();

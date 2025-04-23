@@ -19,17 +19,18 @@ public class PostingRepository {
     @Inject
     private Database database;
 
-    public void createPosting(String nodeName, String postingId) {
-        database.tx().run(
+    public boolean createPosting(String nodeName, String postingId) {
+        return database.tx().run(
             """
             MATCH (n:MoeraNode {name: $nodeName})
-            MERGE (n)<-[:SOURCE]-(:Posting {id: $postingId})
+            MERGE (n)<-[:SOURCE]-(p:Posting {id: $postingId})
+            RETURN p.scan IS NOT NULL AS scanned
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
             )
-        );
+        ).single().get("scanned").asBoolean();
     }
 
     public void assignPostingOwner(String nodeName, String postingId, String ownerName) {
@@ -48,13 +49,13 @@ public class PostingRepository {
     }
 
     public void addPublication(
-        String nodeName, String postingId, String receiverName, String storyId, long publishedAt
+        String nodeName, String postingId, String receiverName, String feedName, String storyId, long publishedAt
     ) {
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
                   (r:MoeraNode {name: $receiverName})
-            MERGE (r)-[pb:PUBLISHED {storyId: $storyId}]->(p)
+            MERGE (r)-[pb:PUBLISHED {feedName: $feedName, storyId: $storyId}]->(p)
                 ON CREATE
                     SET pb.publishedAt = $publishedAt
             """,
@@ -62,6 +63,7 @@ public class PostingRepository {
                 "nodeName", nodeName,
                 "postingId", postingId,
                 "receiverName", receiverName,
+                "feedName", feedName,
                 "storyId", storyId,
                 "publishedAt", publishedAt
             )
@@ -131,6 +133,19 @@ public class PostingRepository {
         );
     }
 
+    public String getRevisionId(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            RETURN p.revisionId AS id
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).single().get("id").asString(null);
+    }
+
     public String getDocumentId(String nodeName, String postingId) {
         return database.tx().run(
             """
@@ -184,6 +199,19 @@ public class PostingRepository {
             """,
             Map.of("limit", limit)
         ).list(r -> new PostingAtNode(r.get("nodeName").asString(), r.get("postingId").asString()));
+    }
+
+    public boolean isScanned(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            RETURN p.scan IS NOT NULL AS scanned
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).single().get("scanned").asBoolean();
     }
 
     public void assignScanJob(String nodeName, String postingId, UUID jobId) {

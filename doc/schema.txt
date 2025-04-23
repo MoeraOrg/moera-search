@@ -90,6 +90,7 @@ distance:           float NOT NULL
 (:MoeraNode)<-[:OWNER]-(:Posting)
 
 (:MoeraNode)-[:PUBLISHED]->(:Posting)
+feedName:           string NOT NULL
 storyId:            string NOT NULL
 publishedAt:        int NOT NULL INDEX      (sec timestamp)
 

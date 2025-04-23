@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.SearchBlockUpdate;
 import org.moera.lib.node.types.SearchContentUpdateType;
 import org.moera.lib.node.types.SearchFriendUpdate;
+import org.moera.lib.node.types.SearchPostingUpdate;
 import org.moera.lib.node.types.SearchSubscriptionUpdate;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.Workload;
@@ -20,6 +21,7 @@ import org.moera.search.data.DatabaseInitializedEvent;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PendingUpdate;
 import org.moera.search.data.PendingUpdateRepository;
+import org.moera.search.data.PostingRepository;
 import org.moera.search.global.RequestCounter;
 import org.moera.search.job.Jobs;
 import org.slf4j.Logger;
@@ -46,6 +48,9 @@ public class UpdateQueue {
 
     @Inject
     private NodeRepository nodeRepository;
+
+    @Inject
+    private PostingRepository postingRepository;
 
     @Inject
     private Jobs jobs;
@@ -105,6 +110,7 @@ public class UpdateQueue {
             case FRIEND, UNFRIEND -> SearchFriendUpdate.class;
             case SUBSCRIBE, UNSUBSCRIBE -> SearchSubscriptionUpdate.class;
             case BLOCK, UNBLOCK -> SearchBlockUpdate.class;
+            case POSTING_ADD -> SearchPostingUpdate.class;
         };
     }
 
@@ -112,6 +118,10 @@ public class UpdateQueue {
         return switch (update.type()) {
             case FRIEND, UNFRIEND, SUBSCRIBE, UNSUBSCRIBE, BLOCK, UNBLOCK ->
                 nodeRepository.isPeopleScanned(update.nodeName());
+            case POSTING_ADD -> {
+                SearchPostingUpdate details = (SearchPostingUpdate) update.details();
+                yield postingRepository.isScanned(details.getNodeName(), details.getPostingId());
+            }
             default -> true;
         };
     }
@@ -158,6 +168,15 @@ public class UpdateQueue {
                         details.getNodeName(),
                         details.getBlockedOperation()
                     )
+                );
+                break;
+            }
+
+            case POSTING_ADD: {
+                var details = (SearchPostingUpdate) update.details();
+                jobs.run(
+                    PostingUpdateJob.class,
+                    new PostingUpdateJob.Parameters(update.nodeName(), details)
                 );
                 break;
             }

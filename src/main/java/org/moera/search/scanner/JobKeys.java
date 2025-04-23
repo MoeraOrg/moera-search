@@ -6,4 +6,8 @@ public class JobKeys {
         return "relative:" + nodeName;
     }
 
+    public static String posting(String nodeName, String postingId) {
+        return "posting:" + nodeName + ":" + postingId;
+    }
+
 }

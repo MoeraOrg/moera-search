@@ -11,6 +11,8 @@ import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
 import org.moera.search.scanner.JobKeys;
+import org.moera.search.scanner.NodeIngest;
+import org.moera.search.scanner.PostingIngest;
 import org.moera.search.scanner.UpdateQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,12 @@ public class SearchProcessor {
 
     @Inject
     private NodeRepository nodeRepository;
+
+    @Inject
+    private NodeIngest nodeIngest;
+
+    @Inject
+    private PostingIngest postingIngest;
 
     @Inject
     private UpdateQueue updateQueue;
@@ -42,7 +50,7 @@ public class SearchProcessor {
                     "Node {} added node {} to friends",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
+                nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
                     notification.getSenderNodeName(),
                     notification.getUpdateType(),
@@ -57,7 +65,7 @@ public class SearchProcessor {
                     "Node {} removed node {} from friends",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
+                nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
                     notification.getSenderNodeName(),
                     notification.getUpdateType(),
@@ -72,7 +80,7 @@ public class SearchProcessor {
                     "Node {} subscribed to node {}",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
+                nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
                     notification.getSenderNodeName(),
                     notification.getUpdateType(),
@@ -87,7 +95,7 @@ public class SearchProcessor {
                     "Node {} unsubscribed from node {}",
                     LogUtil.format(notification.getSenderNodeName()), LogUtil.format(details.getNodeName())
                 );
-                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
+                nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
                     notification.getSenderNodeName(),
                     notification.getUpdateType(),
@@ -99,12 +107,12 @@ public class SearchProcessor {
             case BLOCK: {
                 var details = notification.getBlockUpdate();
                 log.info(
-                    "Node {} blocked {} from node {}",
+                    "Node {} blocked {} the node {}",
                     LogUtil.format(notification.getSenderNodeName()),
                     LogUtil.format(Objects.toString(details.getBlockedOperation())),
                     LogUtil.format(details.getNodeName())
                 );
-                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
+                nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
                     notification.getSenderNodeName(),
                     notification.getUpdateType(),
@@ -116,18 +124,45 @@ public class SearchProcessor {
             case UNBLOCK: {
                 var details = notification.getBlockUpdate();
                 log.info(
-                    "Node {} unblocked {} from node {}",
+                    "Node {} unblocked {} the node {}",
                     LogUtil.format(notification.getSenderNodeName()),
                     LogUtil.format(Objects.toString(details.getBlockedOperation())),
                     LogUtil.format(details.getNodeName())
                 );
-                database.writeIgnoreConflict(() -> nodeRepository.createName(details.getNodeName()));
+                nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
                     notification.getSenderNodeName(),
                     notification.getUpdateType(),
                     details,
                     JobKeys.nodeRelative(notification.getSenderNodeName())
                 );
+                break;
+            }
+            case POSTING_ADD: {
+                var details = notification.getPostingUpdate();
+                log.info(
+                    "Node {} published posting {} from node {} in feed {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getPostingId()),
+                    LogUtil.format(details.getNodeName()),
+                    LogUtil.format(details.getFeedName())
+                );
+                if (!Objects.equals(details.getFeedName(), "timeline")) {
+                    break;
+                }
+                boolean isOriginal = Objects.equals(details.getNodeName(), notification.getSenderNodeName());
+                if (!isOriginal) {
+                    nodeIngest.newNode(details.getNodeName());
+                }
+                boolean isScanned = postingIngest.newPosting(details.getNodeName(), details.getPostingId());
+                if (isScanned || !isOriginal) {
+                    updateQueue.offer(
+                        notification.getSenderNodeName(),
+                        notification.getUpdateType(),
+                        details,
+                        JobKeys.posting(details.getNodeName(), details.getPostingId())
+                    );
+                }
                 break;
             }
         }
