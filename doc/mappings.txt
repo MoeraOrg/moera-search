@@ -18,6 +18,9 @@ OpenSearch Mappings
     "postingId": {
       "type": "keyword"
     },
+    "revisionId": {
+      "type": "keyword"
+    },
     "publishers": {
       "type": "keyword"
     },

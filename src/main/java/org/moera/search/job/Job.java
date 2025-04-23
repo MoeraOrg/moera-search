@@ -21,6 +21,7 @@ import org.moera.search.config.Config;
 import org.moera.search.config.NotConfiguredException;
 import org.moera.search.data.Database;
 import org.moera.search.global.RequestCounter;
+import org.moera.search.index.TransientIndexException;
 import org.moera.search.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,6 +178,8 @@ public abstract class Job<P, S> implements Runnable {
         } else if (e instanceof InterruptedException) {
             recover(e);
         } else if (e instanceof MoeraNodeException ex && isRecoverableError(ex)) {
+            recover(e);
+        } else if (e instanceof TransientIndexException) {
             recover(e);
         } else {
             unhandledException(e);

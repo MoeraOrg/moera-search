@@ -12,6 +12,7 @@ public class IndexedDocument {
     private String nodeName;
     private String postingId;
     private String commentId;
+    private String revisionId;
     private Timestamp createdAt;
     private String ownerName;
     private List<String> publishers;
@@ -24,6 +25,7 @@ public class IndexedDocument {
     public IndexedDocument(String nodeName, PostingInfo info) {
         this.nodeName = nodeName;
         postingId = info.getId();
+        revisionId = info.getRevisionId();
         createdAt = Util.toTimestamp(info.getCreatedAt());
         ownerName = info.getOwnerName();
         Body body = info.getBody();
@@ -53,6 +55,14 @@ public class IndexedDocument {
 
     public void setCommentId(String commentId) {
         this.commentId = commentId;
+    }
+
+    public String getRevisionId() {
+        return revisionId;
+    }
+
+    public void setRevisionId(String revisionId) {
+        this.revisionId = revisionId;
     }
 
     public Timestamp getCreatedAt() {

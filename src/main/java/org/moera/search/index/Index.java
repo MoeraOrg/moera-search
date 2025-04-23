@@ -5,6 +5,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -99,36 +100,64 @@ public class Index {
         return ready;
     }
 
-    public String index(IndexedDocument document) throws IOException {
-        var response = client.index(
-            new IndexRequest.Builder<IndexedDocument>()
-                .index(config.getIndex().getIndexName())
-                .document(document)
-                .build()
-        );
-        return response.id();
+    public String index(IndexedDocument document) {
+        try {
+            var response = client.index(
+                new IndexRequest.Builder<IndexedDocument>()
+                    .index(config.getIndex().getIndexName())
+                    .document(document)
+                    .build()
+            );
+            return response.id();
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
     }
 
-    public void update(String id, IndexedDocument document) throws IOException {
-        client.update(
-            new UpdateRequest.Builder<IndexedDocument, IndexedDocument>()
-                .index(config.getIndex().getIndexName())
-                .id(id)
-                .doc(document)
-                .build(),
-            IndexedDocument.class
-        );
+    public void update(String id, IndexedDocument document) {
+        try {
+            client.update(
+                new UpdateRequest.Builder<IndexedDocument, IndexedDocument>()
+                    .index(config.getIndex().getIndexName())
+                    .id(id)
+                    .doc(document)
+                    .build(),
+                IndexedDocument.class
+            );
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
     }
 
-    public IndexedDocument get(String id) throws IOException {
-        var response = client.get(
-            new GetRequest.Builder()
-                .index(config.getIndex().getIndexName())
-                .id(id)
-                .build(),
-            IndexedDocument.class
-        );
-        return response.source();
+    public IndexedDocument get(String id) {
+        try {
+            var response = client.get(
+                new GetRequest.Builder()
+                    .index(config.getIndex().getIndexName())
+                    .id(id)
+                    .build(),
+                IndexedDocument.class
+            );
+            return response.source();
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
+    }
+
+    public String getRevisionId(String id) {
+        try {
+            var response = client.get(
+                new GetRequest.Builder()
+                    .index(config.getIndex().getIndexName())
+                    .id(id)
+                    .sourceIncludes(List.of("revisionId"))
+                    .build(),
+                IndexedDocument.class
+            );
+            return response.source() != null ? response.source().getRevisionId() : null;
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
     }
 
 }

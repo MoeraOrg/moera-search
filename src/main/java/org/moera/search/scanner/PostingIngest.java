@@ -1,6 +1,5 @@
 package org.moera.search.scanner;
 
-import java.io.IOException;
 import java.util.Objects;
 import jakarta.inject.Inject;
 
@@ -42,7 +41,7 @@ public class PostingIngest {
         }
     }
 
-    public void ingest(String nodeName, PostingInfo posting) throws IOException {
+    public void ingest(String nodeName, PostingInfo posting) {
         if (!posting.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(posting.getOwnerName());
         }
@@ -65,7 +64,12 @@ public class PostingIngest {
         update(nodeName, posting);
     }
 
-    public void update(String nodeName, PostingInfo posting) throws IOException {
+    public void update(String nodeName, PostingInfo posting) {
+        updateDatabase(nodeName, posting);
+        updateIndex(nodeName, posting);
+    }
+
+    private void updateDatabase(String nodeName, PostingInfo posting) {
         var revisionId = database.read(() -> postingRepository.getRevisionId(nodeName, posting.getId()));
         if (Objects.equals(revisionId, posting.getRevisionId())) {
             return;
@@ -80,8 +84,15 @@ public class PostingIngest {
                 postingRepository.addAvatar(nodeName, posting.getId(), avatarId, shape);
             }
         );
+    }
 
+    private void updateIndex(String nodeName, PostingInfo posting) {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, posting.getId()));
+        String revisionId = documentId != null ? index.getRevisionId(documentId) : null;
+        if (Objects.equals(revisionId, posting.getRevisionId())) {
+            return;
+        }
+
         var document = new IndexedDocument(nodeName, posting);
         var publishers = database.read(() -> postingRepository.getPublishers(nodeName, posting.getId()));
         document.setPublishers(publishers);
@@ -96,7 +107,7 @@ public class PostingIngest {
 
     public void addPublication(
         String nodeName, String postingId, String publisherName, String feedName, String storyId, long publishedAt
-    ) throws IOException {
+    ) {
         database.writeNoResult(() ->
             postingRepository.addPublication(nodeName, postingId, publisherName, feedName, storyId, publishedAt)
         );
