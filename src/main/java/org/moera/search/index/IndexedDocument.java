@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.search.util.Util;
+import org.springframework.util.ObjectUtils;
 
 public class IndexedDocument {
 
@@ -37,13 +38,33 @@ public class IndexedDocument {
         ownerName = info.getOwnerName();
         Body body = info.getBody();
         subject = body.getSubject();
-        text = body.getText();
+        text = getText(body);
         if (info.getMedia() != null) {
             imageCount = info.getMedia().size();
         }
-        if (text != null && VIDEO_TAGS.matcher(text).find()) {
+        if (VIDEO_TAGS.matcher(text).find()) {
             videoPresent = true;
         }
+    }
+
+    private static String getText(Body body) {
+        var buf = new StringBuilder();
+        if (body.getText() != null) {
+            buf.append(body.getText());
+        }
+        if (body.getLinkPreviews() != null) {
+            for (var linkPreview : body.getLinkPreviews()) {
+                if (!ObjectUtils.isEmpty(linkPreview.getTitle())) {
+                    buf.append(' ');
+                    buf.append(linkPreview.getTitle());
+                }
+                if (!ObjectUtils.isEmpty(linkPreview.getDescription())) {
+                    buf.append(' ');
+                    buf.append(linkPreview.getDescription());
+                }
+            }
+        }
+        return buf.toString();
     }
 
     public String getNodeName() {
