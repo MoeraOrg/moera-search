@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
+import org.moera.search.data.PublicationRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -21,6 +22,9 @@ public class PostingIngest {
 
     @Inject
     private PostingRepository postingRepository;
+
+    @Inject
+    private PublicationRepository publicationRepository;
 
     @Inject
     private NodeIngest nodeIngest;
@@ -53,7 +57,7 @@ public class PostingIngest {
             postingRepository.assignPostingOwner(nodeName, posting.getId(), posting.getOwnerName());
             for (var feedReference : posting.getFeedReferences()) {
                 if (feedReference.getFeedName().equals("timeline")) {
-                    postingRepository.addPublication(
+                    publicationRepository.addPublication(
                         nodeName,
                         posting.getId(),
                         nodeName,
@@ -99,7 +103,7 @@ public class PostingIngest {
 
         var document = new IndexedDocument(nodeName, posting);
         languageAnalyzer.analyze(document);
-        var publishers = database.read(() -> postingRepository.getPublishers(nodeName, posting.getId()));
+        var publishers = database.read(() -> publicationRepository.getPublishers(nodeName, posting.getId()));
         document.setPublishers(publishers);
 
         if (documentId == null) {
@@ -116,21 +120,24 @@ public class PostingIngest {
         if (documentId != null) {
             index.delete(documentId);
         }
-        database.writeNoResult(() -> postingRepository.deletePosting(nodeName, postingId));
+        database.writeNoResult(() -> {
+            publicationRepository.deleteAllPublications(nodeName, postingId);
+            postingRepository.deletePosting(nodeName, postingId);
+        });
     }
 
     public void addPublication(
         String nodeName, String postingId, String publisherName, String feedName, String storyId, long publishedAt
     ) {
         database.writeNoResult(() ->
-            postingRepository.addPublication(nodeName, postingId, publisherName, feedName, storyId, publishedAt)
+            publicationRepository.addPublication(nodeName, postingId, publisherName, feedName, storyId, publishedAt)
         );
         updatePublicationsInIndex(nodeName, postingId);
     }
 
     public void deletePublications(String nodeName, String postingId, String publisherName) {
         database.writeNoResult(() ->
-            postingRepository.deletePublications(nodeName, postingId, publisherName)
+            publicationRepository.deletePublications(nodeName, postingId, publisherName)
         );
         updatePublicationsInIndex(nodeName, postingId);
     }
@@ -139,7 +146,7 @@ public class PostingIngest {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null) {
             var document = new IndexedDocument();
-            var publishers = database.read(() -> postingRepository.getPublishers(nodeName, postingId));
+            var publishers = database.read(() -> publicationRepository.getPublishers(nodeName, postingId));
             document.setPublishers(publishers);
             index.update(documentId, document);
         }

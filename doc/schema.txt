@@ -4,6 +4,12 @@ Neo4j Database Schema
 Nodes
 -----
 
+(:Favor)
+value               float NOT NULL
+decayHours          int NOT NULL
+createdAt           int NOT NULL            (ms timestamp)
+deadline            int NOT NULL INDEX      (ms timestamp)
+
 (:Job)
 id:                 string NOT NULL UNIQUE
 jobType:            string NOT NULL
@@ -70,6 +76,11 @@ scannedAt:          int                     (ms timestamp)
 documentId:         string
 INDEX ON (scan, scannedAt);
 
+(:Publication)
+feedName:           string NOT NULL
+storyId:            string NOT NULL
+publishedAt:        int NOT NULL INDEX      (sec timestamp)
+
 (:Version) UNIQUE
 version:            int NOT NULL
 
@@ -82,17 +93,22 @@ shape:              string
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
 blockedOperation:   string NOT NULL         (BlockedOperation)
 
+(:Favor)-[:CAUSED_BY]->(:Publication)
+
 (:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
 distance:           float NOT NULL
+
+(:Publication)-[:CONTAINS]->(:Posting)
+
+(:Favor)-[:DONE_BY]->(:MoeraNode)
+
+(:Favor)-[:DONE_TO]->(:MoeraNode|Posting)
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
 (:MoeraNode)<-[:OWNER]-(:Posting)
 
-(:MoeraNode)-[:PUBLISHED]->(:Posting)
-feedName:           string NOT NULL
-storyId:            string NOT NULL
-publishedAt:        int NOT NULL INDEX      (sec timestamp)
+(:Publication)-[:PUBLISHED_IN]->(:MoeraNode)
 
 (:MoeraNode)<-[:SCANS]-(:Job)
 
