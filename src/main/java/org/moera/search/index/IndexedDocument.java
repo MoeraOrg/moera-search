@@ -17,7 +17,9 @@ public class IndexedDocument {
     private String ownerName;
     private List<String> publishers;
     private String subject;
+    private String subjectRu;
     private String text;
+    private String textRu;
 
     public IndexedDocument() {
     }
@@ -97,12 +99,28 @@ public class IndexedDocument {
         this.subject = subject;
     }
 
+    public String getSubjectRu() {
+        return subjectRu;
+    }
+
+    public void setSubjectRu(String subjectRu) {
+        this.subjectRu = subjectRu;
+    }
+
     public String getText() {
         return text;
     }
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public String getTextRu() {
+        return textRu;
+    }
+
+    public void setTextRu(String textRu) {
+        this.textRu = textRu;
     }
 
 }

@@ -68,6 +68,13 @@ public class Util {
         return buf.toString();
     }
 
+    public static String clearHtml(String s) {
+        if (s == null) {
+            return null;
+        }
+        return HtmlUtils.htmlUnescape(s.replaceAll("(?i)</?[a-z][^>]*>", " "));
+    }
+
     public static Integer toInteger(Long value) {
         return value != null ? value.intValue() : null;
     }

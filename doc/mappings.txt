@@ -27,8 +27,16 @@ OpenSearch Mappings
     "subject": {
       "type": "text"
     },
+    "subjectRu": {
+      "type": "text",
+      "analyzer": "russian"
+    },
     "text": {
       "type": "text"
+    },
+    "textRu": {
+      "type": "text",
+      "analyzer": "russian"
     }
   }
 }

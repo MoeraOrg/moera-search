@@ -8,6 +8,7 @@ import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
+import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
 import org.moera.search.util.ParametrizedLock;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ public class PostingIngest {
 
     @Inject
     private Index index;
+
+    @Inject
+    private LanguageAnalyzer languageAnalyzer;
 
     private record PostingKey(String nodeName, String postingId) {
     }
@@ -94,6 +98,7 @@ public class PostingIngest {
         }
 
         var document = new IndexedDocument(nodeName, posting);
+        languageAnalyzer.analyze(document);
         var publishers = database.read(() -> postingRepository.getPublishers(nodeName, posting.getId()));
         document.setPublishers(publishers);
 
