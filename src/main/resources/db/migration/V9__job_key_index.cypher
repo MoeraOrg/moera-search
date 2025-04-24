@@ -1,1 +1,1 @@
-CREATE INDEX job_key FOR (j:Job) ON (j.jobKey);
+CREATE INDEX job_key IF NOT EXISTS FOR (j:Job) ON (j.jobKey);

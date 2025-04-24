@@ -1,1 +1,1 @@
-CREATE CONSTRAINT media_file_id FOR (mf:MediaFile) REQUIRE mf.id IS UNIQUE;
+CREATE CONSTRAINT media_file_id IF NOT EXISTS FOR (mf:MediaFile) REQUIRE mf.id IS UNIQUE;
