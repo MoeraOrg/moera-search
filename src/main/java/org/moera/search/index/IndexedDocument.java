@@ -2,12 +2,15 @@ package org.moera.search.index;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.search.util.Util;
 
 public class IndexedDocument {
+
+    private static final Pattern VIDEO_TAGS = Pattern.compile("(?i)<(?:object|video|iframe)");
 
     private String nodeName;
     private String postingId;
@@ -20,6 +23,8 @@ public class IndexedDocument {
     private String subjectRu;
     private String text;
     private String textRu;
+    private int imageCount;
+    private boolean videoPresent;
 
     public IndexedDocument() {
     }
@@ -33,6 +38,12 @@ public class IndexedDocument {
         Body body = info.getBody();
         subject = body.getSubject();
         text = body.getText();
+        if (info.getMedia() != null) {
+            imageCount = info.getMedia().size();
+        }
+        if (text != null && VIDEO_TAGS.matcher(text).find()) {
+            videoPresent = true;
+        }
     }
 
     public String getNodeName() {
@@ -121,6 +132,22 @@ public class IndexedDocument {
 
     public void setTextRu(String textRu) {
         this.textRu = textRu;
+    }
+
+    public int getImageCount() {
+        return imageCount;
+    }
+
+    public void setImageCount(int imageCount) {
+        this.imageCount = imageCount;
+    }
+
+    public boolean isVideoPresent() {
+        return videoPresent;
+    }
+
+    public void setVideoPresent(boolean videoPresent) {
+        this.videoPresent = videoPresent;
     }
 
 }

@@ -37,6 +37,14 @@ OpenSearch Mappings
     "textRu": {
       "type": "text",
       "analyzer": "russian"
+    },
+    "imageCount": {
+      "type": "integer",
+      "null_value": 0
+    },
+    "videoPresent": {
+      "type": "boolean",
+      "null_value": false
     }
   }
 }
