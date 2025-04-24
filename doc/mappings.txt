@@ -47,6 +47,9 @@ OpenSearch Mappings
     "videoPresent": {
       "type": "boolean",
       "null_value": false
+    },
+    "hashtags": {
+      "type": "keyword"
     }
   }
 }

@@ -1,6 +1,8 @@
 package org.moera.search.index;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -12,6 +14,7 @@ import org.springframework.util.ObjectUtils;
 public class IndexedDocument {
 
     private static final Pattern VIDEO_TAGS = Pattern.compile("(?i)<(?:object|video|iframe)");
+    private static final Pattern HASHTAGS = Pattern.compile("(?U)(?:^|[\\s(\\[{])(#\\w+)\\b");
 
     private String nodeName;
     private String postingId;
@@ -26,6 +29,7 @@ public class IndexedDocument {
     private String textRu;
     private int imageCount;
     private boolean videoPresent;
+    private List<String> hashtags;
 
     public IndexedDocument() {
     }
@@ -45,6 +49,7 @@ public class IndexedDocument {
         if (VIDEO_TAGS.matcher(text).find()) {
             videoPresent = true;
         }
+        hashtags = extractHashtags(body.getText());
     }
 
     private static String getText(Body body) {
@@ -65,6 +70,18 @@ public class IndexedDocument {
             }
         }
         return buf.toString();
+    }
+
+    private static List<String> extractHashtags(String text) {
+        if (ObjectUtils.isEmpty(text)) {
+            return Collections.emptyList();
+        }
+        var hashtags = new ArrayList<String>();
+        var m = HASHTAGS.matcher(text);
+        while (m.find()) {
+            hashtags.add(m.group(1));
+        }
+        return hashtags;
     }
 
     public String getNodeName() {
@@ -169,6 +186,14 @@ public class IndexedDocument {
 
     public void setVideoPresent(boolean videoPresent) {
         this.videoPresent = videoPresent;
+    }
+
+    public List<String> getHashtags() {
+        return hashtags;
+    }
+
+    public void setHashtags(List<String> hashtags) {
+        this.hashtags = hashtags;
     }
 
 }
