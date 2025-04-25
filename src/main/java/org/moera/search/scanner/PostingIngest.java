@@ -55,6 +55,9 @@ public class PostingIngest {
         }
         database.writeNoResult(() -> {
             postingRepository.assignPostingOwner(nodeName, posting.getId(), posting.getOwnerName());
+            if (posting.getTotalComments() == 0) {
+                postingRepository.scanCommentsSucceeded(nodeName, posting.getId());
+            }
             for (var feedReference : posting.getFeedReferences()) {
                 if (feedReference.getFeedName().equals("timeline")) {
                     publicationRepository.addPublication(
@@ -115,6 +118,7 @@ public class PostingIngest {
     }
 
     public void delete(String nodeName, String postingId) {
+        // TODO delete comments as a separate UpdateQueue job
         // delete the document first, so in the case of failure we will not lose documentId
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null) {

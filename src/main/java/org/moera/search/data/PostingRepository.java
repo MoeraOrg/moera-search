@@ -235,4 +235,58 @@ public class PostingRepository {
         );
     }
 
+    public List<PostingAtNode> findPostingsToScanComments(int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)<-[:SOURCE]-(p:Posting)
+            WHERE p.scanComments IS NULL AND NOT (p)<-[:SCANS_COMMENTS]-(:Job)
+            LIMIT $limit
+            RETURN n.name AS nodeName, p.id AS postingId
+            """,
+            Map.of("limit", limit)
+        ).list(r -> new PostingAtNode(r.get("nodeName").asString(), r.get("postingId").asString()));
+    }
+
+    public void assignScanCommentsJob(String nodeName, String postingId, UUID jobId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}), (j:Job {id: $jobId})
+            MERGE (p)<-[:SCANS_COMMENTS]-(j)
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "jobId", jobId.toString()
+            )
+        );
+    }
+
+    public void scanCommentsSucceeded(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            SET p.scanComments = true, p.commentsScannedAt = $now
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void scanCommentsFailed(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            SET p.scanComments = false, p.commentsScannedAt = $now
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
 }

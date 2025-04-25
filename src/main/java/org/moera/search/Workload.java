@@ -34,6 +34,9 @@ public class Workload {
     public static final String POSTING_SCANNERS_START_PERIOD = "PT1M";
     public static final int POSTING_SCANNERS_MAX_JOBS = 50;
 
+    public static final String COMMENTS_SCANNERS_START_PERIOD = "PT1M";
+    public static final int COMMENTS_SCANNERS_MAX_JOBS = 25;
+
     public static final int UPDATE_QUEUE_JOB_START_PERIOD = 15000; // ms
 
 }

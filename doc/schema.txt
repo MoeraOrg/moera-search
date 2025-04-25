@@ -4,6 +4,20 @@ Neo4j Database Schema
 Nodes
 -----
 
+(:Comment)
+id:                 string NOT NULL INDEX
+revisionId:         string
+ownerFullName:      string
+heading:            string
+bodyPreview:        string                  (Body)
+createdAt:          int                     (sec timestamp)
+editedAt:           int                     (sec timestamp)
+viewPrincipal:      string
+scan:               boolean/int             (ScanStatus)
+scannedAt:          int                     (ms timestamp)
+documentId:         string
+INDEX ON (scan, scannedAt)
+
 (:Favor)
 value               float NOT NULL
 decayHours          int NOT NULL
@@ -44,11 +58,11 @@ peopleScannedAt:    int                     (ms timestamp)
 closeToUpdatedAt:   int                     (ms timestamp)
 scanTimeline:       boolean/int             (ScanStatus)
 timelineScannedAt:  int                     (ms timestamp)
-INDEX ON (scanProfile, profileScannedAt);
-INDEX ON (subscribe, subscribedAt);
-INDEX ON (scanPeople, peopleScannedAt);
-INDEX ON (closeToUpdatedAt);
-INDEX ON (scanTimeline, timelineScannedAt);
+INDEX ON (scanProfile, profileScannedAt)
+INDEX ON (subscribe, subscribedAt)
+INDEX ON (scanPeople, peopleScannedAt)
+INDEX ON (closeToUpdatedAt)
+INDEX ON (scanTimeline, timelineScannedAt)
 
 (:NamingService) UNIQUE
 scanTimestamp:      int NOT NULL
@@ -73,8 +87,11 @@ editedAt:           int                     (sec timestamp)
 viewPrincipal:      string
 scan:               boolean/int             (ScanStatus)
 scannedAt:          int                     (ms timestamp)
+scanComments:       boolean/int             (ScanStatus)
+commentsScannedAt:  int                     (ms timestamp)
 documentId:         string
-INDEX ON (scan, scannedAt);
+INDEX ON (scan, scannedAt)
+INDEX ON (scanComments, commentsScannedAt)
 
 (:Publication)
 feedName:           string NOT NULL
@@ -87,13 +104,13 @@ version:            int NOT NULL
 Relationships
 -------------
 
-(:MoeraNode|Posting)-[:AVATAR]->(:MediaFile)
+(:MoeraNode|Posting|Comment)-[:AVATAR]->(:MediaFile)
 shape:              string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
 blockedOperation:   string NOT NULL         (BlockedOperation)
 
-(:Favor)-[:CAUSED_BY]->(:Publication)
+(:Favor)-[:CAUSED_BY]->(:Publication|Comment)
 
 (:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
 distance:           float NOT NULL
@@ -106,11 +123,17 @@ distance:           float NOT NULL
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
-(:MoeraNode)<-[:OWNER]-(:Posting)
+(:MoeraNode)<-[:OWNER]-(:Posting|Comment)
 
 (:Publication)-[:PUBLISHED_IN]->(:MoeraNode)
 
+(:Comment)-[:REPLIED_TO]->(:Comment)
+
 (:MoeraNode)<-[:SCANS]-(:Job)
+
+(:Comment)<-[:SCANS_COMMENT]-(:Job)
+
+(:Posting)<-[:SCANS_COMMENTS]-(:Job)
 
 (:MoeraNode)<-[:SCANS_PEOPLE]-(:Job)
 
@@ -124,3 +147,5 @@ distance:           float NOT NULL
 feedName:           string NOT NULL
 
 (:MoeraNode)<-[:SUBSCRIBES]-(:Job)
+
+(:Comment)-[:UNDER]->(:Posting)

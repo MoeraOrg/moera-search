@@ -106,12 +106,10 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                         boolean isScanned = postingIngest.newPosting(parameters.nodeName, posting.getId());
                         if (!isScanned) {
                             postingIngest.ingest(parameters.nodeName, posting);
-                        } else {
-                            postingIngest.update(parameters.nodeName, posting);
+                            database.writeNoResult(() ->
+                                postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
+                            );
                         }
-                        database.writeNoResult(() ->
-                            postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
-                        );
                     } else {
                         nodeIngest.newNode(posting.getReceiverName());
                         postingIngest.newPosting(posting.getReceiverName(), posting.getReceiverPostingId());

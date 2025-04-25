@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.search.util.Util;
@@ -50,6 +51,24 @@ public class IndexedDocument {
             videoPresent = true;
         }
         hashtags = extractHashtags(body.getText());
+    }
+
+    public IndexedDocument(String nodeName, CommentInfo info) {
+        this.nodeName = nodeName;
+        postingId = info.getPostingId();
+        commentId = info.getId();
+        revisionId = info.getRevisionId();
+        createdAt = Util.toTimestamp(info.getCreatedAt());
+        ownerName = info.getOwnerName();
+        Body body = info.getBody();
+        subject = body.getSubject();
+        text = getText(body);
+        if (info.getMedia() != null) {
+            imageCount = info.getMedia().size();
+        }
+        if (VIDEO_TAGS.matcher(text).find()) {
+            videoPresent = true;
+        }
     }
 
     private static String getText(Body body) {
