@@ -69,6 +69,7 @@ public class IndexedDocument {
         if (VIDEO_TAGS.matcher(text).find()) {
             videoPresent = true;
         }
+        hashtags = extractHashtags(body.getText());
     }
 
     private static String getText(Body body) {
