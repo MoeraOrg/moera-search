@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.updates;
 
 import java.util.List;
 import jakarta.inject.Inject;
@@ -13,6 +13,7 @@ import org.moera.lib.node.types.SubscriptionType;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.NodeIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,7 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
 
     public PeopleScanJob() {
         state = new State();
-        retryCount(3, "PT5M");
+        retryCount(5, "PT5M");
     }
 
     @Override
@@ -157,7 +158,6 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
             state.scannedBlockedUsers = true;
             checkpoint();
         }
-
         database.writeNoResult(() -> nodeRepository.scanPeopleSucceeded(parameters.nodeName));
     }
 

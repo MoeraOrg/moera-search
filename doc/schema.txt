@@ -50,8 +50,6 @@ fullName:           string FULLTEXT INDEX
 title: string
 scanProfile:        boolean/int             (ScanStatus)
 profileScannedAt:   int                     (ms timestamp)
-subscribe:          boolean/int             (ScanStatus)
-subscribedAt:       int                     (ms timestamp)
 subscriberId:       string
 scanPeople:         boolean/int             (ScanStatus)
 peopleScannedAt:    int                     (ms timestamp)
@@ -59,7 +57,6 @@ closeToUpdatedAt:   int                     (ms timestamp)
 scanTimeline:       boolean/int             (ScanStatus)
 timelineScannedAt:  int                     (ms timestamp)
 INDEX ON (scanProfile, profileScannedAt)
-INDEX ON (subscribe, subscribedAt)
 INDEX ON (scanPeople, peopleScannedAt)
 INDEX ON (closeToUpdatedAt)
 INDEX ON (scanTimeline, timelineScannedAt)
@@ -70,11 +67,9 @@ scannedAt:          int                     (ms timestamp)
 
 (:PendingUpdate)
 id:                 string NOT NULL UNIQUE
-nodeName:           string NOT NULL
 type:               string NOT NULL
-details:            string NOT NULL
+jobParameters:      string NOT NULL
 createdAt:          int NOT NULL            (ms timestamp)
-jobKey:             string NOT NULL
 
 (:Posting)
 id:                 string NOT NULL INDEX
@@ -130,16 +125,6 @@ distance:           float NOT NULL
 (:Comment)-[:REPLIED_TO]->(:Comment)
 
 (:MoeraNode)<-[:SCANS]-(:Job)
-
-(:Comment)<-[:SCANS_COMMENT]-(:Job)
-
-(:Posting)<-[:SCANS_COMMENTS]-(:Job)
-
-(:MoeraNode)<-[:SCANS_PEOPLE]-(:Job)
-
-(:Posting)<-[:SCANS_POSTING]-(:Job)
-
-(:MoeraNode)<-[:SCANS_TIMELINE]-(:Job)
 
 (:MoeraNode)<-[:SOURCE]-(:Posting)
 

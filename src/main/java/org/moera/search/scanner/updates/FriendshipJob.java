@@ -1,10 +1,11 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.NodeIngest;
 
 public class FriendshipJob extends Job<FriendshipJob.Parameters, Object> {
 
@@ -54,11 +55,6 @@ public class FriendshipJob extends Job<FriendshipJob.Parameters, Object> {
 
     public FriendshipJob() {
         noRetry();
-    }
-
-    @Override
-    public String getJobKey() {
-        return JobKeys.nodeRelative(parameters.friendName);
     }
 
     @Override

@@ -45,16 +45,13 @@ public abstract class Job<P, S> implements Runnable {
     private int retries;
     private Instant waitUntil;
     private JobRetryPolicy retryPolicy;
+    private String jobKey;
 
     @Inject
     private RequestCounter requestCounter;
 
     public Job() {
         exponentialRetry("PT10S", "PT3H");
-    }
-
-    public String getJobKey() {
-        return null;
     }
 
     P getParameters() {
@@ -127,6 +124,14 @@ public abstract class Job<P, S> implements Runnable {
 
     protected void exponentialRetry(String minPeriod, String maxPeriod) {
         setRetryPolicy(new JobExponentialRetryPolicy(this, minPeriod, maxPeriod));
+    }
+
+    public String getJobKey() {
+        return jobKey;
+    }
+
+    public void setJobKey(String jobKey) {
+        this.jobKey = jobKey;
     }
 
     public final void success() {

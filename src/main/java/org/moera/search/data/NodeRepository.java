@@ -129,89 +129,15 @@ public class NodeRepository {
         );
     }
 
-    public List<String> findNamesToSubscribe(int limit) {
-        return database.tx().run(
-            """
-            MATCH (n:MoeraNode)
-            WHERE n.subscribe IS NULL AND NOT (n)<-[:SUBSCRIBES]-(:Job)
-            LIMIT $limit
-            RETURN n.name AS name
-            """,
-            Map.of("limit", limit)
-        ).list(r -> r.get("name").asString());
-    }
-
-    public void assignSubscribeJob(String name, UUID jobId) {
-        database.tx().run(
-            """
-            MATCH (n:MoeraNode {name: $name}), (j:Job {id: $jobId})
-            MERGE (n)<-[:SUBSCRIBES]-(j)
-            """,
-            Map.of(
-                "name", name,
-                "jobId", jobId.toString()
-            )
-        );
-    }
-
     public void subscribed(String name, String subscriberId) {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})
-            SET n.subscribe = true, n.subscribedAt = $now, n.subscriberId = $subscriberId
+            SET n.subscriberId = $subscriberId
             """,
             Map.of(
                 "name", name,
-                "subscriberId", subscriberId,
-                "now", Instant.now().toEpochMilli()
-            )
-        );
-    }
-
-    public void subscribeFailed(String name) {
-        database.tx().run(
-            """
-            MATCH (n:MoeraNode {name: $name})
-            SET n.subscribe = false, n.subscribedAt = $now
-            """,
-            Map.of(
-                "name", name,
-                "now", Instant.now().toEpochMilli()
-            )
-        );
-    }
-
-    public List<String> findNamesToScanPeople(int limit) {
-        return database.tx().run(
-            """
-            MATCH (n:MoeraNode)
-            WHERE n.scanPeople IS NULL AND NOT (n)<-[:SCANS_PEOPLE]-(:Job)
-            LIMIT $limit
-            RETURN n.name AS name
-            """,
-            Map.of("limit", limit)
-        ).list(r -> r.get("name").asString());
-    }
-
-    public boolean isPeopleScanned(String name) {
-        return database.tx().run(
-            """
-            MATCH (n:MoeraNode {name: $name})
-            RETURN n.scanPeople IS NOT NULL AS scanned
-            """,
-            Map.of("name", name)
-        ).single().get("scanned").asBoolean();
-    }
-
-    public void assignScanPeopleJob(String name, UUID jobId) {
-        database.tx().run(
-            """
-            MATCH (n:MoeraNode {name: $name}), (j:Job {id: $jobId})
-            MERGE (n)<-[:SCANS_PEOPLE]-(j)
-            """,
-            Map.of(
-                "name", name,
-                "jobId", jobId.toString()
+                "subscriberId", subscriberId
             )
         );
     }
@@ -589,29 +515,16 @@ public class NodeRepository {
         );
     }
 
-    public List<String> findNamesToScanTimeline(int limit) {
+    public boolean isScannedTimeline(String name) {
         return database.tx().run(
             """
-            MATCH (n:MoeraNode)
-            WHERE n.scanTimeline IS NULL AND NOT (n)<-[:SCANS_TIMELINE]-(:Job)
-            LIMIT $limit
-            RETURN n.name AS name
-            """,
-            Map.of("limit", limit)
-        ).list(r -> r.get("name").asString());
-    }
-
-    public void assignScanTimelineJob(String name, UUID jobId) {
-        database.tx().run(
-            """
-            MATCH (n:MoeraNode {name: $name}), (j:Job {id: $jobId})
-            MERGE (n)<-[:SCANS_TIMELINE]-(j)
+            OPTIONAL MATCH (n:MoeraNode {name: $name})
+            RETURN n.scanTimeline IS NOT NULL AS scan
             """,
             Map.of(
-                "name", name,
-                "jobId", jobId.toString()
+                "name", name
             )
-        );
+        ).single().get("scan").asBoolean();
     }
 
     public void scanTimelineSucceeded(String name) {

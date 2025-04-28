@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
@@ -6,10 +6,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.Scope;
 import org.moera.search.api.NodeApi;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.PostingIngest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class PostingScanJob extends Job<PostingScanJob.Parameters, Object> {
+public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
 
     public static class Parameters {
 
@@ -42,8 +46,13 @@ public class PostingScanJob extends Job<PostingScanJob.Parameters, Object> {
 
     }
 
+    private static final Logger log = LoggerFactory.getLogger(PostingAddJob.class);
+
     @Inject
     private NodeApi nodeApi;
+
+    @Inject
+    private NodeRepository nodeRepository;
 
     @Inject
     private PostingRepository postingRepository;
@@ -51,7 +60,7 @@ public class PostingScanJob extends Job<PostingScanJob.Parameters, Object> {
     @Inject
     private PostingIngest postingIngest;
 
-    public PostingScanJob() {
+    public PostingAddJob() {
         retryCount(5, "PT10M");
     }
 
@@ -67,6 +76,17 @@ public class PostingScanJob extends Job<PostingScanJob.Parameters, Object> {
 
     @Override
     protected void execute() throws Exception {
+        var scannedTimeline = database.read(() -> nodeRepository.isScannedTimeline(parameters.nodeName));
+        if (!scannedTimeline) {
+            log.warn("Timeline is not scanned yet, skipping");
+            return;
+        }
+        var exists = database.read(() -> postingRepository.exists(parameters.nodeName, parameters.postingId));
+        if (exists) {
+            log.warn("Posting is added already, skipping");
+            return;
+        }
+
         var posting = nodeApi
             .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
             .getPosting(parameters.postingId, false);

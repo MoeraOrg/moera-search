@@ -11,7 +11,7 @@ import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
-import org.moera.search.util.ParametrizedLock;
+import org.moera.search.scanner.updates.CommentsScanUpdate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,18 +38,11 @@ public class PostingIngest {
     @Inject
     private LanguageAnalyzer languageAnalyzer;
 
-    private record PostingKey(String nodeName, String postingId) {
-    }
-
-    private final ParametrizedLock<PostingKey> postingLock = new ParametrizedLock<>();
-
-    public boolean newPosting(String nodeName, String postingId) {
-        try (var ignored = postingLock.lock(new PostingKey(nodeName, postingId))) {
-            return database.write(() -> postingRepository.createPosting(nodeName, postingId));
-        }
-    }
+    @Inject
+    private UpdateQueue updateQueue;
 
     public void ingest(String nodeName, PostingInfo posting) {
+        database.writeNoResult(() -> postingRepository.createPosting(nodeName, posting.getId()));
         if (!posting.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(posting.getOwnerName());
         }
@@ -73,6 +66,10 @@ public class PostingIngest {
         });
 
         update(nodeName, posting);
+
+        if (posting.getTotalComments() > 0) {
+            updateQueue.offer(new CommentsScanUpdate(nodeName, posting.getId()));
+        }
     }
 
     public void update(String nodeName, PostingInfo posting) {

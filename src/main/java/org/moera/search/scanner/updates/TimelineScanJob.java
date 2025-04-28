@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
@@ -6,13 +6,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.Scope;
-import org.moera.lib.node.types.SearchContentUpdateType;
-import org.moera.lib.node.types.SearchPostingUpdate;
 import org.moera.lib.node.types.StoryType;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.NodeIngest;
+import org.moera.search.scanner.PostingIngest;
+import org.moera.search.scanner.UpdateQueue;
 import org.springframework.util.ObjectUtils;
 
 public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineScanJob.State> {
@@ -103,8 +104,10 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 if (story.getStoryType() == StoryType.POSTING_ADDED) {
                     PostingInfo posting = story.getPosting();
                     if (ObjectUtils.isEmpty(posting.getReceiverName())) {
-                        boolean isScanned = postingIngest.newPosting(parameters.nodeName, posting.getId());
-                        if (!isScanned) {
+                        boolean isAdded = database.read(() ->
+                            postingRepository.exists(parameters.nodeName, posting.getId())
+                        );
+                        if (!isAdded) {
                             postingIngest.ingest(parameters.nodeName, posting);
                             database.writeNoResult(() ->
                                 postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
@@ -112,20 +115,15 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                         }
                     } else {
                         nodeIngest.newNode(posting.getReceiverName());
-                        postingIngest.newPosting(posting.getReceiverName(), posting.getReceiverPostingId());
-
-                        var details = new SearchPostingUpdate();
-                        details.setFeedName("timeline");
-                        details.setStoryId(story.getId());
-                        details.setPublishedAt(story.getPublishedAt());
-                        details.setNodeName(posting.getReceiverName());
-                        details.setPostingId(posting.getReceiverPostingId());
-
                         updateQueue.offer(
-                            parameters.nodeName,
-                            SearchContentUpdateType.POSTING_ADD,
-                            details,
-                            JobKeys.posting(posting.getReceiverName(), posting.getReceiverPostingId())
+                            new PublicationAddUpdate(
+                                posting.getReceiverName(),
+                                posting.getReceiverPostingId(),
+                                parameters.nodeName,
+                                "timeline",
+                                story.getId(),
+                                story.getPublishedAt()
+                            )
                         );
                     }
                 }

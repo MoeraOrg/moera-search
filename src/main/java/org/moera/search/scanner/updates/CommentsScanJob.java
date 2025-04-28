@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
@@ -9,6 +9,7 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.CommentIngest;
 
 public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsScanJob.State> {
 
@@ -72,9 +73,6 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
     private CommentRepository commentRepository;
 
     @Inject
-    private NodeIngest nodeIngest;
-
-    @Inject
     private CommentIngest commentIngest;
 
     public CommentsScanJob() {
@@ -102,10 +100,10 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
                 state.before = comment.getMoment();
                 checkpoint();
 
-                boolean isScanned = commentIngest.newComment(
-                    parameters.nodeName, parameters.postingId, comment.getId()
+                boolean isAdded = database.read(() ->
+                    commentRepository.exists(parameters.nodeName, comment.getPostingId(), comment.getId())
                 );
-                if (!isScanned) {
+                if (!isAdded) {
                     commentIngest.ingest(parameters.nodeName, comment);
                     database.writeNoResult(() ->
                         commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())

@@ -17,25 +17,10 @@ public class Workload {
     public static final String NAME_SCANNERS_START_PERIOD = "PT1M";
     public static final int NAME_SCANNERS_MAX_JOBS = 500;
 
-    public static final String NAME_SUBSCRIBERS_START_PERIOD = "PT1M";
-    public static final int NAME_SUBSCRIBERS_MAX_JOBS = 500;
-
-    public static final String PEOPLE_SCANNERS_START_PERIOD = "PT1M";
-    public static final int PEOPLE_SCANNERS_MAX_JOBS = 200;
-
     public static final String CLOSE_TO_CHECK_PERIOD = "PT15M";
     public static final Duration CLOSE_TO_UPDATE_PERIOD = Duration.of(6, ChronoUnit.HOURS);
     public static final int CLOSE_TO_UPDATE_MAX_NODES = 100;
     public static final String CLOSE_TO_CLEANUP_PERIOD = "P1D";
-
-    public static final String TIMELINE_SCANNERS_START_PERIOD = "PT1M";
-    public static final int TIMELINE_SCANNERS_MAX_JOBS = 25;
-
-    public static final String POSTING_SCANNERS_START_PERIOD = "PT1M";
-    public static final int POSTING_SCANNERS_MAX_JOBS = 50;
-
-    public static final String COMMENTS_SCANNERS_START_PERIOD = "PT1M";
-    public static final int COMMENTS_SCANNERS_MAX_JOBS = 25;
 
     public static final int UPDATE_QUEUE_JOB_START_PERIOD = 15000; // ms
 

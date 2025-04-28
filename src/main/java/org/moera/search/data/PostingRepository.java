@@ -2,9 +2,7 @@ package org.moera.search.data;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
@@ -33,18 +31,17 @@ public class PostingRepository {
         ).single().get("e").asBoolean();
     }
 
-    public boolean createPosting(String nodeName, String postingId) {
-        return database.tx().run(
+    public void createPosting(String nodeName, String postingId) {
+        database.tx().run(
             """
             MATCH (n:MoeraNode {name: $nodeName})
             MERGE (n)<-[:SOURCE]-(p:Posting {id: $postingId})
-            RETURN p.scan IS NOT NULL AS scanned
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
             )
-        ).single().get("scanned").asBoolean();
+        );
     }
 
     public void deletePosting(String nodeName, String postingId) {
@@ -178,35 +175,6 @@ public class PostingRepository {
         );
     }
 
-    public record PostingAtNode(String nodeName, String postingId) {
-    }
-
-    public List<PostingAtNode> findPostingsToScan(int limit) {
-        return database.tx().run(
-            """
-            MATCH (n:MoeraNode)<-[:SOURCE]-(p:Posting)
-            WHERE p.scan IS NULL AND NOT (p)<-[:SCANS_POSTING]-(:Job)
-            LIMIT $limit
-            RETURN n.name AS nodeName, p.id AS postingId
-            """,
-            Map.of("limit", limit)
-        ).list(r -> new PostingAtNode(r.get("nodeName").asString(), r.get("postingId").asString()));
-    }
-
-    public void assignScanJob(String nodeName, String postingId, UUID jobId) {
-        database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}), (j:Job {id: $jobId})
-            MERGE (p)<-[:SCANS_POSTING]-(j)
-            """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId,
-                "jobId", jobId.toString()
-            )
-        );
-    }
-
     public void scanSucceeded(String nodeName, String postingId) {
         database.tx().run(
             """
@@ -235,30 +203,17 @@ public class PostingRepository {
         );
     }
 
-    public List<PostingAtNode> findPostingsToScanComments(int limit) {
+    public boolean isCommentsScanned(String nodeName, String postingId) {
         return database.tx().run(
             """
-            MATCH (n:MoeraNode)<-[:SOURCE]-(p:Posting)
-            WHERE p.scanComments IS NULL AND NOT (p)<-[:SCANS_COMMENTS]-(:Job)
-            LIMIT $limit
-            RETURN n.name AS nodeName, p.id AS postingId
-            """,
-            Map.of("limit", limit)
-        ).list(r -> new PostingAtNode(r.get("nodeName").asString(), r.get("postingId").asString()));
-    }
-
-    public void assignScanCommentsJob(String nodeName, String postingId, UUID jobId) {
-        database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}), (j:Job {id: $jobId})
-            MERGE (p)<-[:SCANS_COMMENTS]-(j)
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            RETURN p.scanComments IS NOT NULL AS scanned
             """,
             Map.of(
                 "nodeName", nodeName,
-                "postingId", postingId,
-                "jobId", jobId.toString()
+                "postingId", postingId
             )
-        );
+        ).single().get("scanned").asBoolean();
     }
 
     public void scanCommentsSucceeded(String nodeName, String postingId) {

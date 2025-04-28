@@ -2,9 +2,7 @@ package org.moera.search.data;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.CommentInfo;
@@ -19,19 +17,34 @@ public class CommentRepository {
     @Inject
     private Database database;
 
-    public boolean createComment(String nodeName, String postingId, String commentId) {
+    public boolean exists(String nodeName, String postingId, String commentId) {
         return database.tx().run(
             """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            MERGE (p)<-[:UNDER]-(c:Comment {id: $commentId})
-            RETURN c.scan IS NOT NULL AS scanned
+            RETURN EXISTS {
+                MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})
+            } AS e
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId,
                 "commentId", commentId
             )
-        ).single().get("scanned").asBoolean();
+        ).single().get("e").asBoolean();
+    }
+
+    public void createComment(String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            MERGE (p)<-[:UNDER]-(c:Comment {id: $commentId})
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
+            )
+        );
     }
 
     public void assignCommentOwner(String nodeName, String postingId, String commentId, String ownerName) {
@@ -179,43 +192,6 @@ public class CommentRepository {
                 "postingId", postingId,
                 "commentId", commentId,
                 "documentId", documentId
-            )
-        );
-    }
-
-    public record CommentAtNode(String nodeName, String postingId, String commentId) {
-    }
-
-    public List<CommentAtNode> findCommentsToScan(int limit) {
-        return database.tx().run(
-            """
-            MATCH (n:MoeraNode)<-[:SOURCE]-(p:Posting)<-[:UNDER]-(c:Comment)
-            WHERE c.scan IS NULL AND NOT (c)<-[:SCANS_COMMENT]-(:Job)
-            LIMIT $limit
-            RETURN n.name AS nodeName, p.id AS postingId, c.id AS commentId
-            """,
-            Map.of("limit", limit)
-        )
-            .list(r ->
-                new CommentAtNode(
-                    r.get("nodeName").asString(), r.get("postingId").asString(), r.get("commentId").asString()
-                )
-            );
-    }
-
-    public void assignScanJob(String nodeName, String postingId, String commentId, UUID jobId) {
-        database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
-                  <-[:UNDER]-(c:Comment {id: $commentId}),
-                  (j:Job {id: $jobId})
-            MERGE (c)<-[:SCANS_COMMENT]-(j)
-            """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId,
-                "commentId", commentId,
-                "jobId", jobId.toString()
             )
         );
     }

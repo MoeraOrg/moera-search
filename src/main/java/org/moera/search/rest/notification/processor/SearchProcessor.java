@@ -8,13 +8,18 @@ import org.moera.lib.node.types.notifications.SearchContentUpdatedNotification;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
-import org.moera.search.data.PostingRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
-import org.moera.search.scanner.JobKeys;
 import org.moera.search.scanner.NodeIngest;
-import org.moera.search.scanner.PostingIngest;
 import org.moera.search.scanner.UpdateQueue;
+import org.moera.search.scanner.updates.BlockingUpdate;
+import org.moera.search.scanner.updates.FriendshipUpdate;
+import org.moera.search.scanner.updates.PostingAddUpdate;
+import org.moera.search.scanner.updates.PostingDeleteUpdate;
+import org.moera.search.scanner.updates.PostingUpdateUpdate;
+import org.moera.search.scanner.updates.PublicationAddUpdate;
+import org.moera.search.scanner.updates.PublicationDeleteUpdate;
+import org.moera.search.scanner.updates.SubscriptionUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +35,7 @@ public class SearchProcessor {
     private NodeRepository nodeRepository;
 
     @Inject
-    private PostingRepository postingRepository;
-
-    @Inject
     private NodeIngest nodeIngest;
-
-    @Inject
-    private PostingIngest postingIngest;
 
     @Inject
     private UpdateQueue updateQueue;
@@ -56,10 +55,7 @@ public class SearchProcessor {
                 );
                 nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
-                    notification.getSenderNodeName(),
-                    notification.getUpdateType(),
-                    details,
-                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                    new FriendshipUpdate(false, notification.getSenderNodeName(), details.getNodeName())
                 );
                 break;
             }
@@ -71,10 +67,7 @@ public class SearchProcessor {
                 );
                 nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
-                    notification.getSenderNodeName(),
-                    notification.getUpdateType(),
-                    details,
-                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                    new FriendshipUpdate(true, notification.getSenderNodeName(), details.getNodeName())
                 );
                 break;
             }
@@ -86,10 +79,9 @@ public class SearchProcessor {
                 );
                 nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
-                    notification.getSenderNodeName(),
-                    notification.getUpdateType(),
-                    details,
-                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                    new SubscriptionUpdate(
+                        false, notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
+                    )
                 );
                 break;
             }
@@ -101,10 +93,9 @@ public class SearchProcessor {
                 );
                 nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
-                    notification.getSenderNodeName(),
-                    notification.getUpdateType(),
-                    details,
-                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                    new SubscriptionUpdate(
+                        true, notification.getSenderNodeName(), details.getNodeName(), details.getFeedName()
+                    )
                 );
                 break;
             }
@@ -118,10 +109,9 @@ public class SearchProcessor {
                 );
                 nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
-                    notification.getSenderNodeName(),
-                    notification.getUpdateType(),
-                    details,
-                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                    new BlockingUpdate(
+                        false, notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
+                    )
                 );
                 break;
             }
@@ -135,10 +125,9 @@ public class SearchProcessor {
                 );
                 nodeIngest.newNode(details.getNodeName());
                 updateQueue.offer(
-                    notification.getSenderNodeName(),
-                    notification.getUpdateType(),
-                    details,
-                    JobKeys.nodeRelative(notification.getSenderNodeName())
+                    new BlockingUpdate(
+                        true, notification.getSenderNodeName(), details.getNodeName(), details.getBlockedOperation()
+                    )
                 );
                 break;
             }
@@ -155,16 +144,19 @@ public class SearchProcessor {
                     break;
                 }
                 boolean isOriginal = Objects.equals(details.getNodeName(), notification.getSenderNodeName());
-                if (!isOriginal) {
+                if (isOriginal) {
+                    updateQueue.offer(new PostingAddUpdate(notification.getSenderNodeName(), details.getPostingId()));
+                } else {
                     nodeIngest.newNode(details.getNodeName());
-                }
-                boolean isScanned = postingIngest.newPosting(details.getNodeName(), details.getPostingId());
-                if (isScanned || !isOriginal) {
                     updateQueue.offer(
-                        notification.getSenderNodeName(),
-                        notification.getUpdateType(),
-                        details,
-                        JobKeys.posting(details.getNodeName(), details.getPostingId())
+                        new PublicationAddUpdate(
+                            details.getNodeName(),
+                            details.getPostingId(),
+                            notification.getSenderNodeName(),
+                            details.getFeedName(),
+                            details.getStoryId(),
+                            details.getPublishedAt()
+                        )
                     );
                 }
                 break;
@@ -182,15 +174,7 @@ public class SearchProcessor {
                     nodeIngest.newNode(details.getNodeName());
                     break; // other changes from non-original nodes are irrelevant
                 }
-                boolean isScanned = postingIngest.newPosting(details.getNodeName(), details.getPostingId());
-                if (isScanned) {
-                    updateQueue.offer(
-                        notification.getSenderNodeName(),
-                        notification.getUpdateType(),
-                        details,
-                        JobKeys.posting(details.getNodeName(), details.getPostingId())
-                    );
-                }
+                updateQueue.offer(new PostingUpdateUpdate(notification.getSenderNodeName(), details.getPostingId()));
                 break;
             }
             case POSTING_DELETE: {
@@ -202,18 +186,16 @@ public class SearchProcessor {
                     LogUtil.format(details.getNodeName())
                 );
                 boolean isOriginal = Objects.equals(details.getNodeName(), notification.getSenderNodeName());
-                if (!isOriginal) {
-                    nodeIngest.newNode(details.getNodeName());
-                }
-                boolean exists = database.read(() ->
-                    postingRepository.exists(details.getNodeName(), details.getPostingId())
-                );
-                if (exists) {
+                if (isOriginal) {
                     updateQueue.offer(
-                        notification.getSenderNodeName(),
-                        notification.getUpdateType(),
-                        details,
-                        JobKeys.posting(details.getNodeName(), details.getPostingId())
+                        new PostingDeleteUpdate(notification.getSenderNodeName(), details.getPostingId())
+                    );
+                } else {
+                    nodeIngest.newNode(details.getNodeName());
+                    updateQueue.offer(
+                        new PublicationDeleteUpdate(
+                            details.getNodeName(), details.getPostingId(), notification.getSenderNodeName()
+                        )
                     );
                 }
                 break;

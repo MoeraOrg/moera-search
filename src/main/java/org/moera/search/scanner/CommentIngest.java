@@ -10,7 +10,6 @@ import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
-import org.moera.search.util.ParametrizedLock;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,23 +33,18 @@ public class CommentIngest {
     @Inject
     private LanguageAnalyzer languageAnalyzer;
 
-    private record CommentKey(String nodeName, String postingId, String commentId) {
-    }
-
-    private final ParametrizedLock<CommentKey> postingLock = new ParametrizedLock<>();
-
-    public boolean newComment(String nodeName, String postingId, String commentId) {
-        try (var ignored = postingLock.lock(new CommentKey(nodeName, postingId, commentId))) {
-            return database.write(() -> commentRepository.createComment(nodeName, postingId, commentId));
-        }
-    }
-
     public void ingest(String nodeName, CommentInfo comment) {
+        database.writeNoResult(() ->
+            commentRepository.createComment(nodeName, comment.getPostingId(), comment.getId())
+        );
         if (!comment.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(comment.getOwnerName());
         }
+        // FIXME need to wait till this comment will appear
         if (comment.getRepliedTo() != null) {
-            newComment(nodeName, comment.getPostingId(), comment.getRepliedTo().getId());
+            database.writeNoResult(() ->
+                commentRepository.createComment(nodeName, comment.getPostingId(), comment.getRepliedTo().getId())
+            );
         }
         database.writeNoResult(() -> {
             commentRepository.assignCommentOwner(

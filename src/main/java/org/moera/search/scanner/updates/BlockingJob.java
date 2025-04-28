@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.BlockedOperation;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.NodeIngest;
 
 public class BlockingJob extends Job<BlockingJob.Parameters, Object> {
 
@@ -65,11 +66,6 @@ public class BlockingJob extends Job<BlockingJob.Parameters, Object> {
 
     public BlockingJob() {
         noRetry();
-    }
-
-    @Override
-    public String getJobKey() {
-        return JobKeys.nodeRelative(parameters.blockedName);
     }
 
     @Override

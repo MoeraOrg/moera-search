@@ -4,11 +4,16 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.types.Scope;
+import org.moera.lib.node.types.SubscriberDescription;
+import org.moera.lib.node.types.SubscriptionType;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
 import org.moera.search.media.MediaManager;
+import org.moera.search.scanner.updates.PeopleScanUpdate;
+import org.moera.search.scanner.updates.TimelineScanUpdate;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {
 
@@ -37,6 +42,8 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
 
         private WhoAmI whoAmI;
         private boolean detailsUpdated;
+        private boolean avatarDownloaded;
+        private String subscriberId;
 
         public State() {
         }
@@ -57,6 +64,22 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             this.detailsUpdated = detailsUpdated;
         }
 
+        public boolean isAvatarDownloaded() {
+            return avatarDownloaded;
+        }
+
+        public void setAvatarDownloaded(boolean avatarDownloaded) {
+            this.avatarDownloaded = avatarDownloaded;
+        }
+
+        public String getSubscriberId() {
+            return subscriberId;
+        }
+
+        public void setSubscriberId(String subscriberId) {
+            this.subscriberId = subscriberId;
+        }
+
     }
 
     @Inject
@@ -68,9 +91,12 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
     @Inject
     private MediaManager mediaManager;
 
+    @Inject
+    private UpdateQueue updateQueue;
+
     public NameScanJob() {
         state = new State();
-        retryCount(3, "PT5M");
+        retryCount(5, "PT5M");
     }
 
     @Override
@@ -96,14 +122,33 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             checkpoint();
         }
 
-        mediaManager.downloadAndSaveAvatar(
-            parameters.nodeName,
-            state.whoAmI.getAvatar(),
-            (avatarId, shape) -> {
-                nodeRepository.removeAvatar(parameters.nodeName);
-                nodeRepository.addAvatar(parameters.nodeName, avatarId, shape);
-            }
-        );
+        if (!state.avatarDownloaded) {
+            mediaManager.downloadAndSaveAvatar(
+                parameters.nodeName,
+                state.whoAmI.getAvatar(),
+                (avatarId, shape) -> {
+                    nodeRepository.removeAvatar(parameters.nodeName);
+                    nodeRepository.addAvatar(parameters.nodeName, avatarId, shape);
+                }
+            );
+            checkpoint();
+        }
+
+        if (state.subscriberId == null) {
+            var description = new SubscriberDescription();
+            description.setType(SubscriptionType.SEARCH);
+            state.subscriberId = nodeApi
+                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.SUBSCRIBE))
+                .createSubscriber(description).getId();
+            checkpoint();
+        }
+
+        updateQueue.offer(new PeopleScanUpdate(parameters.nodeName));
+        updateQueue.offer(new TimelineScanUpdate(parameters.nodeName));
+
+        database.writeNoResult(() -> nodeRepository.subscribed(parameters.nodeName, state.subscriberId));
+
+        // FIXME scan succeeded
     }
 
     @Override

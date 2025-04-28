@@ -123,14 +123,18 @@ public class Jobs {
     }
 
     public <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters) {
-        return run(klass, parameters, true);
+        return run(klass, parameters, null, true);
+    }
+
+    public <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters, String jobKey) {
+        return run(klass, parameters, jobKey, true);
     }
 
     public <P, T extends Job<P, ?>> UUID runNoPersist(Class<T> klass, P parameters) {
-        return run(klass, parameters, false);
+        return run(klass, parameters, null, false);
     }
 
-    private <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters, boolean persistent) {
+    private <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters, String jobKey, boolean persistent) {
         if (!ready) {
             throw new JobsManagerNotInitializedException();
         }
@@ -148,6 +152,7 @@ public class Jobs {
         }
 
         job.setParameters(parameters);
+        job.setJobKey(jobKey);
         job.setJobs(this);
 
         if (persistent) {
@@ -172,7 +177,9 @@ public class Jobs {
     }
 
     public boolean keyExists(String jobKey) {
-        return jobRepository.keyExists(jobKey);
+        return jobKey.endsWith("*")
+            ? jobRepository.keysByPrefixExist(jobKey.substring(0, jobKey.length() - 1))
+            : jobRepository.keyExists(jobKey);
     }
 
     @Scheduled(fixedDelayString = "PT1H")

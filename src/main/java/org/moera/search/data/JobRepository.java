@@ -99,4 +99,17 @@ public class JobRepository {
         ).single().get("e").asBoolean();
     }
 
+    public boolean keysByPrefixExist(String jobKeyPrefix) {
+        return database.tx().run(
+            """
+            RETURN EXISTS {
+                MATCH (j:Job WHERE j.jobKey STARTS WITH $jobKeyPrefix)
+            } AS e
+            """,
+            Map.of(
+                "jobKeyPrefix", jobKeyPrefix
+            )
+        ).single().get("e").asBoolean();
+    }
+
 }
