@@ -131,6 +131,7 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
                     nodeRepository.addAvatar(parameters.nodeName, avatarId, shape);
                 }
             );
+            state.avatarDownloaded = true;
             checkpoint();
         }
 
