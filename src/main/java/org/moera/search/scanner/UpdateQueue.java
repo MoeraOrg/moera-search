@@ -11,10 +11,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.moera.search.Workload;
 import org.moera.search.data.Database;
 import org.moera.search.data.DatabaseInitializedEvent;
-import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PendingUpdate;
 import org.moera.search.data.PendingUpdateRepository;
-import org.moera.search.data.PostingRepository;
 import org.moera.search.global.RequestCounter;
 import org.moera.search.job.Jobs;
 import org.slf4j.Logger;
@@ -40,15 +38,6 @@ public class UpdateQueue {
 
     @Inject
     private PendingUpdateRepository pendingUpdateRepository;
-
-    @Inject
-    private NodeRepository nodeRepository;
-
-    @Inject
-    private PostingRepository postingRepository;
-
-    @Inject
-    private PostingIngest postingIngest;
 
     @Inject
     private Jobs jobs;
