@@ -87,7 +87,7 @@ public class PendingUpdateRepository {
         var update = createPendingUpdate(node.get("type").asString());
         if (update != null) {
             update.setId(UUID.fromString(node.get("id").asString()));
-            update.decodeJobParameters(node.get("details").asString(null));
+            update.decodeJobParameters(node.get("jobParameters").asString(null));
             update.setCreatedAt(Instant.ofEpochMilli(node.get("createdAt").asLong()));
         }
         return update;

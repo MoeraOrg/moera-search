@@ -8,6 +8,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class TimelineScanUpdate extends PendingUpdate<TimelineScanJob.Parameters> {
 
+    public TimelineScanUpdate() {
+    }
+
     public TimelineScanUpdate(String nodeName) {
         super(new TimelineScanJob.Parameters(nodeName));
     }

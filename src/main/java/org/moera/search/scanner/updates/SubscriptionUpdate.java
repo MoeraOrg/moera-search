@@ -8,6 +8,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class SubscriptionUpdate extends PendingUpdate<SubscriptionJob.Parameters> {
 
+    public SubscriptionUpdate() {
+    }
+
     public SubscriptionUpdate(boolean unsubscribe, String nodeName, String subscriptionName, String feedName) {
         super(new SubscriptionJob.Parameters(unsubscribe, nodeName, subscriptionName, feedName));
     }

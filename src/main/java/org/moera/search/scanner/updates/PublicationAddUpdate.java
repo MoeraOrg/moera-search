@@ -18,6 +18,9 @@ public class PublicationAddUpdate extends PendingUpdate<PublicationAddJob.Parame
     @Inject
     private PostingRepository postingRepository;
 
+    public PublicationAddUpdate() {
+    }
+
     public PublicationAddUpdate(
         String nodeName, String postingId, String publisherName, String feedName, String storyId, long publishedAt
     ) {

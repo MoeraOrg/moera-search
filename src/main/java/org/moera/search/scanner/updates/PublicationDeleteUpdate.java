@@ -17,6 +17,9 @@ public class PublicationDeleteUpdate extends PendingUpdate<PublicationDeleteJob.
     @Inject
     private PostingRepository postingRepository;
 
+    public PublicationDeleteUpdate() {
+    }
+
     public PublicationDeleteUpdate(String nodeName, String postingId, String publisherName) {
         super(new PublicationDeleteJob.Parameters(nodeName, postingId, publisherName));
     }

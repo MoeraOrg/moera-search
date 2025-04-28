@@ -8,6 +8,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class PeopleScanUpdate extends PendingUpdate<PeopleScanJob.Parameters> {
 
+    public PeopleScanUpdate() {
+    }
+
     public PeopleScanUpdate(String nodeName) {
         super(new PeopleScanJob.Parameters(nodeName));
     }

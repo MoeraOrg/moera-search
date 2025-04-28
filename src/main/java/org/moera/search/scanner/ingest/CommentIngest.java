@@ -10,6 +10,9 @@ import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
+import org.moera.search.scanner.UpdateQueue;
+import org.moera.search.scanner.updates.CommentAddUpdate;
+import org.moera.search.scanner.updates.CommentRepliedToUpdate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,6 +36,9 @@ public class CommentIngest {
     @Inject
     private LanguageAnalyzer languageAnalyzer;
 
+    @Inject
+    private UpdateQueue updateQueue;
+
     public void ingest(String nodeName, CommentInfo comment) {
         database.writeNoResult(() ->
             commentRepository.createComment(nodeName, comment.getPostingId(), comment.getId())
@@ -40,17 +46,16 @@ public class CommentIngest {
         if (!comment.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(comment.getOwnerName());
         }
-        // FIXME need to wait till this comment will appear
-        if (comment.getRepliedTo() != null) {
-            database.writeNoResult(() ->
-                commentRepository.createComment(nodeName, comment.getPostingId(), comment.getRepliedTo().getId())
-            );
-        }
+        var waitRepliedTo = comment.getRepliedTo() != null
+            ? database.read(() ->
+                !commentRepository.exists(nodeName, comment.getPostingId(), comment.getRepliedTo().getId())
+            )
+            : false;
         database.writeNoResult(() -> {
             commentRepository.assignCommentOwner(
                 nodeName, comment.getPostingId(), comment.getId(), comment.getOwnerName()
             );
-            if (comment.getRepliedTo() != null) {
+            if (comment.getRepliedTo() != null && !waitRepliedTo) {
                 commentRepository.assignCommentRepliedTo(
                     nodeName, comment.getPostingId(), comment.getId(), comment.getRepliedTo().getId()
                 );
@@ -58,6 +63,15 @@ public class CommentIngest {
         });
 
         update(nodeName, comment);
+
+        if (waitRepliedTo) {
+            updateQueue.offer(new CommentAddUpdate(nodeName, comment.getPostingId(), comment.getRepliedTo().getId()));
+            updateQueue.offer(
+                new CommentRepliedToUpdate(
+                    nodeName, comment.getPostingId(), comment.getId(), comment.getRepliedTo().getId()
+                )
+            );
+        }
     }
 
     public void update(String nodeName, CommentInfo comment) {
@@ -106,6 +120,10 @@ public class CommentIngest {
         } else {
             index.update(documentId, document);
         }
+    }
+
+    public void deleteAll(String nodeName, String postingId) {
+        database.writeNoResult(() -> commentRepository.deleteAllComments(nodeName, postingId));
     }
 
 }

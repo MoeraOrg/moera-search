@@ -46,12 +46,11 @@ public class NodeRepository {
         args.put("name", name);
         args.put("fullName", whoAmI.getFullName());
         args.put("title", whoAmI.getTitle());
-        args.put("now", Instant.now().toEpochMilli());
 
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})
-            SET n.fullName = $fullName, n.title = $title, n.scanProfile = true, n.profileScannedAt = $now
+            SET n.fullName = $fullName, n.title = $title
             """,
             args
         );
@@ -112,6 +111,19 @@ public class NodeRepository {
             Map.of(
                 "name", name,
                 "jobId", jobId.toString()
+            )
+        );
+    }
+
+    public void scanSucceeded(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanProfile = true, n.profileScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
             )
         );
     }

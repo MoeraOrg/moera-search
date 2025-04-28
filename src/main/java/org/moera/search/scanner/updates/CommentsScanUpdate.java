@@ -8,6 +8,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class CommentsScanUpdate extends PendingUpdate<CommentsScanJob.Parameters> {
 
+    public CommentsScanUpdate() {
+    }
+
     public CommentsScanUpdate(String nodeName, String postingId) {
         super(new CommentsScanJob.Parameters(nodeName, postingId));
     }

@@ -17,6 +17,7 @@ import org.moera.search.global.RequestCounter;
 import org.moera.search.job.Jobs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,9 @@ public class UpdateQueue {
     @Inject
     private Jobs jobs;
 
+    @Inject
+    private AutowireCapableBeanFactory autowireCapableBeanFactory;
+
     @EventListener(DatabaseInitializedEvent.class)
     public void init() {
         try (var ignored = requestCounter.allot()) {
@@ -59,6 +63,7 @@ public class UpdateQueue {
         synchronized (lock) {
             queue.add(update);
         }
+        autowireCapableBeanFactory.autowireBean(update);
         database.writeNoResult(() -> {
             try {
                 pendingUpdateRepository.create(update);

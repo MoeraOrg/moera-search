@@ -228,4 +228,17 @@ public class CommentRepository {
         );
     }
 
+    public void deleteAllComments(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})<-[:UNDER]-(c:Comment)
+            DETACH DELETE c
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
 }

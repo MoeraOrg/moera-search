@@ -206,7 +206,7 @@ public class PostingRepository {
     public boolean isCommentsScanned(String nodeName, String postingId) {
         return database.tx().run(
             """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
             RETURN p.scanComments IS NOT NULL AS scanned
             """,
             Map.of(

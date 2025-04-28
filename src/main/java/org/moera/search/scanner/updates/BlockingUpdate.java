@@ -9,6 +9,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class BlockingUpdate extends PendingUpdate<BlockingJob.Parameters> {
 
+    public BlockingUpdate() {
+    }
+
     public BlockingUpdate(boolean unblocks, String nodeName, String blockedName, BlockedOperation operation) {
         super(new BlockingJob.Parameters(unblocks, nodeName, blockedName, operation));
     }

@@ -8,6 +8,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class PostingAddUpdate extends PendingUpdate<PostingAddJob.Parameters> {
 
+    public PostingAddUpdate() {
+    }
+
     public PostingAddUpdate(String nodeName, String postingId) {
         super(new PostingAddJob.Parameters(nodeName, postingId));
     }

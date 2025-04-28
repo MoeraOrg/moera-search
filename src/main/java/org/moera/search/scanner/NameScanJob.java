@@ -143,12 +143,12 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             checkpoint();
         }
 
+        database.writeNoResult(() -> nodeRepository.subscribed(parameters.nodeName, state.subscriberId));
+
         updateQueue.offer(new PeopleScanUpdate(parameters.nodeName));
         updateQueue.offer(new TimelineScanUpdate(parameters.nodeName));
 
-        database.writeNoResult(() -> nodeRepository.subscribed(parameters.nodeName, state.subscriberId));
-
-        // FIXME scan succeeded
+        database.writeNoResult(() -> nodeRepository.scanSucceeded(parameters.nodeName));
     }
 
     @Override

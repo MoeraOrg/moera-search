@@ -8,6 +8,9 @@ import org.moera.search.scanner.JobKeys;
 
 public class FriendshipUpdate extends PendingUpdate<FriendshipJob.Parameters> {
 
+    public FriendshipUpdate() {
+    }
+
     public FriendshipUpdate(boolean unfriend, String nodeName, String friendName) {
         super(new FriendshipJob.Parameters(unfriend, nodeName, friendName));
     }
