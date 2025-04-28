@@ -11,8 +11,8 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
-import org.moera.search.scanner.NodeIngest;
-import org.moera.search.scanner.PostingIngest;
+import org.moera.search.scanner.ingest.NodeIngest;
+import org.moera.search.scanner.ingest.PostingIngest;
 import org.moera.search.scanner.UpdateQueue;
 import org.springframework.util.ObjectUtils;
 

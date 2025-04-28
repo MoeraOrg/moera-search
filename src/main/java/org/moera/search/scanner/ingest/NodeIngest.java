@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.ingest;
 
 import jakarta.inject.Inject;
 

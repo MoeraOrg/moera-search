@@ -9,7 +9,7 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
-import org.moera.search.scanner.PostingIngest;
+import org.moera.search.scanner.ingest.PostingIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

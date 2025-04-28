@@ -13,6 +13,7 @@ import org.moera.search.data.DatabaseInitializedEvent;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.NamingServiceRepository;
 import org.moera.search.global.RequestCounter;
+import org.moera.search.scanner.ingest.NodeIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;

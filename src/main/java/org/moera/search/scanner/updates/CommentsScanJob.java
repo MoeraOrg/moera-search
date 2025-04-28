@@ -9,7 +9,7 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
-import org.moera.search.scanner.CommentIngest;
+import org.moera.search.scanner.ingest.CommentIngest;
 
 public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsScanJob.State> {
 

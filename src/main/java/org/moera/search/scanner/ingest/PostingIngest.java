@@ -1,4 +1,4 @@
-package org.moera.search.scanner;
+package org.moera.search.scanner.ingest;
 
 import java.util.Objects;
 import jakarta.inject.Inject;
@@ -11,6 +11,7 @@ import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
+import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.CommentsScanUpdate;
 import org.springframework.stereotype.Component;
 

@@ -10,7 +10,7 @@ import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
-import org.moera.search.scanner.NodeIngest;
+import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.BlockingUpdate;
 import org.moera.search.scanner.updates.FriendshipUpdate;

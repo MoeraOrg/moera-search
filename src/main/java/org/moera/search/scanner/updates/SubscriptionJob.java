@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.search.job.Job;
-import org.moera.search.scanner.NodeIngest;
+import org.moera.search.scanner.ingest.NodeIngest;
 
 public class SubscriptionJob extends Job<SubscriptionJob.Parameters, Object> {
 

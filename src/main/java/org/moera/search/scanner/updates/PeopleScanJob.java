@@ -13,7 +13,7 @@ import org.moera.lib.node.types.SubscriptionType;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
-import org.moera.search.scanner.NodeIngest;
+import org.moera.search.scanner.ingest.NodeIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
