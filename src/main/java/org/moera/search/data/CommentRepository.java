@@ -2,6 +2,7 @@ package org.moera.search.data;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
@@ -196,6 +197,19 @@ public class CommentRepository {
         );
     }
 
+    public List<String> getAllDocumentIds(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})<-[:UNDER]-(c:Comment)
+            RETURN c.documentId AS id
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).list(r -> r.get("id").asString(null));
+    }
+
     public void scanSucceeded(String nodeName, String postingId, String commentId) {
         database.tx().run(
             """
@@ -224,6 +238,21 @@ public class CommentRepository {
                 "postingId", postingId,
                 "commentId", commentId,
                 "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void deleteComment(String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            DETACH DELETE c
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
             )
         );
     }

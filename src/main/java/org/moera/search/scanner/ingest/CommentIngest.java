@@ -122,7 +122,20 @@ public class CommentIngest {
         }
     }
 
+    public void delete(String nodeName, String postingId, String commentId) {
+        // delete the document first, so in the case of failure we will not lose documentId
+        String documentId = database.read(() -> commentRepository.getDocumentId(nodeName, postingId, commentId));
+        if (documentId != null) {
+            index.delete(documentId);
+        }
+        database.writeNoResult(() -> commentRepository.deleteComment(nodeName, postingId, commentId));
+    }
+
     public void deleteAll(String nodeName, String postingId) {
+        var documentIds = database.read(() -> commentRepository.getAllDocumentIds(nodeName, postingId));
+        if (!documentIds.isEmpty()) {
+            index.deleteBulk(documentIds);
+        }
         database.writeNoResult(() -> commentRepository.deleteAllComments(nodeName, postingId));
     }
 

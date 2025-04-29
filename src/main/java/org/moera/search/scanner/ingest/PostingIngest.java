@@ -149,7 +149,7 @@ public class PostingIngest {
 
     private void updatePublicationsInIndex(String nodeName, String postingId) {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
-        if (documentId != null) {
+        if (documentId != null && index.exists(documentId)) {
             var document = new IndexedDocument();
             var publishers = database.read(() -> publicationRepository.getPublishers(nodeName, postingId));
             document.setPublishers(publishers);

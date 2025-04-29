@@ -5,6 +5,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -20,10 +21,14 @@ import org.moera.search.data.DatabaseInitializedEvent;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.DeleteOperation;
+import org.opensearch.client.opensearch.core.search.SourceConfigParam;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,6 +143,44 @@ public class Index {
                     .id(id)
                     .build()
             );
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
+    }
+
+    public void deleteBulk(List<String> ids) {
+        var operations = new ArrayList<BulkOperation>();
+        for (String id : ids) {
+            operations.add(
+                new BulkOperation.Builder()
+                    .delete(new DeleteOperation.Builder().id(id).build())
+                    .build()
+            );
+        }
+
+        try {
+            client.bulk(
+                new BulkRequest.Builder()
+                    .index(config.getIndex().getIndexName())
+                    .operations(operations)
+                    .build()
+            );
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
+    }
+
+    public boolean exists(String id) {
+        try {
+            var response = client.get(
+                new GetRequest.Builder()
+                    .index(config.getIndex().getIndexName())
+                    .id(id)
+                    .source(new SourceConfigParam.Builder().fetch(false).build())
+                    .build(),
+                IndexedDocument.class
+            );
+            return response.found();
         } catch (IOException e) {
             throw new TransientIndexException(e);
         }

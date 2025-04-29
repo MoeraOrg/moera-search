@@ -10,9 +10,12 @@ import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
-import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.UpdateQueue;
+import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.updates.BlockingUpdate;
+import org.moera.search.scanner.updates.CommentAddUpdate;
+import org.moera.search.scanner.updates.CommentDeleteUpdate;
+import org.moera.search.scanner.updates.CommentUpdateUpdate;
 import org.moera.search.scanner.updates.FriendshipUpdate;
 import org.moera.search.scanner.updates.PostingAddUpdate;
 import org.moera.search.scanner.updates.PostingDeleteUpdate;
@@ -198,6 +201,51 @@ public class SearchProcessor {
                         )
                     );
                 }
+                break;
+            }
+            case COMMENT_ADD: {
+                var details = notification.getCommentUpdate();
+                log.info(
+                    "Node {} received a comment {} to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getCommentId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new CommentAddUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getCommentId()
+                    )
+                );
+                break;
+            }
+            case COMMENT_UPDATE: {
+                var details = notification.getCommentUpdate();
+                log.info(
+                    "Node {} received an update for comment {} to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getCommentId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new CommentUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getCommentId()
+                    )
+                );
+                break;
+            }
+            case COMMENT_DELETE: {
+                var details = notification.getCommentUpdate();
+                log.info(
+                    "Node {} deleted comment {} to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getCommentId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new CommentDeleteUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getCommentId()
+                    )
+                );
                 break;
             }
         }
