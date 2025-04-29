@@ -91,6 +91,10 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
             .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
             .getPosting(parameters.postingId, false);
         if (posting != null) {
+            if (posting.getSignature() == null) {
+                log.info("Posting is not signed yet, let's wait");
+                retry();
+            }
             postingIngest.ingest(parameters.nodeName, posting);
         }
 

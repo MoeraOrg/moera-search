@@ -98,6 +98,10 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
             .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
             .getComment(parameters.postingId, parameters.commentId, false);
         if (comment != null) {
+            if (comment.getSignature() == null) {
+                log.info("Comment is not signed yet, let's wait");
+                retry();
+            }
             var exists = database.read(() ->
                 commentRepository.exists(parameters.nodeName, parameters.postingId, parameters.commentId)
             );

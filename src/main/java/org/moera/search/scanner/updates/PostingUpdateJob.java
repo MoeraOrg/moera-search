@@ -86,6 +86,10 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
             .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
             .getPosting(parameters.postingId, false);
         if (posting != null) {
+            if (posting.getSignature() == null) {
+                log.info("Posting is not signed yet, let's wait");
+                retry();
+            }
             var exists = database.read(() -> postingRepository.exists(parameters.nodeName, parameters.postingId));
             if (!exists) {
                 postingIngest.ingest(parameters.nodeName, posting);

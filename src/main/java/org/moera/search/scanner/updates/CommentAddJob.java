@@ -105,6 +105,10 @@ public class CommentAddJob extends Job<CommentAddJob.Parameters, Object> {
             .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
             .getComment(parameters.postingId, parameters.commentId, false);
         if (comment != null) {
+            if (comment.getSignature() == null) {
+                log.info("Comment is not signed yet, let's wait");
+                retry();
+            }
             commentIngest.ingest(parameters.nodeName, comment);
         }
 
