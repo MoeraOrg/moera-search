@@ -33,13 +33,16 @@ public class CommentDeleteUpdate extends PendingUpdate<CommentDeleteJob.Paramete
             JobKeys.postingAllComments(getJobParameters().getNodeName(), getJobParameters().getPostingId()),
             JobKeys.comment(
                 getJobParameters().getNodeName(), getJobParameters().getPostingId(), getJobParameters().getCommentId()
+            ),
+            JobKeys.commentAnyChildren(
+                getJobParameters().getNodeName(), getJobParameters().getPostingId(), getJobParameters().getCommentId()
             )
         );
     }
 
     @Override
     public String jobKey() {
-        return JobKeys.comment(
+        return JobKeys.commentAllChildren(
             getJobParameters().getNodeName(), getJobParameters().getPostingId(), getJobParameters().getCommentId()
         );
     }

@@ -19,6 +19,9 @@ import org.moera.search.scanner.updates.CommentUpdateUpdate;
 import org.moera.search.scanner.updates.FriendshipUpdate;
 import org.moera.search.scanner.updates.PostingAddUpdate;
 import org.moera.search.scanner.updates.PostingDeleteUpdate;
+import org.moera.search.scanner.updates.PostingReactionAddUpdate;
+import org.moera.search.scanner.updates.PostingReactionDeleteUpdate;
+import org.moera.search.scanner.updates.PostingReactionsDeleteAllUpdate;
 import org.moera.search.scanner.updates.PostingUpdateUpdate;
 import org.moera.search.scanner.updates.PublicationAddUpdate;
 import org.moera.search.scanner.updates.PublicationDeleteUpdate;
@@ -246,6 +249,54 @@ public class SearchProcessor {
                         notification.getSenderNodeName(), details.getPostingId(), details.getCommentId()
                     )
                 );
+                break;
+            }
+            case REACTION_ADD: {
+                var details = notification.getReactionUpdate();
+                if (details.getCommentId() == null) {
+                    log.info(
+                        "Node {} received a reaction from node {} to posting {}",
+                        LogUtil.format(notification.getSenderNodeName()),
+                        LogUtil.format(details.getOwnerName()),
+                        LogUtil.format(details.getPostingId())
+                    );
+                    updateQueue.offer(
+                        new PostingReactionAddUpdate(
+                            notification.getSenderNodeName(), details.getPostingId(), details.getOwnerName()
+                        )
+                    );
+                }
+                break;
+            }
+            case REACTION_DELETE: {
+                var details = notification.getReactionUpdate();
+                if (details.getCommentId() == null) {
+                    log.info(
+                        "Node {} deleted a reaction from node {} to posting {}",
+                        LogUtil.format(notification.getSenderNodeName()),
+                        LogUtil.format(details.getOwnerName()),
+                        LogUtil.format(details.getPostingId())
+                    );
+                    updateQueue.offer(
+                        new PostingReactionDeleteUpdate(
+                            notification.getSenderNodeName(), details.getPostingId(), details.getOwnerName()
+                        )
+                    );
+                }
+                break;
+            }
+            case REACTIONS_DELETE_ALL: {
+                var details = notification.getReactionUpdate();
+                if (details.getCommentId() == null) {
+                    log.info(
+                        "Node {} deleted all reactions to posting {}",
+                        LogUtil.format(notification.getSenderNodeName()),
+                        LogUtil.format(details.getPostingId())
+                    );
+                    updateQueue.offer(
+                        new PostingReactionsDeleteAllUpdate(notification.getSenderNodeName(), details.getPostingId())
+                    );
+                }
                 break;
             }
         }

@@ -244,4 +244,45 @@ public class PostingRepository {
         );
     }
 
+    public boolean isReactionsScanned(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            RETURN p.scanReactions IS NOT NULL AS scanned
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).single().get("scanned").asBoolean();
+    }
+
+    public void scanReactionsSucceeded(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            SET p.scanReactions = true, p.reactionsScannedAt = $now
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void scanReactionsFailed(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            SET p.scanReactions = false, p.reactionsScannedAt = $now
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
 }

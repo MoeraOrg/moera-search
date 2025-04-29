@@ -13,7 +13,9 @@ import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.CommentsScanUpdate;
+import org.moera.search.scanner.updates.PostingReactionsScanUpdate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 
 @Component
 public class PostingIngest {
@@ -50,10 +52,19 @@ public class PostingIngest {
         if (!posting.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(posting.getOwnerName());
         }
+        boolean hasReactions =
+            posting.getReactions() != null
+            && (
+                !ObjectUtils.isEmpty(posting.getReactions().getPositive())
+                || !ObjectUtils.isEmpty(posting.getReactions().getNegative())
+            );
         database.writeNoResult(() -> {
             postingRepository.assignPostingOwner(nodeName, posting.getId(), posting.getOwnerName());
             if (posting.getTotalComments() == 0) {
                 postingRepository.scanCommentsSucceeded(nodeName, posting.getId());
+            }
+            if (!hasReactions) {
+                postingRepository.scanReactionsSucceeded(nodeName, posting.getId());
             }
             for (var feedReference : posting.getFeedReferences()) {
                 if (feedReference.getFeedName().equals("timeline")) {
@@ -73,6 +84,9 @@ public class PostingIngest {
 
         if (posting.getTotalComments() > 0) {
             updateQueue.offer(new CommentsScanUpdate(nodeName, posting.getId()));
+        }
+        if (hasReactions) {
+            updateQueue.offer(new PostingReactionsScanUpdate(nodeName, posting.getId()));
         }
     }
 

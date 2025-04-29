@@ -6,15 +6,17 @@ Nodes
 
 (:Comment)
 id:                 string NOT NULL INDEX
-revisionId:         string
+revisionId:         string NOT NULL
 ownerFullName:      string
-heading:            string
-bodyPreview:        string                  (Body)
-createdAt:          int                     (sec timestamp)
+heading:            string NOT NULL
+bodyPreview:        string NOT NULL         (Body)
+createdAt:          int NOT NULL            (sec timestamp)
 editedAt:           int                     (sec timestamp)
 viewPrincipal:      string
 scan:               boolean/int             (ScanStatus)
 scannedAt:          int                     (ms timestamp)
+scanReactions:      boolean/int             (ScanStatus)
+reactionsScannedAt: int                     (ms timestamp)
 documentId:         string
 INDEX ON (scan, scannedAt)
 
@@ -36,12 +38,12 @@ waitUntil:          int                     (ms timestamp)
 (:MediaFile)
 id:                 string NOT NULL UNIQUE
 mimeType:           string NOT NULL
-sizeX: int
-sizeY: int
+sizeX:              int
+sizeY:              int
 orientation:        int NOT NULL
 fileSize:           int NOT NULL
 exposed:            boolean NOT NULL
-digest: byte[]
+digest:             byte[]
 createdAt:          int NOT NULL            (ms timestamp)
 
 (:MoeraNode)
@@ -73,17 +75,19 @@ createdAt:          int NOT NULL            (ms timestamp)
 
 (:Posting)
 id:                 string NOT NULL INDEX
-revisionId:         string
+revisionId:         string NOT NULL
 ownerFullName:      string
-heading:            string
-bodyPreview:        string                  (Body)
-createdAt:          int                     (sec timestamp)
+heading:            string NOT NULL
+bodyPreview:        string NOT NULL         (Body)
+createdAt:          int NOT NULL            (sec timestamp)
 editedAt:           int                     (sec timestamp)
 viewPrincipal:      string
 scan:               boolean/int             (ScanStatus)
 scannedAt:          int                     (ms timestamp)
 scanComments:       boolean/int             (ScanStatus)
 commentsScannedAt:  int                     (ms timestamp)
+scanReactions:      boolean/int             (ScanStatus)
+reactionsScannedAt: int                     (ms timestamp)
 documentId:         string
 INDEX ON (scan, scannedAt)
 INDEX ON (scanComments, commentsScannedAt)
@@ -93,19 +97,26 @@ feedName:           string NOT NULL
 storyId:            string NOT NULL
 publishedAt:        int NOT NULL INDEX      (sec timestamp)
 
+(:Reaction)
+ownerFullName:      string
+negative:           boolean NOT NULL
+emoji:              int NOT NULL
+createdAt:          int NOT NULL            (sec timestamp)
+viewPrincipal:      string
+
 (:Version) UNIQUE
 version:            int NOT NULL
 
 Relationships
 -------------
 
-(:MoeraNode|Posting|Comment)-[:AVATAR]->(:MediaFile)
+(:MoeraNode|Posting|Comment|Reaction)-[:AVATAR]->(:MediaFile)
 shape:              string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
 blockedOperation:   string NOT NULL         (BlockedOperation)
 
-(:Favor)-[:CAUSED_BY]->(:Publication|Comment)
+(:Favor)-[:CAUSED_BY]->(:Publication|Comment|Reaction)
 
 (:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
 distance:           float NOT NULL
@@ -118,9 +129,11 @@ distance:           float NOT NULL
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
-(:MoeraNode)<-[:OWNER]-(:Posting|Comment)
+(:MoeraNode)<-[:OWNER]-(:Posting|Comment|Reaction)
 
 (:Publication)-[:PUBLISHED_IN]->(:MoeraNode)
+
+(:Reaction)-[:REACTS_TO]->(:Posting|Comment)
 
 (:Comment)-[:REPLIED_TO]->(:Comment)
 

@@ -26,12 +26,24 @@ public class JobKeys {
         return "entry:" + nodeName + ":p-" + postingId + ":all-comments";
     }
 
+    public static String postingAllReactions(String nodeName, String postingId) {
+        return "entry:" + nodeName + ":p-" + postingId + ":all-reactions";
+    }
+
     public static String postingAnyChildren(String nodeName, String postingId) {
         return "entry:" + nodeName + ":p-" + postingId + ":*";
     }
 
     public static String comment(String nodeName, String postingId, String commentId) {
         return "entry:" + nodeName + ":p-" + postingId + ":c-" + commentId;
+    }
+
+    public static String commentAllChildren(String nodeName, String postingId, String commentId) {
+        return "entry:" + nodeName + ":p-" + postingId + ":c-" + commentId + ":all";
+    }
+
+    public static String commentAnyChildren(String nodeName, String postingId, String commentId) {
+        return "entry:" + nodeName + ":p-" + postingId + ":c-" + commentId + ":*";
     }
 
 }
