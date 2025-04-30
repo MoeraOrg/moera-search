@@ -100,7 +100,7 @@ public class CommentReactionsScanJob extends Job<CommentReactionsScanJob.Paramet
     protected void execute() throws Exception {
         while (state.before > 0) {
             var reactionsSlice = nodeApi
-                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
                 .getCommentReactionsSlice(
                     parameters.postingId, parameters.commentId, null, null, state.before, PAGE_SIZE
                 );

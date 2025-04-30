@@ -91,7 +91,7 @@ public class PostingReactionAddJob extends Job<PostingReactionAddJob.Parameters,
         }
 
         var reaction = nodeApi
-            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
             .getPostingReaction(parameters.postingId, parameters.ownerName);
         if (reaction != null) {
             if (reaction.getSignature() == null) {

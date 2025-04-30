@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import jakarta.inject.Inject;
 
 import okhttp3.ResponseBody;
@@ -14,6 +15,7 @@ import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.config.Config;
+import org.moera.search.data.CacheMediaDigestRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.MediaFile;
 import org.moera.search.data.MediaFileRepository;
@@ -36,6 +38,9 @@ public class MediaManager {
 
     @Inject
     private MediaFileRepository mediaFileRepository;
+
+    @Inject
+    private CacheMediaDigestRepository cacheMediaDigestRepository;
 
     @Inject
     private NodeApi nodeApi;
@@ -176,6 +181,46 @@ public class MediaManager {
                 avatarSaver.save(AvatarImageUtil.getMediaFile(avatar).getId(), avatar.getShape())
             );
         }
+    }
+
+    private TemporaryMediaFile getPrivateMedia(
+        String nodeName, String carte, String id, TemporaryFile tmpFile, int maxSize
+    ) throws MoeraNodeException {
+        var result = new AtomicReference<TemporaryMediaFile>();
+        nodeApi.at(nodeName, carte).getPrivateMedia(
+            id, null, null, responseBody -> result.set(receiveMediaFile(nodeName, id, responseBody, tmpFile, maxSize))
+        );
+        return result.get();
+    }
+
+    public byte[] getPrivateMediaDigest(String nodeName, String carte, String id) throws MoeraNodeException {
+        var digest = database.read(() -> cacheMediaDigestRepository.getDigest(nodeName, id));
+        if (digest != null) {
+            return digest;
+        }
+
+        var tmp = mediaOperations.tmpFile();
+        try {
+            var tmpMedia = getPrivateMedia(nodeName, carte, id, tmp, config.getMedia().getVerifyMaxSize());
+            database.writeNoResult(() -> cacheMediaDigestRepository.storeDigest(nodeName, id, tmpMedia.digest()));
+            return tmpMedia.digest();
+        } finally {
+            try {
+                Files.deleteIfExists(tmp.path());
+            } catch (IOException e) {
+                log.warn("Error removing temporary media file {}: {}", tmp.path(), e.getMessage());
+            }
+        }
+    }
+
+    public Function<String, byte[]> privateMediaDigestGetter(String nodeName, String carte) {
+        return id -> {
+            try {
+                return getPrivateMediaDigest(nodeName, carte, id);
+            } catch (MoeraNodeException e) {
+                throw new MoeraNodeUncheckedException(e);
+            }
+        };
     }
 
 }

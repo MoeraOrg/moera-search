@@ -9,7 +9,9 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.ingest.PostingIngest;
+import org.moera.search.scanner.signature.PostingSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,12 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
     @Inject
     private PostingIngest postingIngest;
 
+    @Inject
+    private PostingSignatureVerifier postingSignatureVerifier;
+
+    @Inject
+    private MediaManager mediaManager;
+
     public PostingUpdateJob() {
         retryCount(5, "PT10M");
     }
@@ -83,7 +91,7 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
         }
 
         var posting = nodeApi
-            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
             .getPosting(parameters.postingId, false);
         if (posting != null) {
             if (posting.getSignature() == null) {
@@ -92,6 +100,13 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
             }
             var exists = database.read(() -> postingRepository.exists(parameters.nodeName, parameters.postingId));
             if (!exists) {
+                postingSignatureVerifier.verifySignature(
+                    parameters.nodeName,
+                    posting,
+                    mediaManager.privateMediaDigestGetter(
+                        parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_MEDIA)
+                    )
+                );
                 postingIngest.ingest(parameters.nodeName, posting);
                 database.writeNoResult(() ->
                     postingRepository.scanSucceeded(parameters.nodeName, parameters.postingId)

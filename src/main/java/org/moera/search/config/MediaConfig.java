@@ -7,6 +7,7 @@ public class MediaConfig {
     private String accelPrefix = "/";
     private boolean directServe;
     private int avatarMaxSize = 102400;
+    private int verifyMaxSize = 10485760;
 
     public String getPath() {
         return path;
@@ -46,6 +47,14 @@ public class MediaConfig {
 
     public void setAvatarMaxSize(int avatarMaxSize) {
         this.avatarMaxSize = avatarMaxSize;
+    }
+
+    public int getVerifyMaxSize() {
+        return verifyMaxSize;
+    }
+
+    public void setVerifyMaxSize(int verifyMaxSize) {
+        this.verifyMaxSize = verifyMaxSize;
     }
 
 }

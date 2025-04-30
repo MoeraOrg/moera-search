@@ -102,7 +102,7 @@ public class CommentAddJob extends Job<CommentAddJob.Parameters, Object> {
         }
 
         var comment = nodeApi
-            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
             .getComment(parameters.postingId, parameters.commentId, false);
         if (comment != null) {
             if (comment.getSignature() == null) {

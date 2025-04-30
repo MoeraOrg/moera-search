@@ -94,7 +94,7 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
     protected void execute() throws Exception {
         while (state.before > 0) {
             var commentsSlice = nodeApi
-                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
                 .getCommentsSlice(parameters.postingId, null, state.before, PAGE_SIZE);
             for (var comment : commentsSlice.getComments()) {
                 state.before = comment.getMoment();

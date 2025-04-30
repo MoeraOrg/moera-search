@@ -20,7 +20,7 @@ import org.moera.search.api.NamingCache;
 import org.moera.search.auth.IncorrectSignatureException;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
-import org.moera.search.rest.notification.NotificationPacketFingerprintBuilder;
+import org.moera.search.api.fingerprint.NotificationPacketFingerprintBuilder;
 import org.moera.search.rest.notification.NotificationRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

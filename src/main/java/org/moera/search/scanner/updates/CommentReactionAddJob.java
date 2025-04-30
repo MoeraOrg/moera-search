@@ -101,7 +101,7 @@ public class CommentReactionAddJob extends Job<CommentReactionAddJob.Parameters,
         }
 
         var reaction = nodeApi
-            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
             .getCommentReaction(parameters.postingId, parameters.commentId, parameters.ownerName);
         if (reaction != null) {
             if (reaction.getSignature() == null) {

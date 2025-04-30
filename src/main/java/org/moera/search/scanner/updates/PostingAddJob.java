@@ -9,7 +9,9 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.ingest.PostingIngest;
+import org.moera.search.scanner.signature.PostingSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,12 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
     @Inject
     private PostingIngest postingIngest;
 
+    @Inject
+    private PostingSignatureVerifier postingSignatureVerifier;
+
+    @Inject
+    private MediaManager mediaManager;
+
     public PostingAddJob() {
         retryCount(5, "PT10M");
     }
@@ -88,13 +96,20 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
         }
 
         var posting = nodeApi
-            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+            .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
             .getPosting(parameters.postingId, false);
         if (posting != null) {
             if (posting.getSignature() == null) {
                 log.info("Posting is not signed yet, let's wait");
                 retry();
             }
+            postingSignatureVerifier.verifySignature(
+                parameters.nodeName,
+                posting,
+                mediaManager.privateMediaDigestGetter(
+                    parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_MEDIA)
+                )
+            );
             postingIngest.ingest(parameters.nodeName, posting);
         }
 

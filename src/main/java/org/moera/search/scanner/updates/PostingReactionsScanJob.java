@@ -90,7 +90,7 @@ public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Paramet
     protected void execute() throws Exception {
         while (state.before > 0) {
             var reactionsSlice = nodeApi
-                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
                 .getPostingReactionsSlice(parameters.postingId, null, null, state.before, PAGE_SIZE);
             for (var reaction : reactionsSlice.getReactions()) {
                 state.before = reaction.getMoment();

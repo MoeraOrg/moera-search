@@ -11,9 +11,14 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
+import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.ingest.PostingIngest;
 import org.moera.search.scanner.UpdateQueue;
+import org.moera.search.scanner.signature.PostingSignatureVerifier;
+import org.moera.search.scanner.signature.SignatureVerificationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
 
 public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineScanJob.State> {
@@ -56,6 +61,8 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
 
     }
 
+    private static final Logger log = LoggerFactory.getLogger(TimelineScanJob.class);
+
     private static final int PAGE_SIZE = 50;
 
     @Inject
@@ -72,6 +79,12 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
 
     @Inject
     private PostingIngest postingIngest;
+
+    @Inject
+    private PostingSignatureVerifier postingSignatureVerifier;
+
+    @Inject
+    private MediaManager mediaManager;
 
     @Inject
     private UpdateQueue updateQueue;
@@ -95,7 +108,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
     protected void execute() throws Exception {
         while (state.before > 0) {
             var feedSlice = nodeApi
-                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_ALL))
+                .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
                 .getFeedSlice("timeline", null, state.before, PAGE_SIZE);
             for (var story : feedSlice.getStories()) {
                 state.before = story.getMoment();
@@ -108,10 +121,25 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                             postingRepository.exists(parameters.nodeName, posting.getId())
                         );
                         if (!isAdded) {
-                            postingIngest.ingest(parameters.nodeName, posting);
-                            database.writeNoResult(() ->
-                                postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
-                            );
+                            if (posting.getSignature() == null) {
+                                log.info("Posting is not signed yet, let's wait");
+                                retry();
+                            }
+                            try {
+                                postingSignatureVerifier.verifySignature(
+                                    parameters.nodeName,
+                                    posting,
+                                    mediaManager.privateMediaDigestGetter(
+                                        parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_MEDIA)
+                                    )
+                                );
+                                postingIngest.ingest(parameters.nodeName, posting);
+                                database.writeNoResult(() ->
+                                    postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
+                                );
+                            } catch (SignatureVerificationException e) {
+                                log.error("Incorrect signature of posting {}", posting.getId());
+                            }
                         }
                     } else {
                         nodeIngest.newNode(posting.getReceiverName());
