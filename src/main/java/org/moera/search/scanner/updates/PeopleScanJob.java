@@ -148,9 +148,11 @@ public class PeopleScanJob extends Job<PeopleScanJob.Parameters, PeopleScanJob.S
                     .searchBlockedUsers(filter);
                 for (var blockedUser : blockedUsers) {
                     nodeIngest.newNode(blockedUser.getNodeName());
-                    nodeIngest.blocks(
-                        parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
-                    );
+                    if (blockedUser.getDeadline() == null) {
+                        nodeIngest.blocks(
+                            parameters.nodeName, blockedUser.getNodeName(), blockedUser.getBlockedOperation()
+                        );
+                    }
                 }
             } catch (MoeraNodeApiAuthenticationException e) {
                 log.info("Blocked users' list is not public for {}, skipping", parameters.nodeName);
