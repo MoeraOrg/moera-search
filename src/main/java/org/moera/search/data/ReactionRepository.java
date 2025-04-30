@@ -19,6 +19,9 @@ public class ReactionRepository {
         var args = new HashMap<String, Object>();
         args.put("nodeName", nodeName);
         args.put("postingId", reaction.getPostingId());
+        if (reaction.getCommentId() != null) {
+            args.put("commentId", reaction.getCommentId());
+        }
         args.put("ownerName", reaction.getOwnerName());
         args.put("ownerFullName", reaction.getOwnerFullName());
         args.put("negative", reaction.getNegative() != null ? reaction.getNegative() : false);
@@ -26,19 +29,35 @@ public class ReactionRepository {
         args.put("createdAt", reaction.getCreatedAt());
         args.put("viewPrincipal", ReactionOperations.getView(reaction.getOperations(), Principal.PUBLIC).getValue());
 
-        database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
-                  (o:MoeraNode {name: $ownerName})
-            MERGE (p)<-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(o)
-            SET r.ownerFullName = $ownerFullName,
-                r.negative = $negative,
-                r.emoji = $emoji,
-                r.createdAt = $createdAt,
-                r.viewPrincipal = $viewPrincipal
-            """,
-            args
-        );
+        if (reaction.getCommentId() == null) {
+            database.tx().run(
+                """
+                MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
+                      (o:MoeraNode {name: $ownerName})
+                MERGE (p)<-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(o)
+                SET r.ownerFullName = $ownerFullName,
+                    r.negative = $negative,
+                    r.emoji = $emoji,
+                    r.createdAt = $createdAt,
+                    r.viewPrincipal = $viewPrincipal
+                """,
+                args
+            );
+        } else {
+            database.tx().run(
+                """
+                MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                      <-[:UNDER]-(c:Comment {id: $commentId}), (o:MoeraNode {name: $ownerName})
+                MERGE (c)<-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(o)
+                SET r.ownerFullName = $ownerFullName,
+                    r.negative = $negative,
+                    r.emoji = $emoji,
+                    r.createdAt = $createdAt,
+                    r.viewPrincipal = $viewPrincipal
+                """,
+                args
+            );
+        }
     }
 
     public void deleteReaction(String nodeName, String postingId, String ownerName) {
@@ -56,6 +75,23 @@ public class ReactionRepository {
         );
     }
 
+    public void deleteReaction(String nodeName, String postingId, String commentId, String ownerName) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})
+                  <-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(:MoeraNode {name: $ownerName})
+            DETACH DELETE r
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
+                "ownerName", ownerName
+            )
+        );
+    }
+
     public void deleteAllReactions(String nodeName, String postingId) {
         database.tx().run(
             """
@@ -65,6 +101,35 @@ public class ReactionRepository {
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
+            )
+        );
+    }
+
+    public void deleteAllReactionsInComments(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment)<-[:REACTS_TO]-(r:Reaction)
+            DETACH DELETE r
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
+    public void deleteAllReactions(String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})<-[:REACTS_TO]-(r:Reaction)
+            DETACH DELETE r
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
             )
         );
     }
@@ -87,6 +152,28 @@ public class ReactionRepository {
         );
     }
 
+    public void addAvatar(
+        String nodeName, String postingId, String commentId, String ownerName, String mediaFileId, String shape
+    ) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})
+                  <-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(o:MoeraNode {name: $ownerName}),
+                  (mf:MediaFile {id: $mediaFileId})
+            CREATE (r)-[:AVATAR {shape: $shape}]->(mf)
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
+                "ownerName", ownerName,
+                "mediaFileId", mediaFileId,
+                "shape", shape
+            )
+        );
+    }
+
     public void removeAvatar(String nodeName, String postingId, String ownerName) {
         database.tx().run(
             """
@@ -98,6 +185,24 @@ public class ReactionRepository {
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId,
+                "ownerName", ownerName
+            )
+        );
+    }
+
+    public void removeAvatar(String nodeName, String postingId, String commentId, String ownerName) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})
+                  <-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(:MoeraNode {name: $ownerName}),
+                  (r)-[a:AVATAR]->()
+            DELETE a
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
                 "ownerName", ownerName
             )
         );

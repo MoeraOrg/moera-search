@@ -15,6 +15,9 @@ import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.updates.BlockingUpdate;
 import org.moera.search.scanner.updates.CommentAddUpdate;
 import org.moera.search.scanner.updates.CommentDeleteUpdate;
+import org.moera.search.scanner.updates.CommentReactionAddUpdate;
+import org.moera.search.scanner.updates.CommentReactionDeleteUpdate;
+import org.moera.search.scanner.updates.CommentReactionsDeleteAllUpdate;
 import org.moera.search.scanner.updates.CommentUpdateUpdate;
 import org.moera.search.scanner.updates.FriendshipUpdate;
 import org.moera.search.scanner.updates.PostingAddUpdate;
@@ -265,6 +268,20 @@ public class SearchProcessor {
                             notification.getSenderNodeName(), details.getPostingId(), details.getOwnerName()
                         )
                     );
+                } else {
+                    log.info(
+                        "Node {} received a reaction from node {} to comment {} to posting {}",
+                        LogUtil.format(notification.getSenderNodeName()),
+                        LogUtil.format(details.getOwnerName()),
+                        LogUtil.format(details.getCommentId()),
+                        LogUtil.format(details.getPostingId())
+                    );
+                    updateQueue.offer(
+                        new CommentReactionAddUpdate(
+                            notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
+                            details.getOwnerName()
+                        )
+                    );
                 }
                 break;
             }
@@ -282,6 +299,20 @@ public class SearchProcessor {
                             notification.getSenderNodeName(), details.getPostingId(), details.getOwnerName()
                         )
                     );
+                } else {
+                    log.info(
+                        "Node {} deleted a reaction from node {} to comment {} to posting {}",
+                        LogUtil.format(notification.getSenderNodeName()),
+                        LogUtil.format(details.getOwnerName()),
+                        LogUtil.format(details.getCommentId()),
+                        LogUtil.format(details.getPostingId())
+                    );
+                    updateQueue.offer(
+                        new CommentReactionDeleteUpdate(
+                            notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
+                            details.getOwnerName()
+                        )
+                    );
                 }
                 break;
             }
@@ -295,6 +326,18 @@ public class SearchProcessor {
                     );
                     updateQueue.offer(
                         new PostingReactionsDeleteAllUpdate(notification.getSenderNodeName(), details.getPostingId())
+                    );
+                } else {
+                    log.info(
+                        "Node {} deleted all reactions to comment {} to posting {}",
+                        LogUtil.format(notification.getSenderNodeName()),
+                        LogUtil.format(details.getCommentId()),
+                        LogUtil.format(details.getPostingId())
+                    );
+                    updateQueue.offer(
+                        new CommentReactionsDeleteAllUpdate(
+                            notification.getSenderNodeName(), details.getPostingId(), details.getCommentId()
+                        )
                     );
                 }
                 break;

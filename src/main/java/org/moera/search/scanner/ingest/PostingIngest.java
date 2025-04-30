@@ -36,6 +36,9 @@ public class PostingIngest {
     private CommentIngest commentIngest;
 
     @Inject
+    private ReactionIngest reactionIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -134,6 +137,7 @@ public class PostingIngest {
 
     public void delete(String nodeName, String postingId) {
         commentIngest.deleteAll(nodeName, postingId);
+        reactionIngest.deleteAll(nodeName, postingId);
         // delete the document first, so in the case of failure we will not lose documentId
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null) {

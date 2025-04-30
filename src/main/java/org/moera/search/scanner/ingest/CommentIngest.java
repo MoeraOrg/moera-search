@@ -12,8 +12,10 @@ import org.moera.search.index.LanguageAnalyzer;
 import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.CommentAddUpdate;
+import org.moera.search.scanner.updates.CommentReactionsScanUpdate;
 import org.moera.search.scanner.updates.CommentRepliedToUpdate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 
 @Component
 public class CommentIngest {
@@ -26,6 +28,9 @@ public class CommentIngest {
 
     @Inject
     private NodeIngest nodeIngest;
+
+    @Inject
+    private ReactionIngest reactionIngest;
 
     @Inject
     private MediaManager mediaManager;
@@ -51,6 +56,12 @@ public class CommentIngest {
                 !commentRepository.exists(nodeName, comment.getPostingId(), comment.getRepliedTo().getId())
             )
             : false;
+        boolean hasReactions =
+            comment.getReactions() != null
+            && (
+                !ObjectUtils.isEmpty(comment.getReactions().getPositive())
+                || !ObjectUtils.isEmpty(comment.getReactions().getNegative())
+            );
         database.writeNoResult(() -> {
             commentRepository.assignCommentOwner(
                 nodeName, comment.getPostingId(), comment.getId(), comment.getOwnerName()
@@ -59,6 +70,9 @@ public class CommentIngest {
                 commentRepository.assignCommentRepliedTo(
                     nodeName, comment.getPostingId(), comment.getId(), comment.getRepliedTo().getId()
                 );
+            }
+            if (!hasReactions) {
+                commentRepository.scanReactionsSucceeded(nodeName, comment.getPostingId(), comment.getId());
             }
         });
 
@@ -71,6 +85,9 @@ public class CommentIngest {
                     nodeName, comment.getPostingId(), comment.getId(), comment.getRepliedTo().getId()
                 )
             );
+        }
+        if (hasReactions) {
+            updateQueue.offer(new CommentReactionsScanUpdate(nodeName, comment.getPostingId(), comment.getId()));
         }
     }
 
@@ -123,6 +140,7 @@ public class CommentIngest {
     }
 
     public void delete(String nodeName, String postingId, String commentId) {
+        reactionIngest.deleteAll(nodeName, postingId, commentId);
         // delete the document first, so in the case of failure we will not lose documentId
         String documentId = database.read(() -> commentRepository.getDocumentId(nodeName, postingId, commentId));
         if (documentId != null) {
@@ -132,6 +150,7 @@ public class CommentIngest {
     }
 
     public void deleteAll(String nodeName, String postingId) {
+        reactionIngest.deleteAllInComments(nodeName, postingId);
         var documentIds = database.read(() -> commentRepository.getAllDocumentIds(nodeName, postingId));
         if (!documentIds.isEmpty()) {
             index.deleteBulk(documentIds);

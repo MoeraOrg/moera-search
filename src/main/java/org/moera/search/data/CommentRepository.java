@@ -270,4 +270,51 @@ public class CommentRepository {
         );
     }
 
+    public boolean isReactionsScanned(String nodeName, String postingId, String commentId) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                           <-[:UNDER]-(c:Comment {id: $commentId})
+            RETURN c.scanReactions IS NOT NULL AS scanned
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
+            )
+        ).single().get("scanned").asBoolean();
+    }
+
+    public void scanReactionsSucceeded(String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            SET c.scanReactions = true, c.reactionsScannedAt = $now
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void scanReactionsFailed(String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            SET c.scanReactions = false, c.reactionsScannedAt = $now
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
 }
