@@ -4,7 +4,9 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.Scope;
+import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.PostingRepository;
@@ -129,6 +131,15 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
                         );
                     } catch (SignatureVerificationException e) {
                         log.error("Incorrect signature of comment {}", comment.getId());
+                    } catch (MoeraNodeException | MoeraNodeUncheckedException e) {
+                        if (
+                            e instanceof MoeraNodeException ex && isRecoverableError(ex)
+                            || e instanceof MoeraNodeUncheckedException ue && isRecoverableError(ue)
+                        ) {
+                            throw e;
+                        }
+                        log.error("Cannot verify signature of comment {}: {}", comment.getId(), e.getMessage());
+                        log.debug("Cannot verify signature", e);
                     }
                 }
             }

@@ -4,11 +4,17 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.Scope;
+import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.ingest.ReactionIngest;
+import org.moera.search.scanner.signature.ReactionSignatureVerifier;
+import org.moera.search.scanner.signature.SignatureVerificationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Parameters, PostingReactionsScanJob.State> {
 
@@ -60,6 +66,8 @@ public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Paramet
 
     }
 
+    private static final Logger log = LoggerFactory.getLogger(PostingReactionsScanJob.class);
+
     private static final int PAGE_SIZE = 50;
 
     @Inject
@@ -70,6 +78,9 @@ public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Paramet
 
     @Inject
     private ReactionIngest reactionIngest;
+
+    @Inject
+    private ReactionSignatureVerifier reactionSignatureVerifier;
 
     public PostingReactionsScanJob() {
         state = new State();
@@ -96,7 +107,29 @@ public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Paramet
                 state.before = reaction.getMoment();
                 checkpoint();
 
-                reactionIngest.ingest(parameters.nodeName, reaction);
+                if (reaction.getSignature() == null) {
+                    log.info("Reaction is not signed, skipping");
+                    continue;
+                }
+                try {
+                    reactionSignatureVerifier.verifySignature(
+                        parameters.nodeName,
+                        reaction,
+                        generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
+                    );
+                    reactionIngest.ingest(parameters.nodeName, reaction);
+                } catch (SignatureVerificationException e) {
+                    log.error("Incorrect signature of reaction by {}", reaction.getOwnerName());
+                } catch (MoeraNodeException | MoeraNodeUncheckedException e) {
+                    if (
+                        e instanceof MoeraNodeException ex && isRecoverableError(ex)
+                        || e instanceof MoeraNodeUncheckedException ue && isRecoverableError(ue)
+                    ) {
+                        throw e;
+                    }
+                    log.error("Cannot verify signature of reaction by {}: {}", reaction.getOwnerName(), e.getMessage());
+                    log.debug("Cannot verify signature", e);
+                }
             }
             state.before = reactionsSlice.getAfter();
             checkpoint();

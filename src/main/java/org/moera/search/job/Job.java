@@ -16,6 +16,7 @@ import org.moera.lib.node.exception.MoeraNodeApiOperationException;
 import org.moera.lib.node.exception.MoeraNodeApiValidationException;
 import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.Scope;
+import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.MoeraNodeUnknownNameException;
 import org.moera.search.config.Config;
 import org.moera.search.config.NotConfiguredException;
@@ -184,6 +185,8 @@ public abstract class Job<P, S> implements Runnable {
             recover(e);
         } else if (e instanceof MoeraNodeException ex && isRecoverableError(ex)) {
             recover(e);
+        } else if (e instanceof MoeraNodeUncheckedException ex && isRecoverableError(ex)) {
+            recover(e);
         } else if (e instanceof TransientIndexException) {
             recover(e);
         } else {
@@ -218,6 +221,10 @@ public abstract class Job<P, S> implements Runnable {
             return !ex.getErrorCode().equals("ask.too-many");
         }
         return true;
+    }
+
+    protected boolean isRecoverableError(MoeraNodeUncheckedException e) {
+        return isRecoverableError(e.getException());
     }
 
     @Override

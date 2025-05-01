@@ -9,6 +9,7 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.ingest.ReactionIngest;
+import org.moera.search.scanner.signature.ReactionSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +77,9 @@ public class CommentReactionAddJob extends Job<CommentReactionAddJob.Parameters,
     @Inject
     private ReactionIngest reactionIngest;
 
+    @Inject
+    private ReactionSignatureVerifier reactionSignatureVerifier;
+
     public CommentReactionAddJob() {
         retryCount(3, "PT10M");
     }
@@ -108,6 +112,11 @@ public class CommentReactionAddJob extends Job<CommentReactionAddJob.Parameters,
                 log.info("Reaction is not signed yet, let's wait");
                 retry();
             }
+            reactionSignatureVerifier.verifySignature(
+                parameters.nodeName,
+                reaction,
+                generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
+            );
             reactionIngest.ingest(parameters.nodeName, reaction);
         }
     }
