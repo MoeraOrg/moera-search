@@ -10,6 +10,10 @@ import org.moera.search.data.CommentRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.ingest.CommentIngest;
+import org.moera.search.scanner.signature.CommentSignatureVerifier;
+import org.moera.search.scanner.signature.SignatureVerificationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsScanJob.State> {
 
@@ -61,6 +65,8 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
 
     }
 
+    private static final Logger log = LoggerFactory.getLogger(CommentsScanJob.class);
+
     private static final int PAGE_SIZE = 50;
 
     @Inject
@@ -74,6 +80,9 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
 
     @Inject
     private CommentIngest commentIngest;
+
+    @Inject
+    private CommentSignatureVerifier commentSignatureVerifier;
 
     public CommentsScanJob() {
         state = new State();
@@ -104,10 +113,23 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
                     commentRepository.exists(parameters.nodeName, comment.getPostingId(), comment.getId())
                 );
                 if (!isAdded) {
-                    commentIngest.ingest(parameters.nodeName, comment);
-                    database.writeNoResult(() ->
-                        commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())
-                    );
+                    if (comment.getSignature() == null) {
+                        log.info("Comment is not signed, skipping");
+                        continue;
+                    }
+                    try {
+                        commentSignatureVerifier.verifySignature(
+                            parameters.nodeName,
+                            comment,
+                            generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
+                        );
+                        commentIngest.ingest(parameters.nodeName, comment);
+                        database.writeNoResult(() ->
+                            commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())
+                        );
+                    } catch (SignatureVerificationException e) {
+                        log.error("Incorrect signature of comment {}", comment.getId());
+                    }
                 }
             }
             state.before = commentsSlice.getAfter();

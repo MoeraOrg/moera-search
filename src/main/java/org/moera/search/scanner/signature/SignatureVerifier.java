@@ -1,5 +1,6 @@
 package org.moera.search.scanner.signature;
 
+import java.util.function.Function;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
@@ -7,6 +8,7 @@ import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.lib.naming.types.RegisteredNameInfo;
 import org.moera.search.config.Config;
+import org.moera.search.media.MediaManager;
 
 class SignatureVerifier {
 
@@ -14,6 +16,9 @@ class SignatureVerifier {
 
     @Inject
     private Config config;
+
+    @Inject
+    private MediaManager mediaManager;
 
     @PostConstruct
     public void init() {
@@ -27,6 +32,10 @@ class SignatureVerifier {
             throw new SignatureVerificationException("Cannot get signing key for " + remoteNodeName);
         }
         return nameInfo.getSigningKey();
+    }
+
+    protected Function<String, byte[]> mediaDigest(String remoteNodeName, String carte) {
+        return mediaManager.privateMediaDigestGetter(remoteNodeName, carte);
     }
 
 }

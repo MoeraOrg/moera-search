@@ -10,6 +10,7 @@ import org.moera.search.data.CommentRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.ingest.CommentIngest;
+import org.moera.search.scanner.signature.CommentSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +71,9 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
     @Inject
     private CommentIngest commentIngest;
 
+    @Inject
+    private CommentSignatureVerifier commentSignatureVerifier;
+
     public CommentUpdateJob() {
         retryCount(5, "PT10M");
     }
@@ -102,6 +106,11 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
                 log.info("Comment is not signed yet, let's wait");
                 retry();
             }
+            commentSignatureVerifier.verifySignature(
+                parameters.nodeName,
+                comment,
+                generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
+            );
             var exists = database.read(() ->
                 commentRepository.exists(parameters.nodeName, parameters.postingId, parameters.commentId)
             );

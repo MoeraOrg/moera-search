@@ -9,7 +9,6 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
-import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.ingest.PostingIngest;
 import org.moera.search.scanner.signature.PostingSignatureVerifier;
 import org.slf4j.Logger;
@@ -65,9 +64,6 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
     @Inject
     private PostingSignatureVerifier postingSignatureVerifier;
 
-    @Inject
-    private MediaManager mediaManager;
-
     public PostingAddJob() {
         retryCount(5, "PT10M");
     }
@@ -106,9 +102,7 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
             postingSignatureVerifier.verifySignature(
                 parameters.nodeName,
                 posting,
-                mediaManager.privateMediaDigestGetter(
-                    parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_MEDIA)
-                )
+                generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
             );
             postingIngest.ingest(parameters.nodeName, posting);
         }

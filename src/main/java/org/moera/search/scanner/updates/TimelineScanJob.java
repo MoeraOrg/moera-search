@@ -11,10 +11,9 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.job.Job;
-import org.moera.search.media.MediaManager;
+import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.ingest.PostingIngest;
-import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.signature.PostingSignatureVerifier;
 import org.moera.search.scanner.signature.SignatureVerificationException;
 import org.slf4j.Logger;
@@ -84,9 +83,6 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
     private PostingSignatureVerifier postingSignatureVerifier;
 
     @Inject
-    private MediaManager mediaManager;
-
-    @Inject
     private UpdateQueue updateQueue;
 
     public TimelineScanJob() {
@@ -122,16 +118,14 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                         );
                         if (!isAdded) {
                             if (posting.getSignature() == null) {
-                                log.info("Posting is not signed yet, let's wait");
-                                retry();
+                                log.info("Posting is not signed, skipping");
+                                continue;
                             }
                             try {
                                 postingSignatureVerifier.verifySignature(
                                     parameters.nodeName,
                                     posting,
-                                    mediaManager.privateMediaDigestGetter(
-                                        parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_MEDIA)
-                                    )
+                                    generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
                                 );
                                 postingIngest.ingest(parameters.nodeName, posting);
                                 database.writeNoResult(() ->
