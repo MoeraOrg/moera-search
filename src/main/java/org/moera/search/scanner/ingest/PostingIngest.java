@@ -39,6 +39,9 @@ public class PostingIngest {
     private ReactionIngest reactionIngest;
 
     @Inject
+    private FavorIngest favorIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -138,15 +141,13 @@ public class PostingIngest {
     public void delete(String nodeName, String postingId) {
         commentIngest.deleteAll(nodeName, postingId);
         reactionIngest.deleteAll(nodeName, postingId);
+        deleteAllPublications(nodeName, postingId);
         // delete the document first, so in the case of failure we will not lose documentId
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null) {
             index.delete(documentId);
         }
-        database.writeNoResult(() -> {
-            publicationRepository.deleteAllPublications(nodeName, postingId);
-            postingRepository.deletePosting(nodeName, postingId);
-        });
+        database.writeNoResult(() -> postingRepository.deletePosting(nodeName, postingId));
     }
 
     public void addPublication(
@@ -156,13 +157,22 @@ public class PostingIngest {
             publicationRepository.addPublication(nodeName, postingId, publisherName, feedName, storyId, publishedAt)
         );
         updatePublicationsInIndex(nodeName, postingId);
+        favorIngest.publication(nodeName, postingId, publisherName, storyId, publishedAt);
     }
 
     public void deletePublications(String nodeName, String postingId, String publisherName) {
+        favorIngest.deletePublication(nodeName, postingId, publisherName);
         database.writeNoResult(() ->
             publicationRepository.deletePublications(nodeName, postingId, publisherName)
         );
         updatePublicationsInIndex(nodeName, postingId);
+    }
+
+    public void deleteAllPublications(String nodeName, String postingId) {
+        favorIngest.deleteAllPublications(nodeName, postingId);
+        database.writeNoResult(() -> {
+            publicationRepository.deleteAllPublications(nodeName, postingId);
+        });
     }
 
     private void updatePublicationsInIndex(String nodeName, String postingId) {

@@ -33,6 +33,9 @@ public class CommentIngest {
     private ReactionIngest reactionIngest;
 
     @Inject
+    private FavorIngest favorIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -77,6 +80,8 @@ public class CommentIngest {
         });
 
         update(nodeName, comment);
+
+        favorIngest.comment(nodeName, comment);
 
         if (waitRepliedTo) {
             updateQueue.offer(new CommentAddUpdate(nodeName, comment.getPostingId(), comment.getRepliedTo().getId()));
@@ -141,6 +146,7 @@ public class CommentIngest {
 
     public void delete(String nodeName, String postingId, String commentId) {
         reactionIngest.deleteAll(nodeName, postingId, commentId);
+        favorIngest.deleteComment(nodeName, postingId, commentId);
         // delete the document first, so in the case of failure we will not lose documentId
         String documentId = database.read(() -> commentRepository.getDocumentId(nodeName, postingId, commentId));
         if (documentId != null) {
@@ -151,6 +157,7 @@ public class CommentIngest {
 
     public void deleteAll(String nodeName, String postingId) {
         reactionIngest.deleteAllInComments(nodeName, postingId);
+        favorIngest.deleteAllComments(nodeName, postingId);
         var documentIds = database.read(() -> commentRepository.getAllDocumentIds(nodeName, postingId));
         if (!documentIds.isEmpty()) {
             index.deleteBulk(documentIds);

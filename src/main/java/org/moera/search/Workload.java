@@ -24,4 +24,6 @@ public class Workload {
 
     public static final int UPDATE_QUEUE_JOB_START_PERIOD = 15000; // ms
 
+    public static final String FAVORS_PURGE_PERIOD = "PT1H";
+
 }

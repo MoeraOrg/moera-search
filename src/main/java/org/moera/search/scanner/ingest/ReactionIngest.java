@@ -21,6 +21,9 @@ public class ReactionIngest {
     private NodeIngest nodeIngest;
 
     @Inject
+    private FavorIngest favorIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     public void ingest(String nodeName, ReactionInfo reaction) {
@@ -48,25 +51,31 @@ public class ReactionIngest {
             };
         }
         mediaManager.downloadAndSaveAvatar(nodeName, reaction.getOwnerAvatar(), avatarSaver);
+        favorIngest.reaction(nodeName, reaction);
     }
 
     public void delete(String nodeName, String postingId, String ownerName) {
+        favorIngest.deleteReaction(nodeName, postingId, ownerName);
         database.writeNoResult(() -> reactionRepository.deleteReaction(nodeName, postingId, ownerName));
     }
 
     public void delete(String nodeName, String postingId, String commentId, String ownerName) {
+        favorIngest.deleteReaction(nodeName, postingId, commentId, ownerName);
         database.writeNoResult(() -> reactionRepository.deleteReaction(nodeName, postingId, commentId, ownerName));
     }
 
     public void deleteAll(String nodeName, String postingId) {
+        favorIngest.deleteAllReactions(nodeName, postingId);
         database.writeNoResult(() -> reactionRepository.deleteAllReactions(nodeName, postingId));
     }
 
     public void deleteAllInComments(String nodeName, String postingId) {
+        favorIngest.deleteAllReactionsInComments(nodeName, postingId);
         database.writeNoResult(() -> reactionRepository.deleteAllReactionsInComments(nodeName, postingId));
     }
 
     public void deleteAll(String nodeName, String postingId, String commentId) {
+        favorIngest.deleteAllReactions(nodeName, postingId, commentId);
         database.writeNoResult(() -> reactionRepository.deleteAllReactions(nodeName, postingId, commentId));
     }
 
