@@ -1,5 +1,6 @@
 package org.moera.search.scanner.updates;
 
+import java.util.Objects;
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -53,6 +54,7 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
     public static class State {
 
         private long before = Long.MAX_VALUE;
+        private String validatedId;
 
         public State() {
         }
@@ -63,6 +65,14 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
 
         public void setBefore(long before) {
             this.before = before;
+        }
+
+        public String getValidatedId() {
+            return validatedId;
+        }
+
+        public void setValidatedId(String validatedId) {
+            this.validatedId = validatedId;
         }
 
     }
@@ -109,38 +119,46 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
                 .getCommentsSlice(parameters.postingId, null, state.before, PAGE_SIZE);
             for (var comment : commentsSlice.getComments()) {
                 state.before = comment.getMoment();
+                state.validatedId = null;
                 checkpoint();
 
-                boolean isAdded = database.read(() ->
-                    commentRepository.exists(parameters.nodeName, comment.getPostingId(), comment.getId())
-                );
-                if (!isAdded) {
-                    if (comment.getSignature() == null) {
-                        log.info("Comment is not signed, skipping");
+                // On the next retry the comment may exist (partially), so need to skip the check
+                if (!Objects.equals(state.validatedId, comment.getId())) {
+                    boolean isAdded = database.read(() ->
+                        commentRepository.exists(parameters.nodeName, comment.getPostingId(), comment.getId())
+                    );
+                    if (isAdded) {
                         continue;
                     }
-                    try {
-                        commentSignatureVerifier.verifySignature(
-                            parameters.nodeName,
-                            comment,
-                            generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
-                        );
-                        commentIngest.ingest(parameters.nodeName, comment);
-                        database.writeNoResult(() ->
-                            commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())
-                        );
-                    } catch (SignatureVerificationException e) {
-                        log.error("Incorrect signature of comment {}", comment.getId());
-                    } catch (MoeraNodeException | MoeraNodeUncheckedException e) {
-                        if (
-                            e instanceof MoeraNodeException ex && isRecoverableError(ex)
-                            || e instanceof MoeraNodeUncheckedException ue && isRecoverableError(ue)
-                        ) {
-                            throw e;
-                        }
-                        log.error("Cannot verify signature of comment {}: {}", comment.getId(), e.getMessage());
-                        log.debug("Cannot verify signature", e);
+                    state.validatedId = comment.getId();
+                    checkpoint();
+                }
+
+                if (comment.getSignature() == null) {
+                    log.info("Comment is not signed, skipping");
+                    continue;
+                }
+                try {
+                    commentSignatureVerifier.verifySignature(
+                        parameters.nodeName,
+                        comment,
+                        generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
+                    );
+                    commentIngest.ingest(parameters.nodeName, comment);
+                    database.writeNoResult(() ->
+                        commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())
+                    );
+                } catch (SignatureVerificationException e) {
+                    log.error("Incorrect signature of comment {}", comment.getId());
+                } catch (MoeraNodeException | MoeraNodeUncheckedException e) {
+                    if (
+                        e instanceof MoeraNodeException ex && isRecoverableError(ex)
+                        || e instanceof MoeraNodeUncheckedException ue && isRecoverableError(ue)
+                    ) {
+                        throw e;
                     }
+                    log.error("Cannot verify signature of comment {}: {}", comment.getId(), e.getMessage());
+                    log.debug("Cannot verify signature", e);
                 }
             }
             state.before = commentsSlice.getAfter();

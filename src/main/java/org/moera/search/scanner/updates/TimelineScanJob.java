@@ -1,5 +1,6 @@
 package org.moera.search.scanner.updates;
 
+import java.util.Objects;
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,6 +47,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
     public static class State {
 
         private long before = Long.MAX_VALUE;
+        private String validatedId;
 
         public State() {
         }
@@ -56,6 +58,14 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
 
         public void setBefore(long before) {
             this.before = before;
+        }
+
+        public String getValidatedId() {
+            return validatedId;
+        }
+
+        public void setValidatedId(String validatedId) {
+            this.validatedId = validatedId;
         }
 
     }
@@ -108,46 +118,55 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                 .getFeedSlice("timeline", null, state.before, PAGE_SIZE);
             for (var story : feedSlice.getStories()) {
                 state.before = story.getMoment();
+                state.validatedId = null;
                 checkpoint();
 
-                if (story.getStoryType() == StoryType.POSTING_ADDED) {
-                    PostingInfo posting = story.getPosting();
-                    if (ObjectUtils.isEmpty(posting.getReceiverName())) {
+                if (story.getStoryType() != StoryType.POSTING_ADDED) {
+                    continue;
+                }
+
+                PostingInfo posting = story.getPosting();
+                if (ObjectUtils.isEmpty(posting.getReceiverName())) {
+                    // On the next retry the posting may exist (partially), so need to skip the check
+                    if (!Objects.equals(state.validatedId, posting.getId())) {
                         boolean isAdded = database.read(() ->
                             postingRepository.exists(parameters.nodeName, posting.getId())
                         );
-                        if (!isAdded) {
-                            if (posting.getSignature() == null) {
-                                log.info("Posting is not signed, skipping");
-                                continue;
-                            }
-                            try {
-                                postingSignatureVerifier.verifySignature(
-                                    parameters.nodeName,
-                                    posting,
-                                    generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
-                                );
-                                postingIngest.ingest(parameters.nodeName, posting);
-                                database.writeNoResult(() ->
-                                    postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
-                                );
-                            } catch (SignatureVerificationException e) {
-                                log.error("Incorrect signature of posting {}", posting.getId());
-                            }
+                        if (isAdded) {
+                            continue;
                         }
-                    } else {
-                        nodeIngest.newNode(posting.getReceiverName());
-                        updateQueue.offer(
-                            new PublicationAddUpdate(
-                                posting.getReceiverName(),
-                                posting.getReceiverPostingId(),
-                                parameters.nodeName,
-                                "timeline",
-                                story.getId(),
-                                story.getPublishedAt()
-                            )
-                        );
+                        state.validatedId = posting.getId();
+                        checkpoint();
                     }
+                    if (posting.getSignature() == null) {
+                        log.info("Posting is not signed, skipping");
+                        continue;
+                    }
+                    try {
+                        postingSignatureVerifier.verifySignature(
+                            parameters.nodeName,
+                            posting,
+                            generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
+                        );
+                        postingIngest.ingest(parameters.nodeName, posting);
+                        database.writeNoResult(() ->
+                            postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
+                        );
+                    } catch (SignatureVerificationException e) {
+                        log.error("Incorrect signature of posting {}", posting.getId());
+                    }
+                } else {
+                    nodeIngest.newNode(posting.getReceiverName());
+                    updateQueue.offer(
+                        new PublicationAddUpdate(
+                            posting.getReceiverName(),
+                            posting.getReceiverPostingId(),
+                            parameters.nodeName,
+                            "timeline",
+                            story.getId(),
+                            story.getPublishedAt()
+                        )
+                    );
                 }
             }
             state.before = feedSlice.getAfter();

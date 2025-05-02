@@ -14,7 +14,7 @@ import org.moera.search.scanner.signature.CommentSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CommentAddJob extends Job<CommentAddJob.Parameters, Object> {
+public class CommentAddJob extends Job<CommentAddJob.Parameters, CommentAddJob.State> {
 
     public static class Parameters {
 
@@ -57,6 +57,23 @@ public class CommentAddJob extends Job<CommentAddJob.Parameters, Object> {
 
     }
 
+    public static class State {
+
+        private boolean validated;
+
+        public State() {
+        }
+
+        public boolean isValidated() {
+            return validated;
+        }
+
+        public void setValidated(boolean validated) {
+            this.validated = validated;
+        }
+
+    }
+
     private static final Logger log = LoggerFactory.getLogger(CommentAddJob.class);
 
     @Inject
@@ -75,6 +92,7 @@ public class CommentAddJob extends Job<CommentAddJob.Parameters, Object> {
     private CommentSignatureVerifier commentSignatureVerifier;
 
     public CommentAddJob() {
+        state = new State();
         retryCount(5, "PT10M");
     }
 
@@ -84,25 +102,30 @@ public class CommentAddJob extends Job<CommentAddJob.Parameters, Object> {
     }
 
     @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
+    protected void setState(String state, ObjectMapper objectMapper) throws JsonProcessingException {
+        this.state = objectMapper.readValue(state, State.class);
     }
 
     @Override
     protected void execute() throws Exception {
-        var scannedComments = database.read(() ->
-            postingRepository.isCommentsScanned(parameters.nodeName, parameters.postingId)
-        );
-        if (!scannedComments) {
-            log.warn("Comments are not scanned yet, skipping");
-            return;
-        }
-        var exists = database.read(() ->
-            commentRepository.exists(parameters.nodeName, parameters.postingId, parameters.commentId)
-        );
-        if (exists) {
-            log.warn("Comment is added already, skipping");
-            return;
+        // On the next retry the comment may exist (partially), so need to skip the check
+        if (!state.validated) {
+            var scannedComments = database.read(() ->
+                postingRepository.isCommentsScanned(parameters.nodeName, parameters.postingId)
+            );
+            if (!scannedComments) {
+                log.warn("Comments are not scanned yet, skipping");
+                return;
+            }
+            var exists = database.read(() ->
+                commentRepository.exists(parameters.nodeName, parameters.postingId, parameters.commentId)
+            );
+            if (exists) {
+                log.warn("Comment is added already, skipping");
+                return;
+            }
+            state.validated = true;
+            checkpoint();
         }
 
         var comment = nodeApi

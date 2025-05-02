@@ -14,7 +14,7 @@ import org.moera.search.scanner.signature.PostingSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
+public class PostingAddJob extends Job<PostingAddJob.Parameters, PostingAddJob.State> {
 
     public static class Parameters {
 
@@ -47,6 +47,23 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
 
     }
 
+    public static class State {
+
+        private boolean validated;
+
+        public State() {
+        }
+
+        public boolean isValidated() {
+            return validated;
+        }
+
+        public void setValidated(boolean validated) {
+            this.validated = validated;
+        }
+
+    }
+
     private static final Logger log = LoggerFactory.getLogger(PostingAddJob.class);
 
     @Inject
@@ -65,6 +82,7 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
     private PostingSignatureVerifier postingSignatureVerifier;
 
     public PostingAddJob() {
+        state = new State();
         retryCount(5, "PT10M");
     }
 
@@ -74,21 +92,26 @@ public class PostingAddJob extends Job<PostingAddJob.Parameters, Object> {
     }
 
     @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
+    protected void setState(String state, ObjectMapper objectMapper) throws JsonProcessingException {
+        this.state = objectMapper.readValue(state, State.class);
     }
 
     @Override
     protected void execute() throws Exception {
-        var scannedTimeline = database.read(() -> nodeRepository.isScannedTimeline(parameters.nodeName));
-        if (!scannedTimeline) {
-            log.warn("Timeline is not scanned yet, skipping");
-            return;
-        }
-        var exists = database.read(() -> postingRepository.exists(parameters.nodeName, parameters.postingId));
-        if (exists) {
-            log.warn("Posting is added already, skipping");
-            return;
+        // On the next retry the posting may exist (partially), so need to skip the check
+        if (!state.validated) {
+            var scannedTimeline = database.read(() -> nodeRepository.isScannedTimeline(parameters.nodeName));
+            if (!scannedTimeline) {
+                log.warn("Timeline is not scanned yet, skipping");
+                return;
+            }
+            var exists = database.read(() -> postingRepository.exists(parameters.nodeName, parameters.postingId));
+            if (exists) {
+                log.warn("Posting is added already, skipping");
+                return;
+            }
+            state.validated = true;
+            checkpoint();
         }
 
         var posting = nodeApi
