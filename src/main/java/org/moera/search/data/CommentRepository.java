@@ -38,7 +38,7 @@ public class CommentRepository {
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            MERGE (p)<-[:UNDER]-(c:Comment {id: $commentId})
+            MERGE (p)<-[:UNDER]-(c:Comment:Entry {id: $commentId})
             """,
             Map.of(
                 "nodeName", nodeName,

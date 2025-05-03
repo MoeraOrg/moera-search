@@ -35,7 +35,7 @@ public class PostingRepository {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $nodeName})
-            MERGE (n)<-[:SOURCE]-(p:Posting {id: $postingId})
+            MERGE (n)<-[:SOURCE]-(p:Posting:Entry {id: $postingId})
             """,
             Map.of(
                 "nodeName", nodeName,

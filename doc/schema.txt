@@ -43,6 +43,10 @@ INDEX comment_id ON (id)
 INDEX comment_scan ON (scan, scannedAt)
 INDEX comment_scan_reactions ON (scanReactions, reactionsScannedAt)
 
+(:Entry)
+documentId:         string
+UNIQUE entry_document_id ON (documentId)
+
 (:Favor)
 value               float NOT NULL
 decayHours          int NOT NULL
