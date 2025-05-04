@@ -36,6 +36,9 @@ public class CommentIngest {
     private FavorIngest favorIngest;
 
     @Inject
+    private HashtagIngest hashtagIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -120,6 +123,7 @@ public class CommentIngest {
                 commentRepository.addAvatar(nodeName, comment.getPostingId(), comment.getId(), avatarId, shape);
             }
         );
+        hashtagIngest.ingest(nodeName, comment);
     }
 
     private void updateIndex(String nodeName, CommentInfo comment) {

@@ -30,6 +30,7 @@ id:                 string NOT NULL
 revisionId:         string NOT NULL
 ownerFullName:      string
 heading:            string NOT NULL
+repliedTo:          string                  (SearchRepliedTo)
 bodyPreview:        string NOT NULL         (Body)
 createdAt:          int NOT NULL            (sec timestamp)
 editedAt:           int                     (sec timestamp)
@@ -53,6 +54,11 @@ decayHours          int NOT NULL
 createdAt           int NOT NULL            (ms timestamp)
 deadline            int NOT NULL INDEX      (ms timestamp)
 INDEX favor_deadline ON (deadline)
+
+(:Hashtag)
+name:               string NOT NULL
+createdAt           int NOT NULL            (ms timestamp)
+UNIQUE hashtag_name ON (name)
 
 (:Job)
 id:                 string NOT NULL
@@ -163,6 +169,8 @@ distance:           float NOT NULL
 (:Favor)-[:DONE_BY]->(:MoeraNode)
 
 (:Favor)-[:DONE_TO]->(:MoeraNode|Posting)
+
+(:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 

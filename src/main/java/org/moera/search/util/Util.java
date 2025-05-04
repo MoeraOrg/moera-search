@@ -2,14 +2,20 @@ package org.moera.search.util;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import com.github.jknack.handlebars.Handlebars.SafeString;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.util.HtmlUtils;
 
 public class Util {
 
     private static final String LUCENE_SPECIAL_CHARS = "+-&|!(){}[]^\"~*?:\\/=";
+    private static final Pattern HASHTAGS = Pattern.compile("(?U)(?:^|[\\s(\\[{>])(#\\w+)\\b");
 
     public static Timestamp toTimestamp(Long epochSecond) {
         return epochSecond != null ? Timestamp.from(Instant.ofEpochSecond(epochSecond)) : null;
@@ -73,6 +79,18 @@ public class Util {
             return null;
         }
         return HtmlUtils.htmlUnescape(s.replaceAll("(?i)</?[a-z][^>]*>", " "));
+    }
+
+    public static List<String> extractHashtags(String text) {
+        if (ObjectUtils.isEmpty(text)) {
+            return Collections.emptyList();
+        }
+        var hashtags = new ArrayList<String>();
+        var m = HASHTAGS.matcher(text);
+        while (m.find()) {
+            hashtags.add(m.group(1));
+        }
+        return hashtags;
     }
 
     public static Integer toInteger(Long value) {

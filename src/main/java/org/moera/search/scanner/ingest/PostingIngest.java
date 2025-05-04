@@ -42,6 +42,9 @@ public class PostingIngest {
     private FavorIngest favorIngest;
 
     @Inject
+    private HashtagIngest hashtagIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -116,6 +119,7 @@ public class PostingIngest {
                 postingRepository.addAvatar(nodeName, posting.getId(), avatarId, shape);
             }
         );
+        hashtagIngest.ingest(nodeName, posting);
     }
 
     private void updateIndex(String nodeName, PostingInfo posting) {

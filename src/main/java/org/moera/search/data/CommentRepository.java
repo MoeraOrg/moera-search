@@ -6,17 +6,26 @@ import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CommentRepository {
 
+    private static final Logger log = LoggerFactory.getLogger(CommentRepository.class);
+
     @Inject
     private Database database;
+
+    @Inject
+    private ObjectMapper objectMapper;
 
     public boolean exists(String nodeName, String postingId, String commentId) {
         return database.tx().run(
@@ -90,6 +99,16 @@ public class CommentRepository {
         args.put("revisionId", info.getRevisionId());
         args.put("ownerFullName", info.getOwnerFullName());
         args.put("heading", info.getHeading());
+        if (info.getRepliedTo() != null) {
+            try {
+                String repliedTo = objectMapper.writeValueAsString(new SearchRepliedTo(info.getRepliedTo()));
+                args.put("repliedTo", repliedTo);
+            } catch (JsonProcessingException e) {
+                log.error("Cannot convert repliedTo to JSON", e);
+            }
+        } else {
+            args.put("repliedTo", null);
+        }
         Body bodyPreview = info.getBodyPreview() != null && !info.getBodyPreview().getEncoded().equals(Body.EMPTY)
             ? info.getBodyPreview()
             : info.getBody();
@@ -107,6 +126,7 @@ public class CommentRepository {
             SET c.revisionId = $revisionId,
                 c.ownerFullName = $ownerFullName,
                 c.heading = $heading,
+                c.repliedTo = $repliedTo,
                 c.bodyPreview = $bodyPreview,
                 c.createdAt = $createdAt,
                 c.editedAt = $editedAt,
