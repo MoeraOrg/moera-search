@@ -23,6 +23,7 @@ public class Workload {
     public static final String CLOSE_TO_CLEANUP_PERIOD = "P1D";
 
     public static final int UPDATE_QUEUE_JOB_START_PERIOD = 15000; // ms
+    public static final int UPDATE_QUEUE_MAX_STARTED_JOBS = 50; // ms
 
     public static final String FAVORS_PURGE_PERIOD = "PT1H";
 

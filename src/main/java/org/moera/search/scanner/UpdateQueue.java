@@ -94,6 +94,7 @@ public class UpdateQueue {
 
     private void processQueue() {
         var busy = new HashSet<String>();
+        int startedJobs = 0;
         int i = 0;
         while (true) {
             PendingUpdate<?> update;
@@ -113,6 +114,9 @@ public class UpdateQueue {
                 database.writeNoResult(() -> pendingUpdateRepository.deleteById(update.getId()));
                 synchronized (lock) {
                     queue.remove(i);
+                }
+                if (++startedJobs >= Workload.UPDATE_QUEUE_MAX_STARTED_JOBS) {
+                    return;
                 }
             } else if (update.getCreatedAt().plus(UPDATE_TIMEOUT).isBefore(Instant.now())) {
                 synchronized (lock) {
