@@ -51,7 +51,11 @@ public class UpdateQueue {
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
                 log.info("Loading the queue of updates");
-                queue = database.read(() -> pendingUpdateRepository.findAll());
+                synchronized (lock) {
+                    var stored = database.read(() -> pendingUpdateRepository.findAll());
+                    stored.addAll(queue);
+                    queue = stored;
+                }
             }
         }
 
