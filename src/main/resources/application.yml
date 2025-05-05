@@ -16,3 +16,4 @@ search:
   node-full-name: "Moera Search"
   node-title: "Moera search engine"
   naming-server: "https://naming.moera.org/moera-naming"
+  sheriff-default: google-play-sheriff_0

@@ -18,6 +18,7 @@ public class Config {
     private String namingServer;
     private PoolsConfig pools = new PoolsConfig();
     private MediaConfig media = new MediaConfig();
+    private String sheriffDefault;
 
     public boolean isDryRun() {
         return dryRun;
@@ -105,6 +106,14 @@ public class Config {
 
     public void setMedia(MediaConfig media) {
         this.media = media;
+    }
+
+    public String getSheriffDefault() {
+        return sheriffDefault;
+    }
+
+    public void setSheriffDefault(String sheriffDefault) {
+        this.sheriffDefault = sheriffDefault;
     }
 
 }

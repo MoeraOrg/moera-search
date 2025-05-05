@@ -46,4 +46,8 @@ public class JobKeys {
         return "entry:" + nodeName + ":p-" + postingId + ":c-" + commentId + ":*";
     }
 
+    public static String sheriff(String nodeName) {
+        return "sheriff:" + nodeName;
+    }
+
 }

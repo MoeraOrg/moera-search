@@ -565,4 +565,30 @@ public class NodeRepository {
         );
     }
 
+    public void scanSheriffSucceeded(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanSheriff = true, n.sheriffScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void scanSheriffFailed(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            SET n.scanSheriff = false, n.sheriffScannedAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
 }

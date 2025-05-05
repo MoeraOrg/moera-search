@@ -1,6 +1,7 @@
 package org.moera.search.data;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,6 +136,22 @@ public class CommentRepository {
                 c.scannedAt = $now
             """,
             args
+        );
+    }
+
+    public void setSheriffMarks(String nodeName, String postingId, String commentId, Collection<String> sheriffMarks) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            SET c.sheriffMarks = $sheriffMarks
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
+                "sheriffMarks", sheriffMarks
+            )
         );
     }
 

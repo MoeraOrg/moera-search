@@ -13,6 +13,7 @@ import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
 import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.updates.PeopleScanUpdate;
+import org.moera.search.scanner.updates.SheriffScanUpdate;
 import org.moera.search.scanner.updates.TimelineScanUpdate;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {
@@ -148,6 +149,9 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
 
         updateQueue.offer(new PeopleScanUpdate(parameters.nodeName));
         updateQueue.offer(new TimelineScanUpdate(parameters.nodeName));
+        if (parameters.nodeName.equals(config.getSheriffDefault())) {
+            updateQueue.offer(new SheriffScanUpdate(parameters.nodeName));
+        }
 
         database.writeNoResult(() -> nodeRepository.scanSucceeded(parameters.nodeName));
     }

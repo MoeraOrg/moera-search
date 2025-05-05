@@ -50,6 +50,7 @@ public class UpdateQueue {
     public void init() {
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
+                log.info("Loading the queue of updates");
                 queue = database.read(() -> pendingUpdateRepository.findAll());
             }
         }
