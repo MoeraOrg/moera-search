@@ -11,10 +11,13 @@ import org.moera.lib.node.types.notifications.SheriffOrderForFeedDeletedNotifica
 import org.moera.lib.node.types.notifications.SheriffOrderForPostingAddedNotification;
 import org.moera.lib.node.types.notifications.SheriffOrderForPostingDeletedNotification;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.data.Database;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.SheriffOrderUpdate;
+import org.moera.search.scanner.updates.SheriffScanUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +25,12 @@ import org.slf4j.LoggerFactory;
 public class SheriffProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(SearchProcessor.class);
+
+    @Inject
+    private Database database;
+
+    @Inject
+    private NodeRepository nodeRepository;
 
     @Inject
     private UpdateQueue updateQueue;
@@ -36,6 +45,7 @@ public class SheriffProcessor {
             "Sheriff {} ordered to hide the timeline of node {}",
             LogUtil.format(notification.getSenderNodeName()), LogUtil.format(notification.getRemoteNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             false,
             null,
@@ -56,6 +66,7 @@ public class SheriffProcessor {
             "Sheriff {} ordered to unhide the timeline of node {}",
             LogUtil.format(notification.getSenderNodeName()), LogUtil.format(notification.getRemoteNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             true,
             null,
@@ -74,6 +85,7 @@ public class SheriffProcessor {
             LogUtil.format(notification.getPostingId()),
             LogUtil.format(notification.getRemoteNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             false,
             null,
@@ -92,6 +104,7 @@ public class SheriffProcessor {
             LogUtil.format(notification.getPostingId()),
             LogUtil.format(notification.getRemoteNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             true,
             null,
@@ -111,6 +124,7 @@ public class SheriffProcessor {
             LogUtil.format(notification.getPostingId()),
             LogUtil.format(notification.getRemoteNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             false,
             null,
@@ -130,6 +144,7 @@ public class SheriffProcessor {
             LogUtil.format(notification.getPostingId()),
             LogUtil.format(notification.getRemoteNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             true,
             null,
@@ -138,6 +153,14 @@ public class SheriffProcessor {
             notification.getCommentId(),
             notification.getSenderNodeName()
         ));
+    }
+
+    private void scanSheriff(String sheriffName) {
+        var sheriffScanned = database.read(() -> nodeRepository.isScanSheriffSucceeded(sheriffName));
+        if (!sheriffScanned) {
+            log.info("Sheriff {} has not been scanned yet, initiating scan", LogUtil.format(sheriffName));
+            updateQueue.offer(new SheriffScanUpdate(sheriffName));
+        }
     }
 
 }

@@ -7,11 +7,14 @@ import org.moera.lib.node.types.notifications.NotificationType;
 import org.moera.lib.node.types.notifications.UserListItemAddedNotification;
 import org.moera.lib.node.types.notifications.UserListItemDeletedNotification;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.data.Database;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.ingest.SheriffMarkIngest;
 import org.moera.search.scanner.updates.SheriffOrderUpdate;
+import org.moera.search.scanner.updates.SheriffScanUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +22,12 @@ import org.slf4j.LoggerFactory;
 public class UserListProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(UserListProcessor.class);
+
+    @Inject
+    private Database database;
+
+    @Inject
+    private NodeRepository nodeRepository;
 
     @Inject
     private UpdateQueue updateQueue;
@@ -34,6 +43,7 @@ public class UserListProcessor {
             LogUtil.format(notification.getSenderNodeName()),
             LogUtil.format(notification.getNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             false,
             notification.getNodeName(),
@@ -55,6 +65,7 @@ public class UserListProcessor {
             LogUtil.format(notification.getSenderNodeName()),
             LogUtil.format(notification.getNodeName())
         );
+        scanSheriff(notification.getSenderNodeName());
         updateQueue.offer(new SheriffOrderUpdate(
             true,
             notification.getNodeName(),
@@ -63,6 +74,14 @@ public class UserListProcessor {
             null,
             notification.getSenderNodeName()
         ));
+    }
+
+    private void scanSheriff(String sheriffName) {
+        var sheriffScanned = database.read(() -> nodeRepository.isScanSheriffSucceeded(sheriffName));
+        if (!sheriffScanned) {
+            log.info("Sheriff {} has not been scanned yet, initiating scan", LogUtil.format(sheriffName));
+            updateQueue.offer(new SheriffScanUpdate(sheriffName));
+        }
     }
 
 }
