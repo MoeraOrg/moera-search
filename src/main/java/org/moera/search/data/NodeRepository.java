@@ -565,6 +565,30 @@ public class NodeRepository {
         );
     }
 
+    public boolean isScannedSheriff(String name) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (n:MoeraNode {name: $name})
+            RETURN n.scanSheriff IS NOT NULL AS scan
+            """,
+            Map.of(
+                "name", name
+            )
+        ).single().get("scan").asBoolean();
+    }
+
+    public boolean isScanSheriffSucceeded(String name) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (n:MoeraNode {name: $name})
+            RETURN n.scanSheriff IS NOT NULL AND n.scanSheriff = true AS scan
+            """,
+            Map.of(
+                "name", name
+            )
+        ).single().get("scan").asBoolean();
+    }
+
     public void scanSheriffSucceeded(String name) {
         database.tx().run(
             """
@@ -587,6 +611,68 @@ public class NodeRepository {
             Map.of(
                 "name", name,
                 "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void sheriffMark(String sheriffName, String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            WHERE n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks)
+            SET n.sheriffMarks = CASE
+                WHEN n.sheriffMarks IS NULL THEN [$sheriffName]
+                ELSE n.sheriffMarks + [$sheriffName]
+            END
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "name", name
+            )
+        );
+    }
+
+    public void sheriffUnmark(String sheriffName, String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            WHERE n.sheriffMarks IS NOT NULL AND $sheriffName IN n.sheriffMarks
+            SET n.sheriffMarks = [mark IN n.sheriffMarks WHERE mark <> $sheriffName]
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "name", name
+            )
+        );
+    }
+
+    public void sheriffMarkOwner(String sheriffName, String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            WHERE n.ownerSheriffMarks IS NULL OR NOT ($sheriffName IN n.ownerSheriffMarks)
+            SET n.ownerSheriffMarks = CASE
+                WHEN n.ownerSheriffMarks IS NULL THEN [$sheriffName]
+                ELSE n.ownerSheriffMarks + [$sheriffName]
+            END
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "name", name
+            )
+        );
+    }
+
+    public void sheriffUnmarkOwner(String sheriffName, String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})
+            WHERE n.ownerSheriffMarks IS NOT NULL AND $sheriffName IN n.ownerSheriffMarks
+            SET n.ownerSheriffMarks = [mark IN n.ownerSheriffMarks WHERE mark <> $sheriffName]
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "name", name
             )
         );
     }

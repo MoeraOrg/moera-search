@@ -6,7 +6,6 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
-import org.moera.search.data.SheriffMarkRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -26,9 +25,6 @@ public class CommentIngest {
 
     @Inject
     private CommentRepository commentRepository;
-
-    @Inject
-    private SheriffMarkRepository sheriffMarkRepository;
 
     @Inject
     private NodeIngest nodeIngest;
@@ -80,12 +76,6 @@ public class CommentIngest {
                 commentRepository.assignCommentRepliedTo(
                     nodeName, comment.getPostingId(), comment.getId(), comment.getRepliedTo().getId()
                 );
-            }
-            var sheriffMarks = sheriffMarkRepository.findMarksForComment(
-                nodeName, comment.getPostingId(), comment.getId(), comment.getOwnerName()
-            );
-            if (sheriffMarks != null) {
-                commentRepository.setSheriffMarks(nodeName, comment.getPostingId(), comment.getId(), sheriffMarks);
             }
             if (!hasReactions) {
                 commentRepository.scanReactionsSucceeded(nodeName, comment.getPostingId(), comment.getId());

@@ -1,7 +1,6 @@
 package org.moera.search.data;
 
 import java.time.Instant;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,22 +138,6 @@ public class CommentRepository {
         );
     }
 
-    public void setSheriffMarks(String nodeName, String postingId, String commentId, Collection<String> sheriffMarks) {
-        database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
-                  <-[:UNDER]-(c:Comment {id: $commentId})
-            SET c.sheriffMarks = $sheriffMarks
-            """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId,
-                "commentId", commentId,
-                "sheriffMarks", sheriffMarks
-            )
-        );
-    }
-
     public void addAvatar(String nodeName, String postingId, String commentId, String mediaFileId, String shape) {
         database.tx().run(
             """
@@ -245,6 +228,43 @@ public class CommentRepository {
                 "postingId", postingId
             )
         ).list(r -> r.get("id").asString(null));
+    }
+
+    public void sheriffMark(String sheriffName, String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            WHERE c.sheriffMarks IS NULL OR NOT ($sheriffName IN c.sheriffMarks)
+            SET c.sheriffMarks = CASE
+                WHEN c.sheriffMarks IS NULL THEN [$sheriffName]
+                ELSE c.sheriffMarks + [$sheriffName]
+            END
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
+            )
+        );
+    }
+
+    public void sheriffUnmark(String sheriffName, String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            WHERE c.sheriffMarks IS NOT NULL AND $sheriffName IN c.sheriffMarks
+            SET c.sheriffMarks = [mark IN c.sheriffMarks WHERE mark <> $sheriffName]
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
+            )
+        );
     }
 
     public void scanSucceeded(String nodeName, String postingId, String commentId) {

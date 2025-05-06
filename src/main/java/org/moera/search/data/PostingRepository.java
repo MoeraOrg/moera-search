@@ -1,7 +1,6 @@
 package org.moera.search.data;
 
 import java.time.Instant;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import jakarta.inject.Inject;
@@ -107,20 +106,6 @@ public class PostingRepository {
         );
     }
 
-    public void setSheriffMarks(String nodeName, String postingId, Collection<String> sheriffMarks) {
-        database.tx().run(
-            """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            SET p.sheriffMarks = $sheriffMarks
-            """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId,
-                "sheriffMarks", sheriffMarks
-            )
-        );
-    }
-
     public void addAvatar(String nodeName, String postingId, String mediaFileId, String shape) {
         database.tx().run(
             """
@@ -186,6 +171,39 @@ public class PostingRepository {
                 "nodeName", nodeName,
                 "postingId", postingId,
                 "documentId", documentId
+            )
+        );
+    }
+
+    public void sheriffMark(String sheriffName, String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            WHERE p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks)
+            SET p.sheriffMarks = CASE
+                WHEN p.sheriffMarks IS NULL THEN [$sheriffName]
+                ELSE p.sheriffMarks + [$sheriffName]
+            END
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
+    public void sheriffUnmark(String sheriffName, String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            WHERE p.sheriffMarks IS NOT NULL AND $sheriffName IN p.sheriffMarks
+            SET p.sheriffMarks = [mark IN p.sheriffMarks WHERE mark <> $sheriffName]
+            """,
+            Map.of(
+                "sheriffName", sheriffName,
+                "nodeName", nodeName,
+                "postingId", postingId
             )
         );
     }

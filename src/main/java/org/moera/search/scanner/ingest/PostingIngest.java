@@ -7,7 +7,6 @@ import org.moera.lib.node.types.PostingInfo;
 import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.data.PublicationRepository;
-import org.moera.search.data.SheriffMarkRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -29,9 +28,6 @@ public class PostingIngest {
 
     @Inject
     private PublicationRepository publicationRepository;
-
-    @Inject
-    private SheriffMarkRepository sheriffMarkRepository;
 
     @Inject
     private NodeIngest nodeIngest;
@@ -73,12 +69,6 @@ public class PostingIngest {
             );
         database.writeNoResult(() -> {
             postingRepository.assignPostingOwner(nodeName, posting.getId(), posting.getOwnerName());
-            var sheriffMarks = sheriffMarkRepository.findMarksForPosting(
-                nodeName, posting.getId(), posting.getOwnerName()
-            );
-            if (sheriffMarks != null) {
-                postingRepository.setSheriffMarks(nodeName, posting.getId(), sheriffMarks);
-            }
             if (posting.getTotalComments() == 0) {
                 postingRepository.scanCommentsSucceeded(nodeName, posting.getId());
             }

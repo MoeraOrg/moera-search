@@ -6,14 +6,19 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.notifications.NotificationType;
 import org.moera.lib.node.types.notifications.UserListItemAddedNotification;
 import org.moera.lib.node.types.notifications.UserListItemDeletedNotification;
+import org.moera.lib.util.LogUtil;
 import org.moera.search.rest.notification.NotificationMapping;
 import org.moera.search.rest.notification.NotificationProcessor;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.ingest.SheriffMarkIngest;
 import org.moera.search.scanner.updates.SheriffOrderUpdate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @NotificationProcessor
 public class UserListProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(UserListProcessor.class);
 
     @Inject
     private UpdateQueue updateQueue;
@@ -23,6 +28,12 @@ public class UserListProcessor {
         if (!Objects.equals(notification.getListName(), SheriffMarkIngest.SHERIFF_USER_LIST_HIDE)) {
             return;
         }
+
+        log.info(
+            "Sheriff {} ordered to hide all content owned by node {}",
+            LogUtil.format(notification.getSenderNodeName()),
+            LogUtil.format(notification.getNodeName())
+        );
         updateQueue.offer(new SheriffOrderUpdate(
             false,
             notification.getNodeName(),
@@ -38,6 +49,12 @@ public class UserListProcessor {
         if (!Objects.equals(notification.getListName(), SheriffMarkIngest.SHERIFF_USER_LIST_HIDE)) {
             return;
         }
+
+        log.info(
+            "Sheriff {} ordered to unhide all content owned by node {}",
+            LogUtil.format(notification.getSenderNodeName()),
+            LogUtil.format(notification.getNodeName())
+        );
         updateQueue.offer(new SheriffOrderUpdate(
             true,
             notification.getNodeName(),

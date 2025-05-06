@@ -4,8 +4,11 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.ingest.SheriffMarkIngest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SheriffOrderJob extends Job<SheriffOrderJob.Parameters, Object> {
 
@@ -82,6 +85,11 @@ public class SheriffOrderJob extends Job<SheriffOrderJob.Parameters, Object> {
 
     }
 
+    private static final Logger log = LoggerFactory.getLogger(SheriffOrderJob.class);
+
+    @Inject
+    private NodeRepository nodeRepository;
+
     @Inject
     private SheriffMarkIngest sheriffMarkIngest;
 
@@ -101,6 +109,12 @@ public class SheriffOrderJob extends Job<SheriffOrderJob.Parameters, Object> {
 
     @Override
     protected void execute() throws Exception {
+        var scannedSheriff = database.read(() -> nodeRepository.isScannedSheriff(parameters.sheriffName));
+        if (!scannedSheriff) {
+            log.warn("Sheriff is not scanned yet, skipping");
+            return;
+        }
+
         if (!parameters.delete) {
             sheriffMarkIngest.ingest(
                 parameters.sheriffName, parameters.nodeName, parameters.postingId, parameters.commentId,
@@ -117,11 +131,11 @@ public class SheriffOrderJob extends Job<SheriffOrderJob.Parameters, Object> {
     @Override
     protected String getJobDescription() {
         return super.getJobDescription() + " of sheriff " + parameters.sheriffName
-            + (!parameters.delete ? " to hide " : " to unhide ")
-            + (parameters.nodeName != null ? "entry from " + parameters.nodeName : "")
+            + (!parameters.delete ? " to hide" : " to unhide")
+            + (parameters.commentId != null ? " comment " + parameters.commentId + " under " : "")
             + (parameters.postingId != null ? " posting " + parameters.postingId : "")
-            + (parameters.commentId != null ? " comment " + parameters.commentId : "")
-            + (parameters.ownerName != null ? " owned by " + parameters.ownerName : "");
+            + (parameters.ownerName != null ? " owned by " + parameters.ownerName : "")
+            + (parameters.nodeName != null ? " at " + parameters.nodeName : "");
     }
 
 }

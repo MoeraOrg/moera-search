@@ -40,6 +40,7 @@ scannedAt:          int                     (ms timestamp)
 scanReactions:      boolean/int             (ScanStatus)
 reactionsScannedAt: int                     (ms timestamp)
 documentId:         string
+sheriffMarks:       string[]
 INDEX comment_id ON (id)
 INDEX comment_scan ON (scan, scannedAt)
 INDEX comment_scan_reactions ON (scanReactions, reactionsScannedAt)
@@ -98,6 +99,7 @@ timelineScannedAt:  int                     (ms timestamp)
 scanSheriff:        boolean/int             (ScanStatus)
 sheriffScannedAt:   int                     (ms timestamp)
 sheriffMarks:       string[]
+ownerSheriffMarks:  string[]
 UNIQUE moera_node_name ON (name)
 FULLTEXT moera_node_full_name ON (fullName)
 INDEX moera_node_scan_profile ON (scanProfile, profileScannedAt)
@@ -132,6 +134,7 @@ commentsScannedAt:  int                     (ms timestamp)
 scanReactions:      boolean/int             (ScanStatus)
 reactionsScannedAt: int                     (ms timestamp)
 documentId:         string
+sheriffMarks:       string[]
 INDEX posting_id ON (id)
 INDEX posting_scan ON (scan, scannedAt)
 INDEX posting_scan_comments ON (scanComments, commentsScannedAt)
@@ -149,25 +152,6 @@ negative:           boolean NOT NULL
 emoji:              int NOT NULL
 createdAt:          int NOT NULL            (sec timestamp)
 viewPrincipal:      string
-
-(:SheriffCommentMark)
-nodeName:           string NOT NULL
-postingId:          string NOT NULL
-commentId:          string NOT NULL
-sheriffs:           string[] NOT NULL
-INDEX sheriff_comment_mark_primary ON (nodeName, postingId, commentId)
-
-(:SheriffFeedMark)
-nodeName:           string NOT NULL
-feedName:           string NOT NULL
-sheriffs:           string[] NOT NULL
-INDEX sheriff_feed_mark_primary ON (nodeName, feedName)
-
-(:SheriffPostingMark)
-nodeName:           string NOT NULL
-postingId:          string NOT NULL
-sheriffs:           string[] NOT NULL
-INDEX sheriff_posting_mark_primary ON (nodeName, postingId)
 
 (:Version) UNIQUE
 version:            int NOT NULL

@@ -2,8 +2,10 @@ package org.moera.search.scanner.ingest;
 
 import jakarta.inject.Inject;
 
+import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
-import org.moera.search.data.SheriffMarkRepository;
+import org.moera.search.data.NodeRepository;
+import org.moera.search.data.PostingRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,7 +17,13 @@ public class SheriffMarkIngest {
     private Database database;
 
     @Inject
-    private SheriffMarkRepository sheriffMarkRepository;
+    private NodeRepository nodeRepository;
+
+    @Inject
+    private PostingRepository postingRepository;
+
+    @Inject
+    private CommentRepository commentRepository;
 
     @Inject
     private NodeIngest nodeIngest;
@@ -38,33 +46,19 @@ public class SheriffMarkIngest {
 
     private void ingestOwner(String sheriffName, String ownerName) {
         nodeIngest.newNode(ownerName);
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.markOwner(sheriffName, ownerName);
-            sheriffMarkRepository.markEntriesByOwner(sheriffName, ownerName);
-        });
+        database.writeNoResult(() -> nodeRepository.sheriffMarkOwner(sheriffName, ownerName));
     }
 
     private void ingestNode(String sheriffName, String nodeName) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.createFeedMark(sheriffName, nodeName, "timeline");
-            sheriffMarkRepository.markFeedPostings(sheriffName, nodeName, "timeline");
-            sheriffMarkRepository.markFeedComments(sheriffName, nodeName, "timeline");
-        });
+        database.writeNoResult(() -> nodeRepository.sheriffMark(sheriffName, nodeName));
     }
 
     private void ingestPosting(String sheriffName, String nodeName, String postingId) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.createPostingMark(sheriffName, nodeName, postingId);
-            sheriffMarkRepository.markPosting(sheriffName, nodeName, postingId);
-            sheriffMarkRepository.markPostingComments(sheriffName, nodeName, postingId);
-        });
+        database.writeNoResult(() -> postingRepository.sheriffMark(sheriffName, nodeName, postingId));
     }
 
     private void ingestComment(String sheriffName, String nodeName, String postingId, String commentId) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.createCommentMark(sheriffName, nodeName, postingId, commentId);
-            sheriffMarkRepository.markComment(sheriffName, nodeName, postingId, commentId);
-        });
+        database.writeNoResult(() -> commentRepository.sheriffMark(sheriffName, nodeName, postingId, commentId));
     }
 
     public void delete(String sheriffName, String nodeName, String postingId, String commentId, String ownerName) {
@@ -84,34 +78,19 @@ public class SheriffMarkIngest {
     }
 
     private void deleteOwner(String sheriffName, String ownerName) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.unmarkOwner(sheriffName, ownerName);
-            sheriffMarkRepository.unmarkPostingsByOwner(sheriffName, ownerName);
-            sheriffMarkRepository.unmarkCommentsByOwner(sheriffName, ownerName);
-        });
+        database.writeNoResult(() -> nodeRepository.sheriffUnmarkOwner(sheriffName, ownerName));
     }
 
     private void deleteNode(String sheriffName, String nodeName) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.deleteFeedMark(sheriffName, nodeName, "timeline");
-            sheriffMarkRepository.unmarkFeedPostings(sheriffName, nodeName, "timeline");
-            sheriffMarkRepository.unmarkFeedComments(sheriffName, nodeName, "timeline");
-        });
+        database.writeNoResult(() -> nodeRepository.sheriffUnmark(sheriffName, nodeName));
     }
 
     private void deletePosting(String sheriffName, String nodeName, String postingId) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.deletePostingMark(sheriffName, nodeName, postingId);
-            sheriffMarkRepository.unmarkPosting(sheriffName, nodeName, postingId);
-            sheriffMarkRepository.unmarkPostingComments(sheriffName, nodeName, postingId);
-        });
+        database.writeNoResult(() -> postingRepository.sheriffUnmark(sheriffName, nodeName, postingId));
     }
 
     private void deleteComment(String sheriffName, String nodeName, String postingId, String commentId) {
-        database.writeNoResult(() -> {
-            sheriffMarkRepository.deleteCommentMark(sheriffName, nodeName, postingId, commentId);
-            sheriffMarkRepository.unmarkComment(sheriffName, nodeName, postingId, commentId);
-        });
+        database.writeNoResult(() -> commentRepository.sheriffUnmark(sheriffName, nodeName, postingId, commentId));
     }
 
 }

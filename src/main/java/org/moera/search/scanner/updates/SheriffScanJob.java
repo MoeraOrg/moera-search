@@ -7,7 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
+import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.ingest.SheriffMarkIngest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJob.State> {
 
@@ -34,18 +37,18 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
 
     public static class State {
 
-        private long before = Long.MAX_VALUE;
+        private long after = Long.MIN_VALUE;
         private boolean ordersScanned;
 
         public State() {
         }
 
-        public long getBefore() {
-            return before;
+        public long getAfter() {
+            return after;
         }
 
-        public void setBefore(long before) {
-            this.before = before;
+        public void setAfter(long after) {
+            this.after = after;
         }
 
         public boolean isOrdersScanned() {
@@ -58,6 +61,8 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
 
     }
 
+    private static final Logger log = LoggerFactory.getLogger(SheriffScanJob.class);
+
     private static final int PAGE_SIZE = 50;
 
     @Inject
@@ -67,7 +72,7 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
     private NodeRepository nodeRepository;
 
     @Inject
-    private SheriffMarkIngest sheriffMarkIngest;
+    private UpdateQueue updateQueue;
 
     public SheriffScanJob() {
         state = new SheriffScanJob.State();
@@ -86,46 +91,57 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
 
     @Override
     protected void execute() throws Exception {
+        var scannedSheriff = database.read(() -> nodeRepository.isScanSheriffSucceeded(parameters.nodeName));
+        if (scannedSheriff) {
+            log.warn("Sheriff is scanned already, skipping");
+            return;
+        }
+
         if (!state.ordersScanned) {
-            while (state.before > 0) {
+            while (state.after < Long.MAX_VALUE) {
                 var ordersSlice = nodeApi
                     .at(parameters.nodeName)
-                    .getRemoteSheriffOrdersSlice(null, state.before, PAGE_SIZE);
+                    .getRemoteSheriffOrdersSlice(state.after, null, PAGE_SIZE);
                 for (var order : ordersSlice.getOrders()) {
-                    state.before = order.getMoment();
-                    checkpoint();
+                    updateQueue.offer(new SheriffOrderUpdate(
+                        Boolean.TRUE.equals(order.getDelete()), null, order.getNodeName(), order.getPostingId(),
+                        order.getCommentId(), parameters.nodeName
+                    ));
 
-                    if (!Boolean.TRUE.equals(order.getDelete())) {
-                        sheriffMarkIngest.ingest(
-                            parameters.nodeName, order.getNodeName(), order.getPostingId(), order.getCommentId(), null
-                        );
-                    } else {
-                        sheriffMarkIngest.delete(
-                            parameters.nodeName, order.getNodeName(), order.getPostingId(), order.getCommentId(), null
-                        );
-                    }
+                    state.after = order.getMoment();
+                    checkpoint();
                 }
-                state.before = ordersSlice.getAfter();
+                state.after = ordersSlice.getBefore();
                 checkpoint();
+
+                if (ordersSlice.getTotalInFuture() == 0) {
+                    break;
+                }
             }
 
             state.ordersScanned = true;
-            state.before = Long.MAX_VALUE;
+            state.after = Long.MIN_VALUE;
             checkpoint();
         }
 
-        while (state.before > 0) {
+        while (state.after < Long.MAX_VALUE) {
             var userListSlice = nodeApi
                 .at(parameters.nodeName)
-                .getUserListSlice(SheriffMarkIngest.SHERIFF_USER_LIST_HIDE, null, state.before, PAGE_SIZE);
+                .getUserListSlice(SheriffMarkIngest.SHERIFF_USER_LIST_HIDE, state.after, null, PAGE_SIZE);
             for (var item : userListSlice.getItems()) {
-                state.before = item.getMoment();
-                checkpoint();
+                updateQueue.offer(new SheriffOrderUpdate(
+                    false, item.getNodeName(), null, null, null, parameters.nodeName
+                ));
 
-                sheriffMarkIngest.ingest(parameters.nodeName, null, null, null, item.getNodeName());
+                state.after = item.getMoment();
+                checkpoint();
             }
-            state.before = userListSlice.getAfter();
+            state.after = userListSlice.getBefore();
             checkpoint();
+
+            if (userListSlice.getTotalInFuture() == 0) {
+                break;
+            }
         }
 
         database.writeNoResult(() -> nodeRepository.scanSheriffSucceeded(parameters.nodeName));
