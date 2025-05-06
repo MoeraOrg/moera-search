@@ -82,7 +82,7 @@ public class CommentIngest {
                 );
             }
             var sheriffMarks = sheriffMarkRepository.findMarksForComment(
-                nodeName, comment.getPostingId(), comment.getId()
+                nodeName, comment.getPostingId(), comment.getId(), comment.getOwnerName()
             );
             if (sheriffMarks != null) {
                 commentRepository.setSheriffMarks(nodeName, comment.getPostingId(), comment.getId(), sheriffMarks);

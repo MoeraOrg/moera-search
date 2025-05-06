@@ -95,9 +95,15 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
                     state.before = order.getMoment();
                     checkpoint();
 
-                    sheriffMarkIngest.ingest(
-                        parameters.nodeName, order.getNodeName(), order.getPostingId(), order.getCommentId()
-                    );
+                    if (!Boolean.TRUE.equals(order.getDelete())) {
+                        sheriffMarkIngest.ingest(
+                            parameters.nodeName, order.getNodeName(), order.getPostingId(), order.getCommentId(), null
+                        );
+                    } else {
+                        sheriffMarkIngest.delete(
+                            parameters.nodeName, order.getNodeName(), order.getPostingId(), order.getCommentId(), null
+                        );
+                    }
                 }
                 state.before = ordersSlice.getAfter();
                 checkpoint();
@@ -116,7 +122,7 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
                 state.before = item.getMoment();
                 checkpoint();
 
-                sheriffMarkIngest.ingest(parameters.nodeName, item.getNodeName(), null, null);
+                sheriffMarkIngest.ingest(parameters.nodeName, null, null, null, item.getNodeName());
             }
             state.before = userListSlice.getAfter();
             checkpoint();

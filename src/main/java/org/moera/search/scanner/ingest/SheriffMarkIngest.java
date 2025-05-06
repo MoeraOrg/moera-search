@@ -20,23 +20,35 @@ public class SheriffMarkIngest {
     @Inject
     private NodeIngest nodeIngest;
 
-    public void ingest(String sheriffName, String nodeName, String postingId, String commentId) {
-        if (commentId == null) {
-            if (postingId == null) {
-                ingestNode(sheriffName, nodeName);
-            } else {
-                ingestPosting(sheriffName, nodeName, postingId);
-            }
+    public void ingest(String sheriffName, String nodeName, String postingId, String commentId, String ownerName) {
+        if (ownerName != null) {
+            ingestOwner(sheriffName, ownerName);
         } else {
-            ingestComment(sheriffName, nodeName, postingId, commentId);
+            if (commentId == null) {
+                if (postingId == null) {
+                    ingestNode(sheriffName, nodeName);
+                } else {
+                    ingestPosting(sheriffName, nodeName, postingId);
+                }
+            } else {
+                ingestComment(sheriffName, nodeName, postingId, commentId);
+            }
         }
     }
 
-    private void ingestNode(String sheriffName, String nodeName) {
-        nodeIngest.newNode(nodeName);
+    private void ingestOwner(String sheriffName, String ownerName) {
+        nodeIngest.newNode(ownerName);
         database.writeNoResult(() -> {
-            sheriffMarkRepository.markNode(sheriffName, nodeName);
-            sheriffMarkRepository.markEntriesByOwner(sheriffName, nodeName);
+            sheriffMarkRepository.markOwner(sheriffName, ownerName);
+            sheriffMarkRepository.markEntriesByOwner(sheriffName, ownerName);
+        });
+    }
+
+    private void ingestNode(String sheriffName, String nodeName) {
+        database.writeNoResult(() -> {
+            sheriffMarkRepository.createFeedMark(sheriffName, nodeName, "timeline");
+            sheriffMarkRepository.markFeedPostings(sheriffName, nodeName, "timeline");
+            sheriffMarkRepository.markFeedComments(sheriffName, nodeName, "timeline");
         });
     }
 
@@ -44,6 +56,7 @@ public class SheriffMarkIngest {
         database.writeNoResult(() -> {
             sheriffMarkRepository.createPostingMark(sheriffName, nodeName, postingId);
             sheriffMarkRepository.markPosting(sheriffName, nodeName, postingId);
+            sheriffMarkRepository.markPostingComments(sheriffName, nodeName, postingId);
         });
     }
 
@@ -54,23 +67,35 @@ public class SheriffMarkIngest {
         });
     }
 
-    public void delete(String sheriffName, String nodeName, String postingId, String commentId) {
-        if (commentId == null) {
-            if (postingId == null) {
-                deleteNode(sheriffName, nodeName);
-            } else {
-                deletePosting(sheriffName, nodeName, postingId);
-            }
+    public void delete(String sheriffName, String nodeName, String postingId, String commentId, String ownerName) {
+        if (ownerName != null) {
+            deleteOwner(sheriffName, ownerName);
         } else {
-            deleteComment(sheriffName, nodeName, postingId, commentId);
+            if (commentId == null) {
+                if (postingId == null) {
+                    deleteNode(sheriffName, nodeName);
+                } else {
+                    deletePosting(sheriffName, nodeName, postingId);
+                }
+            } else {
+                deleteComment(sheriffName, nodeName, postingId, commentId);
+            }
         }
+    }
+
+    private void deleteOwner(String sheriffName, String ownerName) {
+        database.writeNoResult(() -> {
+            sheriffMarkRepository.unmarkOwner(sheriffName, ownerName);
+            sheriffMarkRepository.unmarkPostingsByOwner(sheriffName, ownerName);
+            sheriffMarkRepository.unmarkCommentsByOwner(sheriffName, ownerName);
+        });
     }
 
     private void deleteNode(String sheriffName, String nodeName) {
         database.writeNoResult(() -> {
-            sheriffMarkRepository.unmarkNode(sheriffName, nodeName);
-            sheriffMarkRepository.unmarkPostingsByOwner(sheriffName, nodeName);
-            sheriffMarkRepository.unmarkCommentsByOwner(sheriffName, nodeName);
+            sheriffMarkRepository.deleteFeedMark(sheriffName, nodeName, "timeline");
+            sheriffMarkRepository.unmarkFeedPostings(sheriffName, nodeName, "timeline");
+            sheriffMarkRepository.unmarkFeedComments(sheriffName, nodeName, "timeline");
         });
     }
 
@@ -78,6 +103,7 @@ public class SheriffMarkIngest {
         database.writeNoResult(() -> {
             sheriffMarkRepository.deletePostingMark(sheriffName, nodeName, postingId);
             sheriffMarkRepository.unmarkPosting(sheriffName, nodeName, postingId);
+            sheriffMarkRepository.unmarkPostingComments(sheriffName, nodeName, postingId);
         });
     }
 

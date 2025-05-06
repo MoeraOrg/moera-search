@@ -73,7 +73,9 @@ public class PostingIngest {
             );
         database.writeNoResult(() -> {
             postingRepository.assignPostingOwner(nodeName, posting.getId(), posting.getOwnerName());
-            var sheriffMarks = sheriffMarkRepository.findMarksForPosting(nodeName, posting.getId());
+            var sheriffMarks = sheriffMarkRepository.findMarksForPosting(
+                nodeName, posting.getId(), posting.getOwnerName()
+            );
             if (sheriffMarks != null) {
                 postingRepository.setSheriffMarks(nodeName, posting.getId(), sheriffMarks);
             }
