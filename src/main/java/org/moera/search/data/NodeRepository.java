@@ -458,7 +458,6 @@ public class NodeRepository {
                 "now", Instant.now().toEpochMilli()
             )
         );
-
     }
 
     public record CloseNode(String name, boolean isFriend, boolean isSubscribed, List<Favor> favors) {
@@ -541,15 +540,45 @@ public class NodeRepository {
         );
     }
 
-    public void cleanupCloseTo() {
+    public List<String> findNamesForCloseToCleanup(int limit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.closeToCleanedUpAt IS NULL OR n.closeToCleanedUpAt < $deadline
+            ORDER BY n.closeToCleanedUpAt ASC
+            LIMIT $limit
+            RETURN n.name AS name
+            """,
+            Map.of(
+                "deadline", Instant.now().minus(Workload.CLOSE_TO_CLEANUP_PERIOD).toEpochMilli(),
+                "limit", limit
+            )
+        ).stream().map(r -> r.get("name").asString()).toList();
+    }
+
+    public void closeToCleanedUp(String name) {
         database.tx().run(
             """
-            MATCH (n:MoeraNode)-[c:CLOSE_TO]->(m:MoeraNode)
+            MERGE (n:MoeraNode {name: $name})
+            SET n.closeToCleanedUpAt = $now
+            """,
+            Map.of(
+                "name", name,
+                "now", Instant.now().toEpochMilli()
+            )
+        );
+    }
+
+    public void cleanupCloseTo(String name) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})-[c:CLOSE_TO]->(m:MoeraNode)
             WHERE NOT EXISTS {
                 MATCH (n)-[:FRIEND|SUBSCRIBED]->{1,2}(m)
             }
             DELETE c
-            """
+            """,
+            Map.of("name", name)
         );
     }
 

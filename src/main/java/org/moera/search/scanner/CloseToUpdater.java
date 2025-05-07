@@ -72,6 +72,7 @@ public class CloseToUpdater {
                 }
             }
             database.writeNoResult(() -> nodeRepository.closeToUpdated(name));
+            log.info("Update of close-tos finished");
         }
     }
 
@@ -92,7 +93,7 @@ public class CloseToUpdater {
         return (float) Math.max(Math.tanh(closeness / 100), 0);
     }
 
-    @Scheduled(fixedDelayString = Workload.CLOSE_TO_CLEANUP_PERIOD)
+    @Scheduled(fixedDelayString = Workload.CLOSE_TO_CLEANUP_CHECK_PERIOD)
     public void scheduledCleanup() {
         if (!database.isReady()) {
             return;
@@ -106,8 +107,17 @@ public class CloseToUpdater {
     }
 
     public void cleanup() {
-        log.info("Cleaning up close-tos");
-        database.writeNoResult(() -> nodeRepository.cleanupCloseTo());
+        var names = database.read(
+            () -> nodeRepository.findNamesForCloseToCleanup(Workload.CLOSE_TO_CLEANUP_MAX_NODES)
+        );
+
+        for (var name : names) {
+            log.info("Cleaning up close-tos for {}", name);
+            database.writeNoResult(() -> {
+                nodeRepository.cleanupCloseTo(name);
+                nodeRepository.closeToCleanedUp(name);
+            });
+        }
         log.info("Cleanup of close-tos finished");
     }
 
