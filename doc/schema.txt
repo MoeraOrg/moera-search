@@ -169,6 +169,7 @@ blockedOperation:   string NOT NULL         (BlockedOperation)
 
 (:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
 distance:           float NOT NULL
+updatedAt:          int NOT NULL            (ms timestamp)
 
 (:Publication)-[:CONTAINS]->(:Posting)
 

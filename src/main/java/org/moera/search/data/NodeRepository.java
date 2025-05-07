@@ -1,6 +1,7 @@
 package org.moera.search.data;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -460,29 +461,54 @@ public class NodeRepository {
 
     }
 
-    public record CloseNode(String name, boolean isFriend, boolean isSubscribed) {
+    public record CloseNode(String name, boolean isFriend, boolean isSubscribed, List<Favor> favors) {
     }
 
-    public List<CloseNode> findCloseNodes(String name) {
-        return database.tx().run(
+    public void linkCloseNodes(String name) {
+        database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})-[:FRIEND|SUBSCRIBED]->{1,2}(m:MoeraNode)
             WHERE n <> m
             WITH DISTINCT n, m
-            RETURN
-                m.name AS name,
-                EXISTS((n)-[:FRIEND]->(m)) AS isFriend,
-                EXISTS((n)-[:SUBSCRIBED]->(m)) AS isSubscribed
+            MERGE (n)-[c:CLOSE_TO]->(m)
+                ON CREATE
+                    SET c.distance = 2.0, c.updatedAt = 0
             """,
             Map.of(
                 "name", name
+            )
+        );
+    }
+
+    public List<CloseNode> findCloseNodes(String name, int limit, int favorLimit) {
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})-[c:CLOSE_TO]->(m:MoeraNode)
+            WHERE c.updatedAt <= $before
+            LIMIT $limit
+            RETURN
+                m.name AS name,
+                EXISTS((n)-[:FRIEND]->(m)) AS isFriend,
+                EXISTS((n)-[:SUBSCRIBED]->(m)) AS isSubscribed,
+                COLLECT {
+                    MATCH (n)<-[:DONE_BY]-(f:Favor)-[:DONE_TO]->(m)
+                    LIMIT $favorLimit
+                    RETURN f
+                } AS favors
+            """,
+            Map.of(
+                "name", name,
+                "before", Instant.now().minus(Workload.CLOSE_TO_UPDATE_PERIOD).toEpochMilli(),
+                "limit", limit,
+                "favorLimit", favorLimit
             )
         )
             .stream()
             .map(r -> new CloseNode(
                 r.get("name").asString(),
                 r.get("isFriend").asBoolean(),
-                r.get("isSubscribed").asBoolean()
+                r.get("isSubscribed").asBoolean(),
+                r.get("favors").asList(v -> new Favor(v.asNode()), Collections.emptyList())
             ))
             .toList();
     }
@@ -490,14 +516,14 @@ public class NodeRepository {
     public void setDistance(String name, String peerName, float distance) {
         database.tx().run(
             """
-            MATCH (n:MoeraNode {name: $name}), (m:MoeraNode {name: $peerName})
-            MERGE (n)-[c:CLOSE_TO]->(m)
-            SET c.distance = $distance
+            MATCH (:MoeraNode {name: $name})-[c:CLOSE_TO]->(:MoeraNode {name: $peerName})
+            SET c.distance = $distance, c.updatedAt = $now
             """,
             Map.of(
                 "name", name,
                 "peerName", peerName,
-                "distance", distance
+                "distance", distance,
+                "now", Instant.now().toEpochMilli()
             )
         );
     }

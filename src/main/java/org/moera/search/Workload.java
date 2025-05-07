@@ -20,6 +20,8 @@ public class Workload {
     public static final String CLOSE_TO_CHECK_PERIOD = "PT15M";
     public static final Duration CLOSE_TO_UPDATE_PERIOD = Duration.of(6, ChronoUnit.HOURS);
     public static final int CLOSE_TO_UPDATE_MAX_NODES = 100;
+    public static final int CLOSE_TO_UPDATE_MAX_PEERS = 200;
+    public static final int CLOSE_TO_UPDATE_MAX_FAVORS = 300;
     public static final String CLOSE_TO_CLEANUP_PERIOD = "P1D";
 
     public static final int UPDATE_QUEUE_JOB_START_PERIOD = 15000; // ms
