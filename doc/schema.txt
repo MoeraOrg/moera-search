@@ -41,13 +41,16 @@ scanReactions:      boolean/int             (ScanStatus)
 reactionsScannedAt: int                     (ms timestamp)
 documentId:         string
 sheriffMarks:       string[]
+moment:             int
 INDEX comment_id ON (id)
 INDEX comment_scan ON (scan, scannedAt)
 INDEX comment_scan_reactions ON (scanReactions, reactionsScannedAt)
 
 (:Entry)
 documentId:         string
+moment:             int
 UNIQUE entry_document_id ON (documentId)
+INDEX entry_moment ON (moment)
 
 (:Favor)
 value               float NOT NULL
@@ -137,6 +140,7 @@ scanReactions:      boolean/int             (ScanStatus)
 reactionsScannedAt: int                     (ms timestamp)
 documentId:         string
 sheriffMarks:       string[]
+moment:             int
 INDEX posting_id ON (id)
 INDEX posting_scan ON (scan, scannedAt)
 INDEX posting_scan_comments ON (scanComments, commentsScannedAt)

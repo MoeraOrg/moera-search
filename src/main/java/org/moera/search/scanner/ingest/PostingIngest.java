@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.search.data.Database;
+import org.moera.search.data.EntryRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.data.PublicationRepository;
 import org.moera.search.index.Index;
@@ -22,6 +23,9 @@ public class PostingIngest {
 
     @Inject
     private Database database;
+
+    @Inject
+    private EntryRepository entryRepository;
 
     @Inject
     private PostingRepository postingRepository;
@@ -89,7 +93,10 @@ public class PostingIngest {
             }
         });
 
-        update(nodeName, posting);
+        var documentId = update(nodeName, posting);
+        if (documentId != null) {
+            database.writeNoResult(() -> entryRepository.allocateMoment(documentId, posting.getCreatedAt()));
+        }
 
         if (posting.getTotalComments() > 0) {
             updateQueue.offer(new CommentsScanUpdate(nodeName, posting.getId()));
@@ -99,9 +106,9 @@ public class PostingIngest {
         }
     }
 
-    public void update(String nodeName, PostingInfo posting) {
+    public String update(String nodeName, PostingInfo posting) {
         updateDatabase(nodeName, posting);
-        updateIndex(nodeName, posting);
+        return updateIndex(nodeName, posting);
     }
 
     private void updateDatabase(String nodeName, PostingInfo posting) {
@@ -122,11 +129,11 @@ public class PostingIngest {
         hashtagIngest.ingest(nodeName, posting);
     }
 
-    private void updateIndex(String nodeName, PostingInfo posting) {
+    private String updateIndex(String nodeName, PostingInfo posting) {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, posting.getId()));
         String revisionId = documentId != null ? index.getRevisionId(documentId) : null;
         if (Objects.equals(revisionId, posting.getRevisionId())) {
-            return;
+            return documentId;
         }
 
         var document = new IndexedDocument(nodeName, posting);
@@ -137,9 +144,12 @@ public class PostingIngest {
         if (documentId == null) {
             var id = index.index(document);
             database.writeNoResult(() -> postingRepository.setDocumentId(nodeName, posting.getId(), id));
+            documentId = id;
         } else {
             index.update(documentId, document);
         }
+
+        return documentId;
     }
 
     public void delete(String nodeName, String postingId) {

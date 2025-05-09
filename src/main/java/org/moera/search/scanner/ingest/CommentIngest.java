@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
+import org.moera.search.data.EntryRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -22,6 +23,9 @@ public class CommentIngest {
 
     @Inject
     private Database database;
+
+    @Inject
+    private EntryRepository entryRepository;
 
     @Inject
     private CommentRepository commentRepository;
@@ -82,7 +86,10 @@ public class CommentIngest {
             }
         });
 
-        update(nodeName, comment);
+        var documentId = update(nodeName, comment);
+        if (documentId != null) {
+            database.writeNoResult(() -> entryRepository.allocateMoment(documentId, comment.getCreatedAt()));
+        }
 
         favorIngest.comment(nodeName, comment);
 
@@ -99,9 +106,9 @@ public class CommentIngest {
         }
     }
 
-    public void update(String nodeName, CommentInfo comment) {
+    public String update(String nodeName, CommentInfo comment) {
         updateDatabase(nodeName, comment);
-        updateIndex(nodeName, comment);
+        return updateIndex(nodeName, comment);
     }
 
     private void updateDatabase(String nodeName, CommentInfo comment) {
@@ -126,13 +133,13 @@ public class CommentIngest {
         hashtagIngest.ingest(nodeName, comment);
     }
 
-    private void updateIndex(String nodeName, CommentInfo comment) {
+    private String updateIndex(String nodeName, CommentInfo comment) {
         String documentId = database.read(() ->
             commentRepository.getDocumentId(nodeName, comment.getPostingId(), comment.getId())
         );
         String revisionId = documentId != null ? index.getRevisionId(documentId) : null;
         if (Objects.equals(revisionId, comment.getRevisionId())) {
-            return;
+            return documentId;
         }
 
         var document = new IndexedDocument(nodeName, comment);
@@ -143,9 +150,12 @@ public class CommentIngest {
             database.writeNoResult(() ->
                 commentRepository.setDocumentId(nodeName, comment.getPostingId(), comment.getId(), id)
             );
+            documentId = id;
         } else {
             index.update(documentId, document);
         }
+
+        return documentId;
     }
 
     public void delete(String nodeName, String postingId, String commentId) {
