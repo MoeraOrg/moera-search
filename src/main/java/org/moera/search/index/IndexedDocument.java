@@ -2,17 +2,16 @@ package org.moera.search.index;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.moera.lib.node.types.CommentInfo;
+import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.body.Body;
+import org.moera.search.util.BodyUtil;
 import org.moera.search.util.Util;
 import org.springframework.util.ObjectUtils;
 
 public class IndexedDocument {
-
-    private static final Pattern VIDEO_TAGS = Pattern.compile("(?i)<(?:object|video|iframe)");
 
     private String nodeName;
     private String postingId;
@@ -38,16 +37,7 @@ public class IndexedDocument {
         revisionId = info.getRevisionId();
         createdAt = Util.toTimestamp(info.getCreatedAt());
         ownerName = info.getOwnerName();
-        Body body = info.getBody();
-        subject = body.getSubject();
-        text = getText(body);
-        if (info.getMedia() != null) {
-            imageCount = info.getMedia().size();
-        }
-        if (VIDEO_TAGS.matcher(text).find()) {
-            videoPresent = true;
-        }
-        hashtags = Util.extractHashtags(body.getText());
+        analyzeBody(info.getBody(), info.getMedia());
     }
 
     public IndexedDocument(String nodeName, CommentInfo info) {
@@ -57,16 +47,16 @@ public class IndexedDocument {
         revisionId = info.getRevisionId();
         createdAt = Util.toTimestamp(info.getCreatedAt());
         ownerName = info.getOwnerName();
-        Body body = info.getBody();
+        analyzeBody(info.getBody(), info.getMedia());
+    }
+
+    private void analyzeBody(Body body, List<MediaAttachment> media) {
         subject = body.getSubject();
         text = getText(body);
-        if (info.getMedia() != null) {
-            imageCount = info.getMedia().size();
-        }
-        if (VIDEO_TAGS.matcher(text).find()) {
-            videoPresent = true;
-        }
-        hashtags = Util.extractHashtags(body.getText());
+        var counts = BodyUtil.countBodyMedia(body, media);
+        imageCount = counts.imageCount();
+        videoPresent = counts.videoPresent();
+        hashtags = BodyUtil.extractHashtags(body.getText());
     }
 
     private static String getText(Body body) {

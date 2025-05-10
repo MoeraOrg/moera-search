@@ -9,6 +9,7 @@ import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.PostingOperations;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
+import org.moera.search.util.BodyUtil;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -84,6 +85,9 @@ public class PostingRepository {
             : info.getBody();
         String bodyPreviewEncoded = bodyPreview != null ? bodyPreview.getEncoded() : "";
         args.put("bodyPreview", bodyPreviewEncoded);
+        var counts = BodyUtil.countBodyMedia(info.getBody(), info.getMedia());
+        args.put("imageCount", counts.imageCount());
+        args.put("videoPresent", counts.videoPresent());
         args.put("createdAt", info.getCreatedAt());
         args.put("editedAt", info.getEditedAt());
         args.put("viewPrincipal", PostingOperations.getView(info.getOperations(), Principal.PUBLIC).getValue());
@@ -96,6 +100,8 @@ public class PostingRepository {
                 p.ownerFullName = $ownerFullName,
                 p.heading = $heading,
                 p.bodyPreview = $bodyPreview,
+                p.imageCount = $imageCount,
+                p.videoPresent = $videoPresent,
                 p.createdAt = $createdAt,
                 p.editedAt = $editedAt,
                 p.viewPrincipal = $viewPrincipal,

@@ -12,6 +12,7 @@ import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
+import org.moera.search.util.BodyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -114,6 +115,9 @@ public class CommentRepository {
             : info.getBody();
         String bodyPreviewEncoded = bodyPreview != null ? bodyPreview.getEncoded() : "";
         args.put("bodyPreview", bodyPreviewEncoded);
+        var counts = BodyUtil.countBodyMedia(info.getBody(), info.getMedia());
+        args.put("imageCount", counts.imageCount());
+        args.put("videoPresent", counts.videoPresent());
         args.put("createdAt", info.getCreatedAt());
         args.put("editedAt", info.getEditedAt());
         args.put("viewPrincipal", CommentOperations.getView(info.getOperations(), Principal.PUBLIC).getValue());
@@ -128,6 +132,8 @@ public class CommentRepository {
                 c.heading = $heading,
                 c.repliedTo = $repliedTo,
                 c.bodyPreview = $bodyPreview,
+                c.imageCount = $imageCount,
+                c.videoPresent = $videoPresent,
                 c.createdAt = $createdAt,
                 c.editedAt = $editedAt,
                 c.viewPrincipal = $viewPrincipal,

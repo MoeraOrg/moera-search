@@ -6,7 +6,7 @@ import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.search.data.Database;
 import org.moera.search.data.HashtagRepository;
-import org.moera.search.util.Util;
+import org.moera.search.util.BodyUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -20,7 +20,7 @@ public class HashtagIngest {
     private HashtagRepository hashtagRepository;
 
     public void ingest(String nodeName, PostingInfo posting) {
-        var hashtags = Util.extractHashtags(posting.getBody().getText());
+        var hashtags = BodyUtil.extractHashtags(posting.getBody().getText());
         if (ObjectUtils.isEmpty(hashtags)) {
             return;
         }
@@ -32,7 +32,7 @@ public class HashtagIngest {
     }
 
     public void ingest(String nodeName, CommentInfo comment) {
-        var hashtags = Util.extractHashtags(comment.getBody().getText());
+        var hashtags = BodyUtil.extractHashtags(comment.getBody().getText());
         if (ObjectUtils.isEmpty(hashtags)) {
             return;
         }
