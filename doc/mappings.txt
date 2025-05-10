@@ -15,6 +15,9 @@ OpenSearch Mappings
     "ownerName": {
       "type": "keyword"
     },
+    "repliedToName": {
+      "type": "keyword"
+    },
     "postingId": {
       "type": "keyword"
     },

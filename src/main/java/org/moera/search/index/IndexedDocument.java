@@ -19,6 +19,7 @@ public class IndexedDocument {
     private String revisionId;
     private Timestamp createdAt;
     private String ownerName;
+    private String repliedToName;
     private List<String> publishers;
     private String subject;
     private String subjectRu;
@@ -47,6 +48,9 @@ public class IndexedDocument {
         revisionId = info.getRevisionId();
         createdAt = Util.toTimestamp(info.getCreatedAt());
         ownerName = info.getOwnerName();
+        if (info.getRepliedTo() != null) {
+            repliedToName = info.getRepliedTo().getName();
+        }
         analyzeBody(info.getBody(), info.getMedia());
     }
 
@@ -125,6 +129,14 @@ public class IndexedDocument {
 
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    public String getRepliedToName() {
+        return repliedToName;
+    }
+
+    public void setRepliedToName(String repliedToName) {
+        this.repliedToName = repliedToName;
     }
 
     public List<String> getPublishers() {
