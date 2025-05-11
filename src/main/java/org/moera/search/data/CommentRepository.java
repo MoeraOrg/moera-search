@@ -12,6 +12,7 @@ import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
+import org.moera.search.api.model.SearchRepliedToUtil;
 import org.moera.search.util.BodyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +103,7 @@ public class CommentRepository {
         args.put("heading", info.getHeading());
         if (info.getRepliedTo() != null) {
             try {
-                String repliedTo = objectMapper.writeValueAsString(new SearchRepliedTo(info.getRepliedTo()));
+                String repliedTo = objectMapper.writeValueAsString(SearchRepliedToUtil.build(info.getRepliedTo()));
                 args.put("repliedTo", repliedTo);
             } catch (JsonProcessingException e) {
                 log.error("Cannot convert repliedTo to JSON", e);
