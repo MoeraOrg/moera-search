@@ -4,6 +4,7 @@ import java.util.Objects;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
+import org.moera.search.api.Feed;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
 import org.moera.search.data.PostingRepository;
@@ -15,6 +16,7 @@ import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.CommentsScanUpdate;
 import org.moera.search.scanner.updates.PostingReactionsScanUpdate;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -80,7 +82,10 @@ public class PostingIngest {
                 postingRepository.scanReactionsSucceeded(nodeName, posting.getId());
             }
             for (var feedReference : posting.getFeedReferences()) {
-                if (feedReference.getFeedName().equals("timeline")) {
+                if (
+                    feedReference.getFeedName().equals(Feed.TIMELINE)
+                    || feedReference.getFeedName().equals(Feed.NEWS)
+                ) {
                     publicationRepository.addPublication(
                         nodeName,
                         posting.getId(),
@@ -138,8 +143,10 @@ public class PostingIngest {
 
         var document = new IndexedDocument(nodeName, posting);
         languageAnalyzer.analyze(document);
-        var publishers = database.read(() -> publicationRepository.getPublishers(nodeName, posting.getId()));
-        document.setPublishers(publishers);
+        database.readNoResult(() -> {
+            document.setPublishers(publicationRepository.getPublishers(nodeName, posting.getId(), Feed.TIMELINE));
+            document.setNews(publicationRepository.getPublishers(nodeName, posting.getId(), Feed.NEWS));
+        });
 
         if (documentId == null) {
             var id = index.index(document);
@@ -179,7 +186,14 @@ public class PostingIngest {
         database.writeNoResult(() ->
             publicationRepository.deletePublications(nodeName, postingId, publisherName)
         );
-        updatePublicationsInIndex(nodeName, postingId);
+        try {
+            updatePublicationsInIndex(nodeName, postingId);
+        } catch (OpenSearchException e) {
+            // ignore the exception because the document may have been deleted already
+            if (!e.error().type().equals("document_missing_exception")) {
+                throw e;
+            }
+        }
     }
 
     public void deleteAllPublications(String nodeName, String postingId) {
@@ -193,8 +207,10 @@ public class PostingIngest {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null && index.exists(documentId)) {
             var document = new IndexedDocument();
-            var publishers = database.read(() -> publicationRepository.getPublishers(nodeName, postingId));
-            document.setPublishers(publishers);
+            database.readNoResult(() -> {
+                document.setPublishers(publicationRepository.getPublishers(nodeName, postingId, Feed.TIMELINE));
+                document.setNews(publicationRepository.getPublishers(nodeName, postingId, Feed.NEWS));
+            });
             index.update(documentId, document);
         }
     }

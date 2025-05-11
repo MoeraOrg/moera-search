@@ -17,8 +17,8 @@ public class FavorRepository {
     ) {
         database.tx().run(
             """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})-[:OWNER]->(po:MoeraNode)
-                  (p)<-[:CONTAINS]-(pb:Publication {storyId: $storyId})
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})-[:OWNER]->(po:MoeraNode),
+                  (p)<-[:CONTAINS]-(pb:Publication {feedName: 'timeline', storyId: $storyId})
                   -[:PUBLISHED_IN]->(pbo:MoeraNode {name: $publisherName})
             WHERE pbo <> po
             MERGE (po)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(pbo)

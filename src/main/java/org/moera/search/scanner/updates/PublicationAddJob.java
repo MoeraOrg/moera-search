@@ -114,7 +114,7 @@ public class PublicationAddJob extends Job<PublicationAddJob.Parameters, Object>
     @Override
     protected String getJobDescription() {
         return super.getJobDescription() + " for posting " + parameters.postingId + " at node " + parameters.nodeName
-            + " published at node " + parameters.publisherName;
+            + " published at node " + parameters.publisherName + " in feed " + parameters.feedName;
     }
 
 }

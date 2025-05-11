@@ -183,6 +183,21 @@ public class Database {
         });
     }
 
+    public void readNoResult(Runnable callback) {
+        if (tx.get() != null) {
+            throw new DatabaseException("Transaction is running already");
+        }
+        session().executeRead(context -> {
+            tx.set(context);
+            try {
+                callback.run();
+            } finally {
+                tx.remove();
+            }
+            return null;
+        });
+    }
+
     public void writeNoResult(Runnable callback) {
         if (tx.get() != null) {
             throw new DatabaseException("Transaction is running already");

@@ -63,16 +63,17 @@ public class PublicationRepository {
         );
     }
 
-    public List<String> getPublishers(String nodeName, String postingId) {
+    public List<String> getPublishers(String nodeName, String postingId, String feedName) {
         return database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
-                  <-[:CONTAINS]-(:Publication)-[:PUBLISHED_IN]->(n:MoeraNode)
+                  <-[:CONTAINS]-(:Publication {feedName: $feedName})-[:PUBLISHED_IN]->(n:MoeraNode)
             RETURN n.name AS name
             """,
             Map.of(
                 "nodeName", nodeName,
-                "postingId", postingId
+                "postingId", postingId,
+                "feedName", feedName
             )
         ).stream().map(r -> r.get("name").asString()).toList();
     }

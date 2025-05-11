@@ -21,6 +21,7 @@ public class IndexedDocument {
     private String ownerName;
     private String repliedToName;
     private List<String> publishers;
+    private List<String> news;
     private String subject;
     private String subjectRu;
     private String text;
@@ -145,6 +146,14 @@ public class IndexedDocument {
 
     public void setPublishers(List<String> publishers) {
         this.publishers = publishers;
+    }
+
+    public List<String> getNews() {
+        return news;
+    }
+
+    public void setNews(List<String> news) {
+        this.news = news;
     }
 
     public String getSubject() {

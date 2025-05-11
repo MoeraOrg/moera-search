@@ -154,6 +154,7 @@ INDEX posting_scan_reactions ON (scanReactions, reactionsScannedAt)
 feedName:           string NOT NULL
 storyId:            string NOT NULL
 publishedAt:        int NOT NULL            (sec timestamp)
+INDEX publication_feed_name ON (feedName)
 INDEX publication_published_at ON (publishedAt)
 
 (:Reaction)

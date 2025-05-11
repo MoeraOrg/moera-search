@@ -27,6 +27,9 @@ OpenSearch Mappings
     "publishers": {
       "type": "keyword"
     },
+    "news": {
+      "type": "keyword"
+    },
     "subject": {
       "type": "text",
       "analyzer": "english"

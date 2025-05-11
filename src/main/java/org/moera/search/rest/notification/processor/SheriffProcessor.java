@@ -11,6 +11,7 @@ import org.moera.lib.node.types.notifications.SheriffOrderForFeedDeletedNotifica
 import org.moera.lib.node.types.notifications.SheriffOrderForPostingAddedNotification;
 import org.moera.lib.node.types.notifications.SheriffOrderForPostingDeletedNotification;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.api.Feed;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
@@ -37,7 +38,7 @@ public class SheriffProcessor {
 
     @NotificationMapping(NotificationType.SHERIFF_ORDER_FOR_FEED_ADDED)
     public void orderForFeedAdded(SheriffOrderForFeedAddedNotification notification) {
-        if (!Objects.equals(notification.getRemoteFeedName(), "timeline")) {
+        if (!Objects.equals(notification.getRemoteFeedName(), Feed.TIMELINE)) {
             return;
         }
 
@@ -58,7 +59,7 @@ public class SheriffProcessor {
 
     @NotificationMapping(NotificationType.SHERIFF_ORDER_FOR_FEED_DELETED)
     public void orderForFeedDeleted(SheriffOrderForFeedDeletedNotification notification) {
-        if (!Objects.equals(notification.getRemoteFeedName(), "timeline")) {
+        if (!Objects.equals(notification.getRemoteFeedName(), Feed.TIMELINE)) {
             return;
         }
 

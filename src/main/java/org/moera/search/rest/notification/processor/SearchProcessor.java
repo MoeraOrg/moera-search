@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.notifications.NotificationType;
 import org.moera.lib.node.types.notifications.SearchContentUpdatedNotification;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.api.Feed;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.rest.notification.NotificationMapping;
@@ -149,24 +150,29 @@ public class SearchProcessor {
                     LogUtil.format(details.getNodeName()),
                     LogUtil.format(details.getFeedName())
                 );
-                if (!Objects.equals(details.getFeedName(), "timeline")) {
-                    break;
-                }
+                boolean inTimeline = Objects.equals(details.getFeedName(), Feed.TIMELINE);
+                boolean inNews = Objects.equals(details.getFeedName(), Feed.NEWS);
                 boolean isOriginal = Objects.equals(details.getNodeName(), notification.getSenderNodeName());
                 if (isOriginal) {
-                    updateQueue.offer(new PostingAddUpdate(notification.getSenderNodeName(), details.getPostingId()));
+                    if (inTimeline) {
+                        updateQueue.offer(
+                            new PostingAddUpdate(notification.getSenderNodeName(), details.getPostingId())
+                        );
+                    }
                 } else {
-                    nodeIngest.newNode(details.getNodeName());
-                    updateQueue.offer(
-                        new PublicationAddUpdate(
-                            details.getNodeName(),
-                            details.getPostingId(),
-                            notification.getSenderNodeName(),
-                            details.getFeedName(),
-                            details.getStoryId(),
-                            details.getPublishedAt()
-                        )
-                    );
+                    if (inTimeline || inNews) {
+                        nodeIngest.newNode(details.getNodeName());
+                        updateQueue.offer(
+                            new PublicationAddUpdate(
+                                details.getNodeName(),
+                                details.getPostingId(),
+                                notification.getSenderNodeName(),
+                                details.getFeedName(),
+                                details.getStoryId(),
+                                details.getPublishedAt()
+                            )
+                        );
+                    }
                 }
                 break;
             }

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.StoryType;
+import org.moera.search.api.Feed;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
@@ -115,7 +116,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
         while (state.before > 0) {
             var feedSlice = nodeApi
                 .at(parameters.nodeName, generateCarte(parameters.nodeName, Scope.VIEW_CONTENT))
-                .getFeedSlice("timeline", null, state.before, PAGE_SIZE);
+                .getFeedSlice(Feed.TIMELINE, null, state.before, PAGE_SIZE);
             for (var story : feedSlice.getStories()) {
                 state.before = story.getMoment();
                 state.validatedId = null;
@@ -162,7 +163,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                             posting.getReceiverName(),
                             posting.getReceiverPostingId(),
                             parameters.nodeName,
-                            "timeline",
+                            Feed.TIMELINE,
                             story.getId(),
                             story.getPublishedAt()
                         )
