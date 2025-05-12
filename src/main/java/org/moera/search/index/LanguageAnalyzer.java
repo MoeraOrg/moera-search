@@ -1,5 +1,7 @@
 package org.moera.search.index;
 
+import java.util.List;
+
 import com.github.pemistahl.lingua.api.Language;
 import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
@@ -29,6 +31,14 @@ public class LanguageAnalyzer {
                 document.setTextRu(document.getText());
             }
         }
+    }
+
+    public List<String> getSearchFields(String text) {
+        var lang = detector.detectLanguageOf(text);
+        return switch (lang) {
+            case RUSSIAN -> List.of("subject^2", "text", "subjectRu^2", "textRu");
+            default -> List.of("subject^2", "text");
+        };
     }
 
 }

@@ -1,17 +1,23 @@
 package org.moera.search.rest;
 
+import java.util.Collections;
+import java.util.List;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.Scope;
+import org.moera.lib.node.types.SearchEntryInfo;
 import org.moera.lib.node.types.SearchEntryType;
 import org.moera.lib.node.types.SearchHashtagFilter;
 import org.moera.lib.node.types.SearchHashtagSliceInfo;
+import org.moera.lib.node.types.SearchTextFilter;
+import org.moera.lib.node.types.SearchTextPageInfo;
 import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.search.auth.RequestContext;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
+import org.moera.search.index.Index;
 import org.moera.search.util.SafeInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +32,8 @@ public class SearchEntriesController {
 
     private static final Logger log = LoggerFactory.getLogger(SearchEntriesController.class);
 
-    private static final int MAX_ENTRIES_PER_REQUEST = 50;
+    private static final int DEFAULT_ENTRIES_PER_REQUEST = 20;
+    private static final int MAX_ENTRIES_PER_REQUEST = 200;
 
     @Inject
     private RequestContext requestContext;
@@ -36,6 +43,9 @@ public class SearchEntriesController {
 
     @Inject
     private EntryRepository entryRepository;
+
+    @Inject
+    private Index index;
 
     @PostMapping("/by-hashtag")
     public SearchHashtagSliceInfo byHashtag(@RequestBody SearchHashtagFilter filter) {
@@ -51,7 +61,11 @@ public class SearchEntriesController {
         if (filter.getEntryType() == null) {
             filter.setEntryType(SearchEntryType.ALL);
         }
-        if (filter.getLimit() == null || filter.getLimit() > MAX_ENTRIES_PER_REQUEST) {
+        canonicalizeHashtags(filter.getHashtags());
+        if (filter.getLimit() == null) {
+            filter.setLimit(DEFAULT_ENTRIES_PER_REQUEST);
+        }
+        if (filter.getLimit() > MAX_ENTRIES_PER_REQUEST) {
             filter.setLimit(MAX_ENTRIES_PER_REQUEST);
         }
         if (filter.getBefore() == null && filter.getAfter() == null) {
@@ -96,6 +110,61 @@ public class SearchEntriesController {
         }
 
         return slice;
+    }
+
+    @PostMapping("/by-text")
+    public SearchTextPageInfo byText(@RequestBody SearchTextFilter filter) {
+        log.info("POST /search/entries/by-text");
+
+        filter.validate();
+
+        if (filter.getEntryType() == null) {
+            filter.setEntryType(SearchEntryType.ALL);
+        }
+        canonicalizeHashtags(filter.getHashtags());
+        if (filter.getPage() == null) {
+            filter.setPage(0);
+        }
+        if (filter.getLimit() == null) {
+            filter.setLimit(DEFAULT_ENTRIES_PER_REQUEST);
+        }
+        if (filter.getLimit() > MAX_ENTRIES_PER_REQUEST) {
+            filter.setLimit(MAX_ENTRIES_PER_REQUEST);
+        }
+
+        var searchResult = index.search(
+            filter.getEntryType(),
+            filter.getText(),
+            filter.getHashtags(),
+            filter.getPublisherName(),
+            Boolean.TRUE.equals(filter.getInNewsfeed()),
+            filter.getOwners(),
+            filter.getRepliedTo(),
+            filter.getMinImageCount(),
+            filter.getMaxImageCount(),
+            filter.getVideoPresent(),
+            filter.getPage(),
+            filter.getLimit()
+        );
+        var entries = searchResult.total() > 0
+            ? database.read(() -> entryRepository.findDocuments(filter.getEntryType(), searchResult.documentIds()))
+            : Collections.<SearchEntryInfo>emptyList();
+
+        var page = new SearchTextPageInfo();
+        page.setTotal(searchResult.total());
+        page.setEntries(entries);
+        return page;
+    }
+
+    private static void canonicalizeHashtags(List<String> filter) {
+        if (filter != null) {
+            for (int i = 0; i < filter.size(); i++) {
+                String hashtag = filter.get(i);
+                if (!hashtag.startsWith("#")) {
+                    filter.set(i, "#" + hashtag);
+                }
+            }
+        }
     }
 
 }
