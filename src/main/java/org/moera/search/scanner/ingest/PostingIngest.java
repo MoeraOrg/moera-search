@@ -4,6 +4,8 @@ import java.util.Objects;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
+import org.moera.lib.node.types.PostingOperations;
+import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.api.Feed;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
@@ -117,8 +119,12 @@ public class PostingIngest {
     }
 
     private void updateDatabase(String nodeName, PostingInfo posting) {
-        var revisionId = database.read(() -> postingRepository.getRevisionId(nodeName, posting.getId()));
-        if (Objects.equals(revisionId, posting.getRevisionId())) {
+        var revision = database.read(() -> postingRepository.getRevision(nodeName, posting.getId()));
+        var viewPrincipal = PostingOperations.getView(posting.getOperations(), Principal.PUBLIC).getValue();
+        if (
+            Objects.equals(revision.revisionId(), posting.getRevisionId())
+            && Objects.equals(revision.viewPrincipal(), viewPrincipal)
+        ) {
             return;
         }
 

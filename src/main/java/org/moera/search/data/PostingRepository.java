@@ -141,17 +141,24 @@ public class PostingRepository {
         );
     }
 
-    public String getRevisionId(String nodeName, String postingId) {
-        return database.tx().run(
+    public record PostingRevision(String revisionId, String viewPrincipal) {
+    }
+
+    public PostingRevision getRevision(String nodeName, String postingId) {
+        var r = database.tx().run(
             """
             OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            RETURN p.revisionId AS id
+            RETURN p.revisionId AS revisionId, p.viewPrincipal AS viewPrincipal
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
             )
-        ).single().get("id").asString(null);
+        ).single();
+        return new PostingRevision(
+            r.get("revisionId").asString(null),
+            r.get("viewPrincipal").asString(Principal.PUBLIC.getValue())
+        );
     }
 
     public String getDocumentId(String nodeName, String postingId) {
