@@ -56,6 +56,9 @@ public class SearchEntriesController {
                     filter.getHashtags(),
                     filter.getPublisherName(),
                     Boolean.TRUE.equals(filter.getInNewsfeed()),
+                    filter.getMinImageCount(),
+                    filter.getMaxImageCount(),
+                    filter.getVideoPresent(),
                     filter.getBefore(),
                     filter.getAfter(),
                     filter.getLimit()

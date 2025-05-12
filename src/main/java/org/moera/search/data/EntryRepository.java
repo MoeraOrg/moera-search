@@ -65,6 +65,9 @@ public class EntryRepository {
         List<String> hashtags,
         String publisherName,
         boolean inNewsfeed,
+        Integer minImageCount,
+        Integer maxImageCount,
+        Boolean videoPresent,
         Long before,
         Long after,
         int limit
@@ -111,6 +114,18 @@ public class EntryRepository {
             );
             args.put("feedName", inNewsfeed ? Feed.NEWS : Feed.TIMELINE);
             args.put("publisherName", publisherName);
+        }
+        if (minImageCount != null) {
+            query.append(" AND e.imageCount >= $minImageCount");
+            args.put("minImageCount", minImageCount);
+        }
+        if (maxImageCount != null) {
+            query.append(" AND e.imageCount <= $maxImageCount");
+            args.put("maxImageCount", maxImageCount);
+        }
+        if (videoPresent != null) {
+            query.append(" AND e.videoPresent = $videoPresent");
+            args.put("videoPresent", videoPresent);
         }
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
