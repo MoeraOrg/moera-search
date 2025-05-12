@@ -54,6 +54,8 @@ public class SearchEntriesController {
                 entryRepository.findEntriesByHashtag(
                     filter.getEntryType(),
                     filter.getHashtags(),
+                    filter.getPublisherName(),
+                    Boolean.TRUE.equals(filter.getInNewsfeed()),
                     filter.getBefore(),
                     filter.getAfter(),
                     filter.getLimit()

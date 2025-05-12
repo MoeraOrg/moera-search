@@ -13,6 +13,7 @@ import org.moera.lib.node.types.SearchEntryType;
 import org.moera.lib.node.types.SearchRepliedTo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
+import org.moera.search.api.Feed;
 import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.util.MomentFinder;
 import org.slf4j.Logger;
@@ -62,6 +63,8 @@ public class EntryRepository {
     public List<SearchEntryInfo> findEntriesByHashtag(
         SearchEntryType entryType,
         List<String> hashtags,
+        String publisherName,
+        boolean inNewsfeed,
         Long before,
         Long after,
         int limit
@@ -86,14 +89,31 @@ public class EntryRepository {
             }
         );
         query.append("-[:SOURCE]->(n:MoeraNode), (e)-[:OWNER]->(o:MoeraNode)\n");
-        query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
         if (after != null) {
-            query.append("WHERE e.moment IS NOT NULL AND e.moment > $after\n");
+            query.append("WHERE e.moment IS NOT NULL AND e.moment > $after");
             args.put("after", after);
         } else if (before != null) {
-            query.append("WHERE e.moment IS NOT NULL AND e.moment <= $before\n");
+            query.append("WHERE e.moment IS NOT NULL AND e.moment <= $before");
             args.put("before", before);
         }
+        if (publisherName != null) {
+            var publication =
+                """
+                <-[:CONTAINS]-(:Publication {feedName: $feedName})-[:PUBLISHED_IN]->(:MoeraNode {name: $publisherName})
+                """;
+            query.append(
+                switch (entryType) {
+                    case ALL ->
+                        " AND (EXISTS((e)" + publication + ") OR EXISTS{WITH p[0] AS pr MATCH (pr)" + publication + "})";
+                    case POSTING -> " AND EXISTS((e)" + publication + ")";
+                    case COMMENT -> " AND EXISTS((p)" + publication + ")";
+                }
+            );
+            args.put("feedName", inNewsfeed ? Feed.NEWS : Feed.TIMELINE);
+            args.put("publisherName", publisherName);
+        }
+        query.append('\n');
+        query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
         query.append("LIMIT $limit\n");
         args.put("limit", limit);
         query.append(
