@@ -86,7 +86,7 @@ public class NamingServiceScanner {
                             if (nodeName.equals(config.getNodeName())) {
                                 continue;
                             }
-                            boolean exists = database.read(() -> nodeRepository.existsName(nodeName));
+                            boolean exists = database.read(() -> nodeRepository.exists(nodeName));
                             if (exists) {
                                 continue;
                             }

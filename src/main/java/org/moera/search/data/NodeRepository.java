@@ -23,11 +23,12 @@ public class NodeRepository {
     @Inject
     private Database database;
 
-    public boolean existsName(String name) {
+    public boolean exists(String name) {
         return database.tx().run(
             """
-            MATCH (n:MoeraNode {name: $name})
-            RETURN count(n) > 0 AS exists
+            RETURN EXISTS {
+                MATCH (:MoeraNode {name: $name})
+            } AS exists
             """,
             Map.of("name", name)
         ).single().get("exists").asBoolean();
