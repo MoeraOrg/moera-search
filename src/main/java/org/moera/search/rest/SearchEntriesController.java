@@ -65,6 +65,7 @@ public class SearchEntriesController {
                     filter.getMinImageCount(),
                     filter.getMaxImageCount(),
                     filter.getVideoPresent(),
+                    filter.getSheriffName(),
                     filter.getBefore(),
                     filter.getAfter(),
                     filter.getLimit()

@@ -68,6 +68,7 @@ public class EntryRepository {
         Integer minImageCount,
         Integer maxImageCount,
         Boolean videoPresent,
+        String sheriffName,
         Long before,
         Long after,
         int limit
@@ -126,6 +127,19 @@ public class EntryRepository {
         if (videoPresent != null) {
             query.append(" AND e.videoPresent = $videoPresent");
             args.put("videoPresent", videoPresent);
+        }
+        if (sheriffName != null) {
+            query.append(" AND (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))");
+            query.append(" AND (o.sheriffMarks IS NULL OR NOT ($sheriffName IN o.sheriffMarks))");
+            query.append(" AND (e.sheriffMarks IS NULL OR NOT ($sheriffName IN e.sheriffMarks))");
+            if (entryType == SearchEntryType.ALL) {
+                query.append(
+                    " AND (size(p) = 0 OR p[0].sheriffMarks IS NULL OR NOT ($sheriffName IN p[0].sheriffMarks))"
+                );
+            } else if (entryType == SearchEntryType.COMMENT) {
+                query.append(" AND (p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks))");
+            }
+            args.put("sheriffName", sheriffName);
         }
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
