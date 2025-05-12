@@ -9,6 +9,7 @@ import org.moera.search.data.NodeRepository;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.ingest.SheriffMarkIngest;
+import org.moera.search.util.SafeInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +99,7 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
         }
 
         if (!state.ordersScanned) {
-            while (state.after < Long.MAX_VALUE) {
+            while (state.after < SafeInteger.MAX_VALUE) {
                 var ordersSlice = nodeApi
                     .at(parameters.nodeName)
                     .getRemoteSheriffOrdersSlice(state.after, null, PAGE_SIZE);
@@ -124,7 +125,7 @@ public class SheriffScanJob extends Job<SheriffScanJob.Parameters, SheriffScanJo
             checkpoint();
         }
 
-        while (state.after < Long.MAX_VALUE) {
+        while (state.after < SafeInteger.MAX_VALUE) {
             var userListSlice = nodeApi
                 .at(parameters.nodeName)
                 .getUserListSlice(SheriffMarkIngest.SHERIFF_USER_LIST_HIDE, state.after, null, PAGE_SIZE);

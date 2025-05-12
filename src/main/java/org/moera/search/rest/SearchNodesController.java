@@ -25,13 +25,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @ApiController
-@RequestMapping("/moera/api/search")
+@RequestMapping("/moera/api/search/nodes")
 @NoCache
-public class SearchController {
+public class SearchNodesController {
 
-    public static final int MAX_NODES_PER_REQUEST = 100;
+    private static final Logger log = LoggerFactory.getLogger(SearchNodesController.class);
 
-    private static final Logger log = LoggerFactory.getLogger(SearchController.class);
+    private static final int MAX_NODES_PER_REQUEST = 100;
 
     @Inject
     private RequestContext requestContext;
@@ -42,8 +42,8 @@ public class SearchController {
     @Inject
     private NodeRepository nodeRepository;
 
-    @GetMapping("/nodes")
-    public List<SearchNodeInfo> searchNodes(
+    @GetMapping
+    public List<SearchNodeInfo> search(
         @RequestParam(defaultValue = "") String query,
         @RequestParam(required = false) Integer limit
     ) {
