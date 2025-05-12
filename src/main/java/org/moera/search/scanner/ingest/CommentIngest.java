@@ -1,11 +1,8 @@
 package org.moera.search.scanner.ingest;
 
-import java.util.Objects;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.CommentInfo;
-import org.moera.lib.node.types.CommentOperations;
-import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
@@ -117,11 +114,7 @@ public class CommentIngest {
         var revision = database.read(() ->
             commentRepository.getRevision(nodeName, comment.getPostingId(), comment.getId())
         );
-        var viewPrincipal = CommentOperations.getView(comment.getOperations(), Principal.PUBLIC).getValue();
-        if (
-            Objects.equals(revision.revisionId(), comment.getRevisionId())
-            && Objects.equals(revision.viewPrincipal(), viewPrincipal)
-        ) {
+        if (revision.sameRevision(comment)) {
             return;
         }
 
@@ -143,8 +136,8 @@ public class CommentIngest {
         String documentId = database.read(() ->
             commentRepository.getDocumentId(nodeName, comment.getPostingId(), comment.getId())
         );
-        String revisionId = documentId != null ? index.getRevisionId(documentId) : null;
-        if (Objects.equals(revisionId, comment.getRevisionId())) {
+        var revision = documentId != null ? index.getRevision(documentId) : null;
+        if (revision != null && revision.sameRevision(comment)) {
             return documentId;
         }
 

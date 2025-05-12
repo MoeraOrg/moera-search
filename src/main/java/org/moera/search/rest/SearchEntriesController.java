@@ -143,11 +143,16 @@ public class SearchEntriesController {
             filter.getMinImageCount(),
             filter.getMaxImageCount(),
             filter.getVideoPresent(),
+            requestContext.hasClientScope(Scope.VIEW_CONTENT),
             filter.getPage(),
             filter.getLimit()
         );
         var entries = searchResult.total() > 0
-            ? database.read(() -> entryRepository.findDocuments(filter.getEntryType(), searchResult.documentIds()))
+            ? database.read(
+                () -> entryRepository.findDocuments(
+                    filter.getEntryType(), searchResult.documentIds(), filter.getSheriffName()
+                )
+            )
             : Collections.<SearchEntryInfo>emptyList();
 
         var page = new SearchTextPageInfo();

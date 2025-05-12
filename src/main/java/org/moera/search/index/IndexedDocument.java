@@ -4,9 +4,12 @@ import java.sql.Timestamp;
 import java.util.List;
 
 import org.moera.lib.node.types.CommentInfo;
+import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PostingInfo;
+import org.moera.lib.node.types.PostingOperations;
 import org.moera.lib.node.types.body.Body;
+import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.util.BodyUtil;
 import org.moera.search.util.Util;
 import org.springframework.util.ObjectUtils;
@@ -29,6 +32,7 @@ public class IndexedDocument {
     private int imageCount;
     private boolean videoPresent;
     private List<String> hashtags;
+    private String viewPrincipal;
 
     public IndexedDocument() {
     }
@@ -40,6 +44,7 @@ public class IndexedDocument {
         createdAt = Util.toTimestamp(info.getCreatedAt());
         ownerName = info.getOwnerName();
         analyzeBody(info.getBody(), info.getMedia());
+        viewPrincipal = PostingOperations.getView(info.getOperations(), Principal.PUBLIC).getValue();
     }
 
     public IndexedDocument(String nodeName, CommentInfo info) {
@@ -53,6 +58,7 @@ public class IndexedDocument {
             repliedToName = info.getRepliedTo().getName();
         }
         analyzeBody(info.getBody(), info.getMedia());
+        viewPrincipal = CommentOperations.getView(info.getOperations(), Principal.PUBLIC).getValue();
     }
 
     private void analyzeBody(Body body, List<MediaAttachment> media) {
@@ -210,6 +216,14 @@ public class IndexedDocument {
 
     public void setHashtags(List<String> hashtags) {
         this.hashtags = hashtags;
+    }
+
+    public String getViewPrincipal() {
+        return viewPrincipal;
+    }
+
+    public void setViewPrincipal(String viewPrincipal) {
+        this.viewPrincipal = viewPrincipal;
     }
 
 }

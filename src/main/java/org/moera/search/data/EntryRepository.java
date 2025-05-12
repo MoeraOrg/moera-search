@@ -198,14 +198,18 @@ public class EntryRepository {
         return database.tx().run(query.toString(), args).list(this::buildSearchResult);
     }
 
-    public List<SearchEntryInfo> findDocuments(SearchEntryType entryType, List<String> documentIds) {
+    public List<SearchEntryInfo> findDocuments(
+        SearchEntryType entryType, List<String> documentIds, String sheriffName
+    ) {
         if (documentIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         var query = new StringBuilder();
+        var args = new HashMap<String, Object>();
 
         query.append("UNWIND $ids AS id\n");
+        args.put("ids", documentIds);
         query.append("MATCH ");
         query.append(
             switch (entryType) {
@@ -215,6 +219,20 @@ public class EntryRepository {
             }
         );
         query.append("-[:SOURCE]->(n:MoeraNode), (e)-[:OWNER]->(o:MoeraNode)\n");
+        if (sheriffName != null) {
+            query.append("WHERE (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))");
+            query.append(" AND (o.sheriffMarks IS NULL OR NOT ($sheriffName IN o.sheriffMarks))");
+            query.append(" AND (e.sheriffMarks IS NULL OR NOT ($sheriffName IN e.sheriffMarks))");
+            if (entryType == SearchEntryType.ALL) {
+                query.append(
+                    " AND (size(p) = 0 OR p[0].sheriffMarks IS NULL OR NOT ($sheriffName IN p[0].sheriffMarks))"
+                );
+            } else if (entryType == SearchEntryType.COMMENT) {
+                query.append(" AND (p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks))");
+            }
+            query.append('\n');
+            args.put("sheriffName", sheriffName);
+        }
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
         query.append(
             """
@@ -256,7 +274,7 @@ public class EntryRepository {
             """
         );
 
-        return database.tx().run(query.toString(), Map.of("ids", documentIds)).list(this::buildSearchResult);
+        return database.tx().run(query.toString(), args).list(this::buildSearchResult);
     }
 
     /*

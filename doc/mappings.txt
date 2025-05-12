@@ -56,6 +56,9 @@ OpenSearch Mappings
     },
     "hashtags": {
       "type": "keyword"
+    },
+    "viewPrincipal": {
+      "type": "keyword"
     }
   }
 }

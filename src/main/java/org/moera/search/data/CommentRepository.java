@@ -178,10 +178,7 @@ public class CommentRepository {
         );
     }
 
-    public record CommentRevision(String revisionId, String viewPrincipal) {
-    }
-
-    public CommentRevision getRevision(String nodeName, String postingId, String commentId) {
+    public EntryRevision getRevision(String nodeName, String postingId, String commentId) {
         var r = database.tx().run(
             """
             OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
@@ -195,7 +192,7 @@ public class CommentRepository {
             )
         ).single();
 
-        return new CommentRevision(
+        return new EntryRevision(
             r.get("revisionId").asString(null),
             r.get("viewPrincipal").asString(Principal.PUBLIC.getValue())
         );

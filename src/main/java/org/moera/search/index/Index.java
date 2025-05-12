@@ -20,6 +20,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.moera.lib.node.types.SearchEntryType;
 import org.moera.search.config.Config;
 import org.moera.search.data.DatabaseInitializedEvent;
+import org.moera.search.data.EntryRevision;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
@@ -219,17 +220,19 @@ public class Index {
         }
     }
 
-    public String getRevisionId(String id) {
+    public EntryRevision getRevision(String id) {
         try {
             var response = client.get(
                 new GetRequest.Builder()
                     .index(config.getIndex().getIndexName())
                     .id(id)
-                    .sourceIncludes(List.of("revisionId"))
+                    .sourceIncludes(List.of("revisionId", "viewPrincipal"))
                     .build(),
                 IndexedDocument.class
             );
-            return response.source() != null ? response.source().getRevisionId() : null;
+            return response.source() != null
+                ? new EntryRevision(response.source().getRevisionId(), response.source().getViewPrincipal())
+                : null;
         } catch (IOException e) {
             throw new TransientIndexException(e);
         }
@@ -249,15 +252,16 @@ public class Index {
         Integer minImageCount,
         Integer maxImageCount,
         Boolean videoPresent,
+        boolean signedIn,
         int page,
         int limit
     ) {
         var conditions = new BoolQuery.Builder();
 
         if (entryType == SearchEntryType.POSTING) {
-            conditions.mustNot(existsQuery("commentId"));
+            conditions.filter(notExistsQuery("commentId"));
         } else if (entryType == SearchEntryType.COMMENT) {
-            conditions.must(existsQuery("commentId"));
+            conditions.filter(existsQuery("commentId"));
         }
 
         conditions.must(
@@ -301,6 +305,18 @@ public class Index {
         if (videoPresent != null) {
             conditions.filter(termQuery("videoPresent", videoPresent));
         }
+        if (!signedIn) {
+            conditions.filter(
+                new Query.Builder()
+                    .bool(
+                        new BoolQuery.Builder()
+                            .should(notExistsQuery("viewPrincipal"))
+                            .should(termQuery("viewPrincipal", "public"))
+                            .build()
+                    )
+                    .build()
+            );
+        }
 
         try {
             var response = client.search(
@@ -332,6 +348,16 @@ public class Index {
             .exists(
                 new ExistsQuery.Builder()
                     .field(fieldName)
+                    .build()
+            )
+            .build();
+    }
+
+    private static Query notExistsQuery(String fieldName) {
+        return new Query.Builder()
+            .bool(
+                new BoolQuery.Builder()
+                    .mustNot(existsQuery(fieldName))
                     .build()
             )
             .build();
