@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.SearchEntryType;
 import org.moera.lib.node.types.SearchHashtagFilter;
 import org.moera.lib.node.types.SearchHashtagSliceInfo;
+import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
 import org.moera.search.global.ApiController;
@@ -36,6 +37,11 @@ public class SearchEntriesController {
         log.info("POST /search/entries/by-hashtag");
 
         filter.validate();
+
+        ValidationUtil.assertion(
+            filter.getBefore() == null || filter.getAfter() == null,
+            "search.before-after-exclusive"
+        );
 
         if (filter.getEntryType() == null) {
             filter.setEntryType(SearchEntryType.ALL);

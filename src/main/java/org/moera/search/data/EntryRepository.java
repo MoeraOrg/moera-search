@@ -129,6 +129,11 @@ public class EntryRepository {
         }
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
+        if (after != null) {
+            query.append("ORDER BY e.moment ASC\n");
+        } else if (before != null) {
+            query.append("ORDER BY e.moment DESC\n");
+        }
         query.append("LIMIT $limit\n");
         args.put("limit", limit);
         query.append(
