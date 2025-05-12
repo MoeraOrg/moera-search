@@ -5,6 +5,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -252,6 +253,8 @@ public class Index {
         Integer minImageCount,
         Integer maxImageCount,
         Boolean videoPresent,
+        Timestamp createdAfter,
+        Timestamp createdBefore,
         boolean signedIn,
         int page,
         int limit
@@ -304,6 +307,21 @@ public class Index {
         }
         if (videoPresent != null) {
             conditions.filter(termQuery("videoPresent", videoPresent));
+        }
+        if (createdAfter != null || createdBefore != null) {
+            var rangeQuery = new RangeQuery.Builder()
+                .field("createdAt");
+            if (createdAfter != null) {
+                rangeQuery.gte(JsonData.of(createdAfter));
+            }
+            if (createdBefore != null) {
+                rangeQuery.lte(JsonData.of(createdBefore));
+            }
+            conditions.filter(
+                new Query.Builder()
+                    .range(rangeQuery.build())
+                    .build()
+            );
         }
         if (!signedIn) {
             conditions.filter(

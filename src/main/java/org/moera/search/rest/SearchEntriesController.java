@@ -19,6 +19,7 @@ import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
 import org.moera.search.index.Index;
 import org.moera.search.util.SafeInteger;
+import org.moera.search.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -143,6 +144,8 @@ public class SearchEntriesController {
             filter.getMinImageCount(),
             filter.getMaxImageCount(),
             filter.getVideoPresent(),
+            Util.toTimestamp(filter.getCreatedAfter()),
+            Util.toTimestamp(filter.getCreatedBefore()),
             requestContext.hasClientScope(Scope.VIEW_CONTENT),
             filter.getPage(),
             filter.getLimit()
