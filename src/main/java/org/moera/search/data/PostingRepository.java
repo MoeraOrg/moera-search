@@ -155,6 +155,7 @@ public class PostingRepository {
                 "postingId", postingId
             )
         ).single();
+
         return new PostingRevision(
             r.get("revisionId").asString(null),
             r.get("viewPrincipal").asString(Principal.PUBLIC.getValue())

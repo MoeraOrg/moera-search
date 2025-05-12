@@ -178,19 +178,27 @@ public class CommentRepository {
         );
     }
 
-    public String getRevisionId(String nodeName, String postingId, String commentId) {
-        return database.tx().run(
+    public record CommentRevision(String revisionId, String viewPrincipal) {
+    }
+
+    public CommentRevision getRevision(String nodeName, String postingId, String commentId) {
+        var r = database.tx().run(
             """
             OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
                            <-[:UNDER]-(c:Comment {id: $commentId})
-            RETURN c.revisionId AS id
+            RETURN c.revisionId AS revisionId, c.viewPrincipal AS viewPrincipal
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId,
                 "commentId", commentId
             )
-        ).single().get("id").asString(null);
+        ).single();
+
+        return new CommentRevision(
+            r.get("revisionId").asString(null),
+            r.get("viewPrincipal").asString(Principal.PUBLIC.getValue())
+        );
     }
 
     public String getDocumentId(String nodeName, String postingId, String commentId) {
