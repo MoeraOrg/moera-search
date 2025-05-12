@@ -10,10 +10,14 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.api.fingerprint.PostingFingerprintBuilder;
 import org.moera.search.data.CachePostingDigestRepository;
 import org.moera.search.data.Database;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PostingSignatureVerifier extends SignatureVerifier {
+
+    private static final Logger log = LoggerFactory.getLogger(PostingSignatureVerifier.class);
 
     @Inject
     private Database database;
@@ -68,7 +72,10 @@ public class PostingSignatureVerifier extends SignatureVerifier {
             postingInfo.getSignatureVersion(), postingInfo, null, mediaDigest(nodeName, carte)
         );
         if (!CryptoUtil.verifySignature(fingerprint, postingInfo.getSignature(), signingKey)) {
-            throw new SignatureVerificationException("Posting signature is incorrect");
+            if (postingInfo.getCreatedAt() >= VERIFICATION_FAILURE_CUTOFF_TIMESTAMP) {
+                throw new SignatureVerificationException("Posting signature is incorrect");
+            }
+            log.error("Posting signature is incorrect, but it is created before cutoff");
         }
         byte[] digest = CryptoUtil.digest(fingerprint);
         database.writeNoResult(() ->

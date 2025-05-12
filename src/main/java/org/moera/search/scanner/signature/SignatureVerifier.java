@@ -1,5 +1,7 @@
 package org.moera.search.scanner.signature;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.function.Function;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
@@ -11,6 +13,9 @@ import org.moera.search.config.Config;
 import org.moera.search.media.MediaManager;
 
 class SignatureVerifier {
+
+    protected static final long VERIFICATION_FAILURE_CUTOFF_TIMESTAMP =
+        LocalDateTime.of(2025, 4, 12, 17, 0, 0, 0).toInstant(ZoneOffset.UTC).getEpochSecond(); // Pesah 5785
 
     private MoeraNaming naming;
 

@@ -12,10 +12,14 @@ import org.moera.search.api.NodeApi;
 import org.moera.search.api.fingerprint.CommentFingerprintBuilder;
 import org.moera.search.data.CacheCommentDigestRepository;
 import org.moera.search.data.Database;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CommentSignatureVerifier extends SignatureVerifier {
+
+    private static final Logger log = LoggerFactory.getLogger(CommentSignatureVerifier.class);
 
     @Inject
     private Database database;
@@ -112,7 +116,10 @@ public class CommentSignatureVerifier extends SignatureVerifier {
             commentInfo.getSignatureVersion(), commentInfo, mediaDigest(nodeName, carte), postingDigest, repliedToDigest
         );
         if (!CryptoUtil.verifySignature(fingerprint, commentInfo.getSignature(), signingKey)) {
-            throw new SignatureVerificationException("Comment signature is incorrect");
+            if (commentInfo.getCreatedAt() >= VERIFICATION_FAILURE_CUTOFF_TIMESTAMP) {
+                throw new SignatureVerificationException("Comment signature is incorrect");
+            }
+            log.error("Comment signature is incorrect, but it is created before cutoff");
         }
         byte[] digest = CryptoUtil.digest(fingerprint);
         database.writeNoResult(() ->
