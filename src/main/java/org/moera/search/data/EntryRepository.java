@@ -69,6 +69,7 @@ public class EntryRepository {
         Integer maxImageCount,
         Boolean videoPresent,
         String sheriffName,
+        boolean signedIn,
         Long before,
         Long after,
         int limit
@@ -140,6 +141,9 @@ public class EntryRepository {
                 query.append(" AND (p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks))");
             }
             args.put("sheriffName", sheriffName);
+        }
+        if (!signedIn) {
+            query.append(" AND (e.viewPrincipal IS NULL OR e.viewPrincipal = 'public')");
         }
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");

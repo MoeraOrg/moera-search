@@ -2,10 +2,12 @@ package org.moera.search.rest;
 
 import jakarta.inject.Inject;
 
+import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.SearchEntryType;
 import org.moera.lib.node.types.SearchHashtagFilter;
 import org.moera.lib.node.types.SearchHashtagSliceInfo;
 import org.moera.lib.node.types.validate.ValidationUtil;
+import org.moera.search.auth.RequestContext;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
 import org.moera.search.global.ApiController;
@@ -25,6 +27,9 @@ public class SearchEntriesController {
     private static final Logger log = LoggerFactory.getLogger(SearchEntriesController.class);
 
     private static final int MAX_ENTRIES_PER_REQUEST = 50;
+
+    @Inject
+    private RequestContext requestContext;
 
     @Inject
     private Database database;
@@ -66,6 +71,7 @@ public class SearchEntriesController {
                     filter.getMaxImageCount(),
                     filter.getVideoPresent(),
                     filter.getSheriffName(),
+                    requestContext.hasClientScope(Scope.VIEW_CONTENT),
                     filter.getBefore(),
                     filter.getAfter(),
                     filter.getLimit()
