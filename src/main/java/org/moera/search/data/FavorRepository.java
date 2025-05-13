@@ -21,15 +21,19 @@ public class FavorRepository {
                   (p)<-[:CONTAINS]-(pb:Publication {feedName: 'timeline', storyId: $storyId})
                   -[:PUBLISHED_IN]->(pbo:MoeraNode {name: $publisherName})
             WHERE pbo <> po
-            MERGE (po)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(pbo)
-            MERGE (f)-[:CAUSED_BY]->(pb)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(po)
+            CREATE (f)-[:DONE_BY]->(pbo)
+            CREATE (f)-[:CAUSED_BY]->(pb)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
                 f.deadline = $deadline
             WITH p, pbo, pb
-            MERGE (p)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(pbo)
-            MERGE (f)-[:CAUSED_BY]->(pb)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(p)
+            CREATE (f)-[:DONE_BY]->(pbo)
+            CREATE (f)-[:CAUSED_BY]->(pb)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
@@ -87,15 +91,19 @@ public class FavorRepository {
                   <-[:UNDER]-(c:Comment {id: $commentId})-[:OWNER]->(co:MoeraNode),
                   (p)-[:OWNER]->(po:MoeraNode)
             WHERE po <> co
-            MERGE (po)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(co)
-            MERGE (f)-[:CAUSED_BY]->(c)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(po)
+            CREATE (f)-[:DONE_BY]->(co)
+            CREATE (f)-[:CAUSED_BY]->(c)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
                 f.deadline = $deadline
             WITH p, co, c
-            MERGE (p)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(co)
-            MERGE (f)-[:CAUSED_BY]->(c)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(p)
+            CREATE (f)-[:DONE_BY]->(co)
+            CREATE (f)-[:CAUSED_BY]->(c)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
@@ -122,8 +130,10 @@ public class FavorRepository {
                   <-[:UNDER]-(c:Comment {id: $commentId})-[:OWNER]->(co:MoeraNode),
                   (c)-[:REPLIED_TO]->(:Comment)-[:OWNER]->(rto:MoeraNode)
             WHERE rto <> co
-            MERGE (rto)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(co)
-            MERGE (f)-[:CAUSED_BY]->(c)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(rto)
+            CREATE (f)-[:DONE_BY]->(co)
+            CREATE (f)-[:CAUSED_BY]->(c)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
@@ -179,15 +189,19 @@ public class FavorRepository {
                   <-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(ro:MoeraNode {name: $reactionOwnerName}),
                   (p)-[:OWNER]->(po:MoeraNode)
             WHERE po <> ro
-            MERGE (po)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(ro)
-            MERGE (f)-[:CAUSED_BY]->(r)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(po)
+            CREATE (f)-[:DONE_BY]->(ro)
+            CREATE (f)-[:CAUSED_BY]->(r)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
                 f.deadline = $deadline
             WITH p, ro, r
-            MERGE (p)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(ro)
-            MERGE (f)-[:CAUSED_BY]->(r)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(p)
+            CREATE (f)-[:DONE_BY]->(ro)
+            CREATE (f)-[:CAUSED_BY]->(r)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
@@ -245,8 +259,10 @@ public class FavorRepository {
                   <-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(ro:MoeraNode {name: $reactionOwnerName}),
                   (c)-[:OWNER]->(co:MoeraNode)
             WHERE co <> ro
-            MERGE (co)<-[:DONE_TO]-(f:Favor)-[:DONE_BY]->(ro)
-            MERGE (f)-[:CAUSED_BY]->(r)
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(co)
+            CREATE (f)-[:DONE_BY]->(ro)
+            CREATE (f)-[:CAUSED_BY]->(r)
             SET f.value = $value,
                 f.decayHours = $decayHours,
                 f.createdAt = $createdAt,
