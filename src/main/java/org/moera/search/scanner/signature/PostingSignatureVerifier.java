@@ -95,7 +95,10 @@ public class PostingSignatureVerifier extends SignatureVerifier {
             postingInfo.getSignatureVersion(), postingInfo, postingRevisionInfo, null, mediaDigest(nodeName, carte)
         );
         if (!CryptoUtil.verifySignature(fingerprint, postingRevisionInfo.getSignature(), signingKey)) {
-            throw new SignatureVerificationException("Posting signature is incorrect");
+            if (postingInfo.getCreatedAt() >= VERIFICATION_FAILURE_CUTOFF_TIMESTAMP) {
+                throw new SignatureVerificationException("Posting signature is incorrect");
+            }
+            log.error("Posting signature is incorrect, but it is created before cutoff");
         }
         byte[] digest = CryptoUtil.digest(fingerprint);
         database.writeNoResult(() ->

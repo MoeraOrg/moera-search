@@ -165,7 +165,10 @@ public class CommentSignatureVerifier extends SignatureVerifier {
             postingDigest, repliedToDigest
         );
         if (!CryptoUtil.verifySignature(fingerprint, commentRevisionInfo.getSignature(), signingKey)) {
-            throw new SignatureVerificationException("Comment signature is incorrect");
+            if (commentInfo.getCreatedAt() >= VERIFICATION_FAILURE_CUTOFF_TIMESTAMP) {
+                throw new SignatureVerificationException("Comment signature is incorrect");
+            }
+            log.error("Comment signature is incorrect, but it is created before cutoff");
         }
         byte[] digest = CryptoUtil.digest(fingerprint);
         database.writeNoResult(() ->
