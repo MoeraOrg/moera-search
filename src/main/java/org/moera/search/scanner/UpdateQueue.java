@@ -134,6 +134,7 @@ public class UpdateQueue {
                     return;
                 }
             } else if (update.getCreatedAt().plus(UPDATE_TIMEOUT).isBefore(Instant.now())) {
+                database.writeNoResult(() -> pendingUpdateRepository.deleteById(update.getId()));
                 synchronized (lock) {
                     queue.remove(i);
                 }
