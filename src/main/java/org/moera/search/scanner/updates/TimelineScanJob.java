@@ -9,6 +9,7 @@ import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.StoryType;
 import org.moera.search.api.Feed;
+import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
@@ -155,6 +156,12 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                         );
                     } catch (SignatureVerificationException e) {
                         log.error("Incorrect signature of posting {}: {}", posting.getId(), e.getMessage());
+                    } catch (MoeraNodeUncheckedException e) {
+                        if (isRecoverableError(e)) {
+                            throw e;
+                        }
+                        log.error("Cannot verify signature of posting {}: {}", posting.getId(), e.getMessage());
+                        log.debug("Cannot verify signature", e);
                     }
                 } else {
                     nodeIngest.newNode(posting.getReceiverName());
