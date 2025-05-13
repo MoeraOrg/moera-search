@@ -149,7 +149,7 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
                         commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())
                     );
                 } catch (SignatureVerificationException e) {
-                    log.error("Incorrect signature of comment {}", comment.getId());
+                    log.error("Incorrect signature of comment {}: {}", comment.getId(), e.getMessage());
                 } catch (MoeraNodeException | MoeraNodeUncheckedException e) {
                     if (
                         e instanceof MoeraNodeException ex && isRecoverableError(ex)

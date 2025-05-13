@@ -131,7 +131,7 @@ public class CommentReactionsScanJob extends Job<CommentReactionsScanJob.Paramet
                     );
                     reactionIngest.ingest(parameters.nodeName, reaction);
                 } catch (SignatureVerificationException e) {
-                    log.error("Incorrect signature of reaction by {}", reaction.getOwnerName());
+                    log.error("Incorrect signature of reaction by {}: {}", reaction.getOwnerName(), e.getMessage());
                 } catch (MoeraNodeException | MoeraNodeUncheckedException e) {
                     if (
                         e instanceof MoeraNodeException ex && isRecoverableError(ex)

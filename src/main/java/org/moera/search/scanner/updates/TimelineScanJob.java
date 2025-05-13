@@ -154,7 +154,7 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                             postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
                         );
                     } catch (SignatureVerificationException e) {
-                        log.error("Incorrect signature of posting {}", posting.getId());
+                        log.error("Incorrect signature of posting {}: {}", posting.getId(), e.getMessage());
                     }
                 } else {
                     nodeIngest.newNode(posting.getReceiverName());
