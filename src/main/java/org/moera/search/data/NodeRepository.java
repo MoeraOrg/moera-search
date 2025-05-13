@@ -277,7 +277,7 @@ public class NodeRepository {
             MATCH (:MoeraNode {name: $clientName})-[c:CLOSE_TO]->(n:MoeraNode)
             WHERE lower(n.name) STARTS WITH $prefix
             WITH n, c.distance AS distance
-            ORDER BY distance DESC
+            ORDER BY distance ASC
             LIMIT $limit
             OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
             RETURN n, distance, a.shape AS shape, mf
@@ -303,7 +303,7 @@ public class NodeRepository {
             MATCH (:MoeraNode {name: $clientName})-[c:CLOSE_TO]->(n:MoeraNode)
             WHERE n.fullName =~ $prefix
             WITH n, c.distance AS distance
-            ORDER BY c.distance DESC
+            ORDER BY c.distance ASC
             LIMIT $limit
             OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
             RETURN n, distance, a.shape AS shape, mf
