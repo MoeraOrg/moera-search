@@ -118,8 +118,11 @@ public class UpdateQueue {
             }
             var waitJobKeys = update.waitJobKeys();
             boolean ready =
-                waitJobKeys.stream().noneMatch(busy::contains)
-                && database.read(() -> waitJobKeys.stream().noneMatch(jobs::keyExists))
+                (
+                    waitJobKeys == null
+                    || waitJobKeys.stream().noneMatch(busy::contains)
+                        && database.read(() -> waitJobKeys.stream().noneMatch(jobs::keyExists))
+                )
                 && update.isPrepared();
             if (ready) {
                 update.execute();
