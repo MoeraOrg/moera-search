@@ -132,7 +132,7 @@ public class EntryRepository {
         }
         if (sheriffName != null) {
             query.append(" AND (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))");
-            query.append(" AND (o.sheriffMarks IS NULL OR NOT ($sheriffName IN o.sheriffMarks))");
+            query.append(" AND (o.ownerSheriffMarks IS NULL OR NOT ($sheriffName IN o.ownerSheriffMarks))");
             query.append(" AND (e.sheriffMarks IS NULL OR NOT ($sheriffName IN e.sheriffMarks))");
             if (entryType == SearchEntryType.ALL) {
                 query.append(
@@ -221,7 +221,7 @@ public class EntryRepository {
         query.append("-[:SOURCE]->(n:MoeraNode), (e)-[:OWNER]->(o:MoeraNode)\n");
         if (sheriffName != null) {
             query.append("WHERE (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))");
-            query.append(" AND (o.sheriffMarks IS NULL OR NOT ($sheriffName IN o.sheriffMarks))");
+            query.append(" AND (o.ownerSheriffMarks IS NULL OR NOT ($sheriffName IN o.ownerSheriffMarks))");
             query.append(" AND (e.sheriffMarks IS NULL OR NOT ($sheriffName IN e.sheriffMarks))");
             if (entryType == SearchEntryType.ALL) {
                 query.append(
