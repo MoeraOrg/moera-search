@@ -15,17 +15,14 @@ import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.search.auth.RequestContext;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
-import org.moera.search.data.NodeRepository;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
 import org.moera.search.index.Index;
-import org.moera.search.scanner.UpdateQueue;
-import org.moera.search.scanner.updates.SheriffScanUpdate;
+import org.moera.search.scanner.ingest.SheriffIngest;
 import org.moera.search.util.SafeInteger;
 import org.moera.search.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,16 +44,13 @@ public class SearchEntriesController {
     private Database database;
 
     @Inject
-    private NodeRepository nodeRepository;
-
-    @Inject
     private EntryRepository entryRepository;
 
     @Inject
     private Index index;
 
     @Inject
-    private UpdateQueue updateQueue;
+    private SheriffIngest sheriffIngest;
 
     @PostMapping("/by-hashtag")
     public SearchHashtagSliceInfo byHashtag(@RequestBody SearchHashtagFilter filter) {
@@ -82,7 +76,7 @@ public class SearchEntriesController {
         if (filter.getBefore() == null && filter.getAfter() == null) {
             filter.setBefore(SafeInteger.MAX_VALUE);
         }
-        activateSheriff(filter.getSheriffName());
+        sheriffIngest.activate(filter.getSheriffName());
 
         var slice = new SearchHashtagSliceInfo();
 
@@ -143,7 +137,7 @@ public class SearchEntriesController {
         if (filter.getLimit() > MAX_ENTRIES_PER_REQUEST) {
             filter.setLimit(MAX_ENTRIES_PER_REQUEST);
         }
-        activateSheriff(filter.getSheriffName());
+        sheriffIngest.activate(filter.getSheriffName());
 
         var searchResult = index.search(
             filter.getEntryType(),
@@ -184,21 +178,6 @@ public class SearchEntriesController {
                     filter.set(i, "#" + hashtag);
                 }
             }
-        }
-    }
-
-    private void activateSheriff(String name) {
-        if (ObjectUtils.isEmpty(name)) {
-            return;
-        }
-        var exists = database.read(() -> nodeRepository.exists(name));
-        if (!exists) {
-            return;
-        }
-        var scannedSheriff = database.read(() -> nodeRepository.isScannedSheriff(name));
-        if (!scannedSheriff) {
-            log.info("Sheriff {} is referred for the first time, starting scanning", name);
-            updateQueue.offer(new SheriffScanUpdate(name));
         }
     }
 

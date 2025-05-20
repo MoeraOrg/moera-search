@@ -92,7 +92,7 @@ UNIQUE media_file_id ON (id)
 (:MoeraNode)
 name:               string NOT NULL
 fullName:           string
-title: string
+title:              string
 scanProfile:        boolean/int             (ScanStatus)
 profileScannedAt:   int                     (ms timestamp)
 subscriberId:       string
