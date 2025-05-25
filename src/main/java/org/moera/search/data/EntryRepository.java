@@ -16,6 +16,7 @@ import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.api.Feed;
 import org.moera.search.api.model.AvatarImageUtil;
+import org.moera.search.api.model.PublicMediaFileInfoUtil;
 import org.moera.search.util.MomentFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,6 +149,7 @@ public class EntryRepository {
         }
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
+        query.append("OPTIONAL MATCH (e)-[:MEDIA_PREVIEW]->(mp:MediaFile)\n");
         if (after != null) {
             query.append("ORDER BY e.moment ASC\n");
         } else if (before != null) {
@@ -191,7 +193,8 @@ public class EntryRepository {
                 o AS owner,
                 mf AS avatar,
                 a.shape AS avatarShape,
-                e AS entry
+                e AS entry,
+                mp AS mediaPreview
             """
         );
 
@@ -234,6 +237,7 @@ public class EntryRepository {
             args.put("sheriffName", sheriffName);
         }
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
+        query.append("OPTIONAL MATCH (e)-[:MEDIA_PREVIEW]->(mp:MediaFile)\n");
         query.append(
             """
             RETURN
@@ -270,7 +274,8 @@ public class EntryRepository {
                 o AS owner,
                 mf AS avatar,
                 a.shape AS avatarShape,
-                e AS entry
+                e AS entry,
+                mp AS mediaPreview
             """
         );
 
@@ -305,6 +310,10 @@ public class EntryRepository {
         info.setBodyPreview(new Body(entry.get("bodyPreview").asString()));
         info.setHeading(entry.get("heading").asString(null));
         info.setImageCount(entry.get("imageCount").asInt(0));
+        var mediaPreview = r.get("mediaPreview").isNull() ? null : new MediaFile(r.get("mediaPreview").asNode());
+        if (mediaPreview != null) {
+            info.setMediaPreview(PublicMediaFileInfoUtil.build(mediaPreview));
+        }
         info.setVideoPresent(entry.get("videoPresent").asBoolean(false));
         var repliedTo = entry.get("repliedTo").asString(null);
         if (repliedTo != null) {
