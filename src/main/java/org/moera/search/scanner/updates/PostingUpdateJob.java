@@ -101,12 +101,16 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
             );
             var exists = database.read(() -> postingRepository.exists(parameters.nodeName, parameters.postingId));
             if (!exists) {
-                postingIngest.ingest(parameters.nodeName, posting);
+                postingIngest.ingest(
+                    parameters.nodeName, posting, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                );
                 database.writeNoResult(() ->
                     postingRepository.scanSucceeded(parameters.nodeName, parameters.postingId)
                 );
             } else {
-                postingIngest.update(parameters.nodeName, posting);
+                postingIngest.update(
+                    parameters.nodeName, posting, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                );
             }
         }
     }

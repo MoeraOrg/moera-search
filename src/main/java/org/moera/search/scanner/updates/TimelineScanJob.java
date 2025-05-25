@@ -150,7 +150,9 @@ public class TimelineScanJob extends Job<TimelineScanJob.Parameters, TimelineSca
                             posting,
                             generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
                         );
-                        postingIngest.ingest(parameters.nodeName, posting);
+                        postingIngest.ingest(
+                            parameters.nodeName, posting, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                        );
                         database.writeNoResult(() ->
                             postingRepository.scanSucceeded(parameters.nodeName, posting.getId())
                         );

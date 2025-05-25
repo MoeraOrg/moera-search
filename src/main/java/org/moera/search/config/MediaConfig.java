@@ -8,6 +8,7 @@ public class MediaConfig {
     private boolean directServe;
     private int avatarMaxSize = 102400;
     private int verifyMaxSize = 10485760;
+    private int previewMaxSize = 10485760;
 
     public String getPath() {
         return path;
@@ -55,6 +56,14 @@ public class MediaConfig {
 
     public void setVerifyMaxSize(int verifyMaxSize) {
         this.verifyMaxSize = verifyMaxSize;
+    }
+
+    public int getPreviewMaxSize() {
+        return previewMaxSize;
+    }
+
+    public void setPreviewMaxSize(int previewMaxSize) {
+        this.previewMaxSize = previewMaxSize;
     }
 
 }

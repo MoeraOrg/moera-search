@@ -141,7 +141,7 @@ public class CommentAddJob extends Job<CommentAddJob.Parameters, CommentAddJob.S
                 comment,
                 generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
             );
-            commentIngest.ingest(parameters.nodeName, comment);
+            commentIngest.ingest(parameters.nodeName, comment, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT));
         }
 
         database.writeNoResult(() ->

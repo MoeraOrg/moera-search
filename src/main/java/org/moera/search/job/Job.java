@@ -4,6 +4,7 @@ import java.security.PrivateKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -292,6 +293,10 @@ public abstract class Job<P, S> implements Runnable {
             log.error("Error generating carte");
             throw e;
         }
+    }
+
+    protected Supplier<String> carteSupplier(String targetNodeName, Scope clientScope) {
+        return () -> generateCarte(targetNodeName, clientScope, Scope.NONE);
     }
 
 }

@@ -1,15 +1,19 @@
 package org.moera.search.media;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
 import okhttp3.ResponseBody;
 import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.AvatarImage;
+import org.moera.lib.node.types.MediaAttachment;
+import org.moera.lib.node.types.body.Body;
 import org.moera.search.api.MoeraNodeLocalStorageException;
 import org.moera.search.api.MoeraNodeUncheckedException;
 import org.moera.search.api.NodeApi;
@@ -19,6 +23,7 @@ import org.moera.search.data.CacheMediaDigestRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.MediaFile;
 import org.moera.search.data.MediaFileRepository;
+import org.moera.search.util.BodyUtil;
 import org.moera.search.util.DigestingOutputStream;
 import org.moera.search.util.ParametrizedLock;
 import org.slf4j.Logger;
@@ -103,8 +108,7 @@ public class MediaManager {
                 return mediaFile;
             }
 
-            var tmp = mediaOperations.tmpFile();
-            try {
+            try (var tmp = mediaOperations.tmpFile()) {
                 var tmpMedia = getPublicMedia(nodeName, id, tmp, maxSize);
                 if (!tmpMedia.mediaFileId().equals(id)) {
                     log.warn("Public media {} has hash {}", id, tmpMedia.mediaFileId());
@@ -117,21 +121,8 @@ public class MediaManager {
                 throw new MoeraNodeLocalStorageException(
                     "Error storing public media %s: %s".formatted(id, e.getMessage())
                 );
-            } finally {
-                try {
-                    Files.deleteIfExists(tmp.path());
-                } catch (IOException e) {
-                    log.warn("Error removing temporary media file {}: {}", tmp.path(), e.getMessage());
-                }
             }
         }
-    }
-
-    public MediaFile downloadPublicMedia(String nodeName, AvatarImage avatarImage) throws MoeraNodeException {
-        if (avatarImage == null) {
-            return null;
-        }
-        return downloadPublicMedia(nodeName, avatarImage.getMediaId(), config.getMedia().getAvatarMaxSize());
     }
 
     public void downloadAvatar(String nodeName, AvatarImage avatarImage) throws MoeraNodeException {
@@ -152,14 +143,6 @@ public class MediaManager {
         }
 
         AvatarImageUtil.setMediaFile(avatarImage, downloadPublicMedia(nodeName, id, maxSize));
-    }
-
-    public void downloadAvatars(String nodeName, AvatarImage[] avatarImages) throws MoeraNodeException {
-        if (avatarImages != null) {
-            for (AvatarImage avatarImage : avatarImages) {
-                downloadAvatar(nodeName, avatarImage);
-            }
-        }
     }
 
     public interface AvatarSaver {
@@ -193,23 +176,16 @@ public class MediaManager {
         return result.get();
     }
 
-    public byte[] getPrivateMediaDigest(String nodeName, String carte, String id) throws MoeraNodeException {
+    private byte[] getPrivateMediaDigest(String nodeName, String carte, String id) throws MoeraNodeException {
         var digest = database.read(() -> cacheMediaDigestRepository.getDigest(nodeName, id));
         if (digest != null) {
             return digest;
         }
 
-        var tmp = mediaOperations.tmpFile();
-        try {
+        try (var tmp = mediaOperations.tmpFile()) {
             var tmpMedia = getPrivateMedia(nodeName, carte, id, tmp, config.getMedia().getVerifyMaxSize());
             database.writeNoResult(() -> cacheMediaDigestRepository.storeDigest(nodeName, id, tmpMedia.digest()));
             return tmpMedia.digest();
-        } finally {
-            try {
-                Files.deleteIfExists(tmp.path());
-            } catch (IOException e) {
-                log.warn("Error removing temporary media file {}: {}", tmp.path(), e.getMessage());
-            }
         }
     }
 
@@ -221,6 +197,40 @@ public class MediaManager {
                 throw new MoeraNodeUncheckedException(e);
             }
         };
+    }
+
+    private MediaFile previewPrivateMedia(String nodeName, String carte, String id) throws MoeraNodeException {
+        try (var tmp = mediaOperations.tmpFile()) {
+            var tmpMedia = getPrivateMedia(nodeName, carte, id, tmp, config.getMedia().getPreviewMaxSize());
+            return mediaOperations.createPreview(tmpMedia.contentType(), tmp.path());
+        } catch (IOException e) {
+            throw new MoeraNodeLocalStorageException(
+                "Error creating a private media preview %s: %s".formatted(id, e.getMessage())
+            );
+        }
+    }
+
+    public void previewAndSavePrivateMedia(
+        String nodeName,
+        Supplier<String> carteSupplier,
+        Body body,
+        List<MediaAttachment> media,
+        Consumer<MediaFile> mediaSaver
+    ) {
+        var info = BodyUtil.findMediaForPreview(body, media);
+        if (info == null) {
+            return;
+        }
+        database.writeNoResult(() -> {
+            try {
+                var mediaFile = previewPrivateMedia(nodeName, carteSupplier.get(), info.getId());
+                if (mediaFile != null) {
+                    mediaSaver.accept(mediaFile);
+                }
+            } catch (MoeraNodeException e) {
+                throw new MoeraNodeUncheckedException(e);
+            }
+        });
     }
 
 }

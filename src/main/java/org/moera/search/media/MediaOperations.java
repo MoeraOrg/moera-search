@@ -4,6 +4,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE;
 
 import java.awt.Dimension;
+import java.awt.Rectangle;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -183,8 +184,10 @@ public class MediaOperations {
                 int height = reader.getHeight(reader.getMinIndex());
                 return new Dimension(width, height);
             } catch (IOException e) {
-                log.warn("Error reading image file {} (Content-Type: {}): {}",
-                        LogUtil.format(path.toString()), LogUtil.format(contentType), e.getMessage());
+                log.warn(
+                    "Error reading image file {} (Content-Type: {}): {}",
+                    LogUtil.format(path.toString()), LogUtil.format(contentType), e.getMessage()
+                );
             } finally {
                 reader.dispose();
             }
@@ -255,20 +258,46 @@ public class MediaOperations {
         return fileType != null ? fileType.getMimeType() : defaultContentType;
     }
 
-    public byte[] digest(MediaFile mediaFile) throws IOException {
-        return digest(
-            FileSystems.getDefault().getPath(
-                config.getMedia().getPath(), MimeUtils.fileName(mediaFile.getId(), mediaFile.getMimeType())
-            )
-        );
-    }
-
     private static byte[] digest(Path mediaPath) throws IOException {
         DigestingOutputStream out = new DigestingOutputStream(OutputStream.nullOutputStream());
         try (InputStream in = new FileInputStream(mediaPath.toFile())) {
             in.transferTo(out);
         }
         return out.getDigest();
+    }
+
+    private static Rectangle getPreviewRegion(int sizeX, int sizeY) {
+        int width = sizeX;
+        int height = sizeY;
+        if (sizeX > sizeY * 3) {
+            width = sizeY * 3;
+        } else if (sizeY > sizeX * 3) {
+            height = sizeX * 3;
+        }
+        return new Rectangle(width, height);
+    }
+
+    public MediaFile createPreview(String contentType, Path path) throws IOException {
+        var previewFormat = MimeUtils.thumbnail(contentType);
+        if (previewFormat == null) {
+            return null;
+        }
+
+        var dimension = getImageDimension(contentType, path);
+        Rectangle region = getPreviewRegion(dimension.width, dimension.height);
+
+        try (var tmp = tmpFile()) {
+            DigestingOutputStream out = new DigestingOutputStream(tmp.outputStream());
+
+            ThumbnailUtil.thumbnailOf(path.toFile(), contentType)
+                .sourceRegion(region)
+                .size(300, 300)
+                .toOutputStream(out);
+
+            return putInPlace(
+                out.getHash(), previewFormat.mimeType, tmp.path(), out.getDigest(), false
+            );
+        }
     }
 
     public ResponseEntity<Resource> serve(MediaFile mediaFile, Boolean download) {

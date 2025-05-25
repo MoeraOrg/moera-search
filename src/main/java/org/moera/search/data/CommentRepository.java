@@ -279,6 +279,38 @@ public class CommentRepository {
         );
     }
 
+    public void addMediaPreview(String nodeName, String postingId, String commentId, String mediaFileId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId}),
+                  (mf:MediaFile {id: $mediaFileId})
+            CREATE (c)-[:MEDIA_PREVIEW]->(mf)
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId,
+                "mediaFileId", mediaFileId
+            )
+        );
+    }
+
+    public void removeMediaPreview(String nodeName, String postingId, String commentId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})-[mp:MEDIA_PREVIEW]->()
+            DELETE mp
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "commentId", commentId
+            )
+        );
+    }
+
     public void scanSucceeded(String nodeName, String postingId, String commentId) {
         database.tx().run(
             """

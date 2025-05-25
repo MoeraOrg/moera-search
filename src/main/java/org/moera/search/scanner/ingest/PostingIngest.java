@@ -1,5 +1,6 @@
 package org.moera.search.scanner.ingest;
 
+import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
@@ -61,7 +62,7 @@ public class PostingIngest {
     @Inject
     private UpdateQueue updateQueue;
 
-    public void ingest(String nodeName, PostingInfo posting) {
+    public void ingest(String nodeName, PostingInfo posting, Supplier<String> carteSupplier) {
         database.writeNoResult(() -> postingRepository.createPosting(nodeName, posting.getId()));
         if (!posting.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(posting.getOwnerName());
@@ -97,7 +98,7 @@ public class PostingIngest {
             }
         });
 
-        var documentId = update(nodeName, posting);
+        var documentId = update(nodeName, posting, carteSupplier);
         if (documentId != null) {
             database.writeNoResult(() -> entryRepository.allocateMoment(documentId, posting.getCreatedAt()));
         }
@@ -110,12 +111,12 @@ public class PostingIngest {
         }
     }
 
-    public String update(String nodeName, PostingInfo posting) {
-        updateDatabase(nodeName, posting);
+    public String update(String nodeName, PostingInfo posting, Supplier<String> carteSupplier) {
+        updateDatabase(nodeName, posting, carteSupplier);
         return updateIndex(nodeName, posting);
     }
 
-    private void updateDatabase(String nodeName, PostingInfo posting) {
+    private void updateDatabase(String nodeName, PostingInfo posting, Supplier<String> carteSupplier) {
         var revision = database.read(() -> postingRepository.getRevision(nodeName, posting.getId()));
         if (revision.sameRevision(posting)) {
             return;
@@ -131,6 +132,16 @@ public class PostingIngest {
             }
         );
         hashtagIngest.ingest(nodeName, posting);
+        mediaManager.previewAndSavePrivateMedia(
+            nodeName,
+            carteSupplier,
+            posting.getBody(),
+            posting.getMedia(),
+            mediaFile -> {
+                postingRepository.removeMediaPreview(nodeName, posting.getId());
+                postingRepository.addMediaPreview(nodeName, posting.getId(), mediaFile.getId());
+            }
+        );
     }
 
     private String updateIndex(String nodeName, PostingInfo posting) {

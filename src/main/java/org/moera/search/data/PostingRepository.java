@@ -227,6 +227,34 @@ public class PostingRepository {
         );
     }
 
+    public void addMediaPreview(String nodeName, String postingId, String mediaFileId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
+                  (mf:MediaFile {id: $mediaFileId})
+            CREATE (p)-[:MEDIA_PREVIEW]->(mf)
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "mediaFileId", mediaFileId
+            )
+        );
+    }
+
+    public void removeMediaPreview(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})-[mp:MEDIA_PREVIEW]->()
+            DELETE mp
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
     public void scanSucceeded(String nodeName, String postingId) {
         database.tx().run(
             """

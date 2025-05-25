@@ -190,6 +190,8 @@ updatedAt:          int NOT NULL            (ms timestamp)
 
 (:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
+(:Posting|Comment)-[:MEDIA_PREVIEW]->(:MediaFile)
+
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
 (:MoeraNode)<-[:OWNER]-(:Posting|Comment|Reaction)

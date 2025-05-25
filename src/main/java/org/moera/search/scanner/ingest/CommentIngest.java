@@ -1,5 +1,6 @@
 package org.moera.search.scanner.ingest;
 
+import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.CommentInfo;
@@ -53,7 +54,7 @@ public class CommentIngest {
     @Inject
     private UpdateQueue updateQueue;
 
-    public void ingest(String nodeName, CommentInfo comment) {
+    public void ingest(String nodeName, CommentInfo comment, Supplier<String> carteSupplier) {
         database.writeNoResult(() ->
             commentRepository.createComment(nodeName, comment.getPostingId(), comment.getId())
         );
@@ -85,7 +86,7 @@ public class CommentIngest {
             }
         });
 
-        var documentId = update(nodeName, comment);
+        var documentId = update(nodeName, comment, carteSupplier);
         if (documentId != null) {
             database.writeNoResult(() -> entryRepository.allocateMoment(documentId, comment.getCreatedAt()));
         }
@@ -105,12 +106,12 @@ public class CommentIngest {
         }
     }
 
-    public String update(String nodeName, CommentInfo comment) {
-        updateDatabase(nodeName, comment);
+    public String update(String nodeName, CommentInfo comment, Supplier<String> carteSupplier) {
+        updateDatabase(nodeName, comment, carteSupplier);
         return updateIndex(nodeName, comment);
     }
 
-    private void updateDatabase(String nodeName, CommentInfo comment) {
+    private void updateDatabase(String nodeName, CommentInfo comment, Supplier<String> carteSupplier) {
         var revision = database.read(() ->
             commentRepository.getRevision(nodeName, comment.getPostingId(), comment.getId())
         );
@@ -130,6 +131,16 @@ public class CommentIngest {
             }
         );
         hashtagIngest.ingest(nodeName, comment);
+        mediaManager.previewAndSavePrivateMedia(
+            nodeName,
+            carteSupplier,
+            comment.getBody(),
+            comment.getMedia(),
+            mediaFile -> {
+                commentRepository.removeMediaPreview(nodeName, comment.getPostingId(), comment.getId());
+                commentRepository.addMediaPreview(nodeName, comment.getPostingId(), comment.getId(), mediaFile.getId());
+            }
+        );
     }
 
     private String updateIndex(String nodeName, CommentInfo comment) {

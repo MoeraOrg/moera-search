@@ -144,7 +144,9 @@ public class CommentsScanJob extends Job<CommentsScanJob.Parameters, CommentsSca
                         comment,
                         generateCarte(parameters.nodeName, Scope.VIEW_CONTENT)
                     );
-                    commentIngest.ingest(parameters.nodeName, comment);
+                    commentIngest.ingest(
+                        parameters.nodeName, comment, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                    );
                     database.writeNoResult(() ->
                         commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, comment.getId())
                     );

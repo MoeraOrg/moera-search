@@ -115,12 +115,16 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
                 commentRepository.exists(parameters.nodeName, parameters.postingId, parameters.commentId)
             );
             if (!exists) {
-                commentIngest.ingest(parameters.nodeName, comment);
+                commentIngest.ingest(
+                    parameters.nodeName, comment, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                );
                 database.writeNoResult(() ->
                     commentRepository.scanSucceeded(parameters.nodeName, parameters.postingId, parameters.commentId)
                 );
             } else {
-                commentIngest.update(parameters.nodeName, comment);
+                commentIngest.update(
+                    parameters.nodeName, comment, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                );
             }
         }
     }

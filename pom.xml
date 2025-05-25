@@ -122,6 +122,11 @@
             <artifactId>metadata-extractor</artifactId>
             <version>2.19.0</version>
         </dependency>
+        <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.20</version>
+        </dependency>
 
         <dependency>
             <groupId>org.moera</groupId>
