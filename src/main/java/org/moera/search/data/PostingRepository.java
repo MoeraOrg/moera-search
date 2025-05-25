@@ -11,6 +11,7 @@ import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.util.BodyUtil;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 
 @Component
 public class PostingRepository {
@@ -80,11 +81,18 @@ public class PostingRepository {
         args.put("revisionId", info.getRevisionId());
         args.put("ownerFullName", info.getOwnerFullName());
         args.put("heading", info.getHeading());
-        Body bodyPreview = info.getBodyPreview() != null && !info.getBodyPreview().getEncoded().equals(Body.EMPTY)
-            ? info.getBodyPreview()
-            : info.getBody();
-        String bodyPreviewEncoded = bodyPreview != null ? bodyPreview.getEncoded() : "";
-        args.put("bodyPreview", bodyPreviewEncoded);
+        var bodyPreview = new Body();
+        if (info.getBodyPreview() != null && !info.getBodyPreview().getEncoded().equals(Body.EMPTY)) {
+            bodyPreview.setText(info.getBodyPreview().getText());
+            bodyPreview.setSubject(info.getBodyPreview().getSubject());
+            if (ObjectUtils.isEmpty(bodyPreview.getSubject())) {
+                bodyPreview.setSubject(info.getBody().getSubject());
+            }
+        } else {
+            bodyPreview.setText(info.getBody().getText());
+            bodyPreview.setSubject(info.getBody().getSubject());
+        }
+        args.put("bodyPreview", bodyPreview.getEncoded());
         var counts = BodyUtil.countBodyMedia(info.getBody(), info.getMedia());
         args.put("imageCount", counts.imageCount());
         args.put("videoPresent", counts.videoPresent());
