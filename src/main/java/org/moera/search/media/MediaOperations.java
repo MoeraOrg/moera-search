@@ -295,7 +295,7 @@ public class MediaOperations {
                 .toOutputStream(out);
 
             return putInPlace(
-                out.getHash(), previewFormat.mimeType, tmp.path(), out.getDigest(), false
+                out.getHash(), previewFormat.mimeType, tmp.path(), out.getDigest(), true
             );
         }
     }

@@ -191,6 +191,7 @@ updatedAt:          int NOT NULL            (ms timestamp)
 (:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
 (:Posting|Comment)-[:MEDIA_PREVIEW]->(:MediaFile)
+mediaId:            string
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 

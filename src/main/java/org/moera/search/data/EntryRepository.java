@@ -149,7 +149,7 @@ public class EntryRepository {
         }
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
-        query.append("OPTIONAL MATCH (e)-[:MEDIA_PREVIEW]->(mp:MediaFile)\n");
+        query.append("OPTIONAL MATCH (e)-[md:MEDIA_PREVIEW]->(mp:MediaFile)\n");
         if (after != null) {
             query.append("ORDER BY e.moment ASC\n");
         } else if (before != null) {
@@ -194,7 +194,8 @@ public class EntryRepository {
                 mf AS avatar,
                 a.shape AS avatarShape,
                 e AS entry,
-                mp AS mediaPreview
+                mp AS mediaPreview,
+                md.mediaId AS mediaPreviewId
             """
         );
 
@@ -237,7 +238,7 @@ public class EntryRepository {
             args.put("sheriffName", sheriffName);
         }
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
-        query.append("OPTIONAL MATCH (e)-[:MEDIA_PREVIEW]->(mp:MediaFile)\n");
+        query.append("OPTIONAL MATCH (e)-[md:MEDIA_PREVIEW]->(mp:MediaFile)\n");
         query.append(
             """
             RETURN
@@ -275,7 +276,8 @@ public class EntryRepository {
                 mf AS avatar,
                 a.shape AS avatarShape,
                 e AS entry,
-                mp AS mediaPreview
+                mp AS mediaPreview,
+                md.mediaId AS mediaPreviewId
             """
         );
 
@@ -314,6 +316,7 @@ public class EntryRepository {
         if (mediaPreview != null) {
             info.setMediaPreview(PublicMediaFileInfoUtil.build(mediaPreview));
         }
+        info.setMediaPreviewId(r.get("mediaPreviewId").asString(null));
         info.setVideoPresent(entry.get("videoPresent").asBoolean(false));
         var repliedTo = entry.get("repliedTo").asString(null);
         if (repliedTo != null) {

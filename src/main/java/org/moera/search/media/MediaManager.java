@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import jakarta.inject.Inject;
@@ -210,22 +209,33 @@ public class MediaManager {
         }
     }
 
+    public interface MediaPreviewSaver {
+
+        void save(String mediaFileId, String mediaId);
+
+    }
+
     public void previewAndSavePrivateMedia(
         String nodeName,
         Supplier<String> carteSupplier,
         Body body,
         List<MediaAttachment> media,
-        Consumer<MediaFile> mediaSaver
+        Supplier<String> mediaPreviewIdGetter,
+        MediaPreviewSaver mediaPreviewSaver
     ) {
         var info = BodyUtil.findMediaForPreview(body, media);
-        if (info == null) {
+        var mediaId = info != null ? info.getId() : null;
+        var mediaPreviewId = database.read(mediaPreviewIdGetter);
+        if (Objects.equals(mediaPreviewId, mediaId)) {
             return;
         }
         database.writeNoResult(() -> {
             try {
-                var mediaFile = previewPrivateMedia(nodeName, carteSupplier.get(), info.getId());
+                var mediaFile = mediaId != null ? previewPrivateMedia(nodeName, carteSupplier.get(), mediaId) : null;
                 if (mediaFile != null) {
-                    mediaSaver.accept(mediaFile);
+                    mediaPreviewSaver.save(mediaFile.getId(), mediaId);
+                } else {
+                    mediaPreviewSaver.save(null, null);
                 }
             } catch (MoeraNodeException e) {
                 throw new MoeraNodeUncheckedException(e);

@@ -136,9 +136,14 @@ public class CommentIngest {
             carteSupplier,
             comment.getBody(),
             comment.getMedia(),
-            mediaFile -> {
+            () -> commentRepository.getMediaPreviewId(nodeName, comment.getPostingId(), comment.getId()),
+            (mediaFileId, mediaId) -> {
                 commentRepository.removeMediaPreview(nodeName, comment.getPostingId(), comment.getId());
-                commentRepository.addMediaPreview(nodeName, comment.getPostingId(), comment.getId(), mediaFile.getId());
+                if (mediaFileId != null) {
+                    commentRepository.addMediaPreview(
+                        nodeName, comment.getPostingId(), comment.getId(), mediaId, mediaFileId
+                    );
+                }
             }
         );
     }

@@ -137,9 +137,12 @@ public class PostingIngest {
             carteSupplier,
             posting.getBody(),
             posting.getMedia(),
-            mediaFile -> {
+            () -> postingRepository.getMediaPreviewId(nodeName, posting.getId()),
+            (mediaFileId, mediaId) -> {
                 postingRepository.removeMediaPreview(nodeName, posting.getId());
-                postingRepository.addMediaPreview(nodeName, posting.getId(), mediaFile.getId());
+                if (mediaFileId != null) {
+                    postingRepository.addMediaPreview(nodeName, posting.getId(), mediaId, mediaFileId);
+                }
             }
         );
     }
@@ -208,9 +211,7 @@ public class PostingIngest {
 
     public void deleteAllPublications(String nodeName, String postingId) {
         favorIngest.deleteAllPublications(nodeName, postingId);
-        database.writeNoResult(() -> {
-            publicationRepository.deleteAllPublications(nodeName, postingId);
-        });
+        database.writeNoResult(() -> publicationRepository.deleteAllPublications(nodeName, postingId));
     }
 
     private void updatePublicationsInIndex(String nodeName, String postingId) {

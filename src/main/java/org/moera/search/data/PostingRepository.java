@@ -227,16 +227,17 @@ public class PostingRepository {
         );
     }
 
-    public void addMediaPreview(String nodeName, String postingId, String mediaFileId) {
+    public void addMediaPreview(String nodeName, String postingId, String mediaId, String mediaFileId) {
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
                   (mf:MediaFile {id: $mediaFileId})
-            CREATE (p)-[:MEDIA_PREVIEW]->(mf)
+            CREATE (p)-[:MEDIA_PREVIEW {mediaId: $mediaId}]->(mf)
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId,
+                "mediaId", mediaId,
                 "mediaFileId", mediaFileId
             )
         );
@@ -253,6 +254,19 @@ public class PostingRepository {
                 "postingId", postingId
             )
         );
+    }
+
+    public String getMediaPreviewId(String nodeName, String postingId) {
+        return database.tx().run(
+            """
+            OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})-[mp:MEDIA_PREVIEW]->()
+            RETURN mp.mediaId AS mediaId
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        ).single().get("mediaId").asString(null);
     }
 
     public void scanSucceeded(String nodeName, String postingId) {
