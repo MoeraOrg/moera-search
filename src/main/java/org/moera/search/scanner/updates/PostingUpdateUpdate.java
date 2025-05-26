@@ -15,6 +15,10 @@ public class PostingUpdateUpdate extends PendingUpdate<PostingUpdateJob.Paramete
         super(new PostingUpdateJob.Parameters(nodeName, postingId));
     }
 
+    public PostingUpdateUpdate(String nodeName, String postingId, boolean force) {
+        super(new PostingUpdateJob.Parameters(nodeName, postingId, force));
+    }
+
     @Override
     protected Class<? extends Job<PostingUpdateJob.Parameters, ?>> getJobClass() {
         return PostingUpdateJob.class;

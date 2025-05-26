@@ -164,6 +164,8 @@ emoji:              int NOT NULL
 createdAt:          int NOT NULL            (sec timestamp)
 viewPrincipal:      string
 
+(:Upgrade) UNIQUE
+
 (:Version) UNIQUE
 version:            int NOT NULL
 
@@ -202,6 +204,8 @@ mediaId:            string
 (:Reaction)-[:REACTS_TO]->(:Posting|Comment)
 
 (:Comment)-[:REPLIED_TO]->(:Comment)
+
+(:Upgrade)-[:RESCAN]->(:Posting|Comment)
 
 (:MoeraNode)<-[:SCANS]-(:Job)
 

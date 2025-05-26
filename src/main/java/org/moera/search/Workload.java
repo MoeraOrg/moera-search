@@ -31,4 +31,7 @@ public class Workload {
 
     public static final String FAVORS_PURGE_PERIOD = "PT1H";
 
+    public static final int UPGRADER_UPDATE_START_PERIOD = 15000; // ms
+    public static final int UPGRADER_MAX_STARTED_UPDATES = 100;
+
 }

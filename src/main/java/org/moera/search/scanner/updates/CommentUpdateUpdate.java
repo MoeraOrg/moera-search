@@ -15,6 +15,10 @@ public class CommentUpdateUpdate extends PendingUpdate<CommentUpdateJob.Paramete
         super(new CommentUpdateJob.Parameters(nodeName, postingId, commentId));
     }
 
+    public CommentUpdateUpdate(String nodeName, String postingId, String commentId, boolean force) {
+        super(new CommentUpdateJob.Parameters(nodeName, postingId, commentId, force));
+    }
+
     @Override
     protected Class<? extends Job<CommentUpdateJob.Parameters, ?>> getJobClass() {
         return CommentUpdateJob.class;

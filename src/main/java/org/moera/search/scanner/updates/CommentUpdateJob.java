@@ -21,14 +21,20 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
         private String nodeName;
         private String postingId;
         private String commentId;
+        private boolean force;
 
         public Parameters() {
         }
 
         public Parameters(String nodeName, String postingId, String commentId) {
+            this(nodeName, postingId, commentId, false);
+        }
+
+        public Parameters(String nodeName, String postingId, String commentId, boolean force) {
             this.nodeName = nodeName;
             this.postingId = postingId;
             this.commentId = commentId;
+            this.force = force;
         }
 
         public String getNodeName() {
@@ -53,6 +59,14 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
 
         public void setCommentId(String commentId) {
             this.commentId = commentId;
+        }
+
+        public boolean isForce() {
+            return force;
+        }
+
+        public void setForce(boolean force) {
+            this.force = force;
         }
 
     }
@@ -123,7 +137,8 @@ public class CommentUpdateJob extends Job<CommentUpdateJob.Parameters, Object> {
                 );
             } else {
                 commentIngest.update(
-                    parameters.nodeName, comment, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                    parameters.nodeName, comment, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT),
+                    parameters.force
                 );
             }
         }

@@ -112,14 +112,20 @@ public class PostingIngest {
     }
 
     public String update(String nodeName, PostingInfo posting, Supplier<String> carteSupplier) {
-        updateDatabase(nodeName, posting, carteSupplier);
+        return update(nodeName, posting, carteSupplier, false);
+    }
+
+    public String update(String nodeName, PostingInfo posting, Supplier<String> carteSupplier, boolean force) {
+        updateDatabase(nodeName, posting, carteSupplier, force);
         return updateIndex(nodeName, posting);
     }
 
-    private void updateDatabase(String nodeName, PostingInfo posting, Supplier<String> carteSupplier) {
-        var revision = database.read(() -> postingRepository.getRevision(nodeName, posting.getId()));
-        if (revision.sameRevision(posting)) {
-            return;
+    private void updateDatabase(String nodeName, PostingInfo posting, Supplier<String> carteSupplier, boolean force) {
+        if (!force) {
+            var revision = database.read(() -> postingRepository.getRevision(nodeName, posting.getId()));
+            if (revision.sameRevision(posting)) {
+                return;
+            }
         }
 
         database.writeNoResult(() -> postingRepository.fillPosting(nodeName, posting.getId(), posting));

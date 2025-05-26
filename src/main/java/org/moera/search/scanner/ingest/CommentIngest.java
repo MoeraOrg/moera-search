@@ -107,16 +107,22 @@ public class CommentIngest {
     }
 
     public String update(String nodeName, CommentInfo comment, Supplier<String> carteSupplier) {
-        updateDatabase(nodeName, comment, carteSupplier);
+        return update(nodeName, comment, carteSupplier, false);
+    }
+
+    public String update(String nodeName, CommentInfo comment, Supplier<String> carteSupplier, boolean force) {
+        updateDatabase(nodeName, comment, carteSupplier, force);
         return updateIndex(nodeName, comment);
     }
 
-    private void updateDatabase(String nodeName, CommentInfo comment, Supplier<String> carteSupplier) {
-        var revision = database.read(() ->
-            commentRepository.getRevision(nodeName, comment.getPostingId(), comment.getId())
-        );
-        if (revision.sameRevision(comment)) {
-            return;
+    private void updateDatabase(String nodeName, CommentInfo comment, Supplier<String> carteSupplier, boolean force) {
+        if (!force) {
+            var revision = database.read(() ->
+                commentRepository.getRevision(nodeName, comment.getPostingId(), comment.getId())
+            );
+            if (revision.sameRevision(comment)) {
+                return;
+            }
         }
 
         database.writeNoResult(() ->

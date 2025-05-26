@@ -20,13 +20,20 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
 
         private String nodeName;
         private String postingId;
+        private boolean force;
 
         public Parameters() {
         }
 
         public Parameters(String nodeName, String postingId) {
+            this(nodeName, postingId, false);
+        }
+
+        public Parameters(String nodeName, String postingId, boolean force) {
             this.nodeName = nodeName;
             this.postingId = postingId;
+            this.force = force;
+
         }
 
         public String getNodeName() {
@@ -43,6 +50,14 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
 
         public void setPostingId(String postingId) {
             this.postingId = postingId;
+        }
+
+        public boolean isForce() {
+            return force;
+        }
+
+        public void setForce(boolean force) {
+            this.force = force;
         }
 
     }
@@ -109,7 +124,8 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
                 );
             } else {
                 postingIngest.update(
-                    parameters.nodeName, posting, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT)
+                    parameters.nodeName, posting, carteSupplier(parameters.nodeName, Scope.VIEW_CONTENT),
+                    parameters.force
                 );
             }
         }
