@@ -63,7 +63,7 @@ public class MediaFileRepository {
         return database.tx().run(
             """
             MATCH (mf:MediaFile)
-            WHERE NOT ()-[:AVATAR]->(mf) AND mf.createdAt < $deadline
+            WHERE NOT ()-->(mf) AND mf.createdAt < $deadline
             DELETE mf
             RETURN mf
             """,
