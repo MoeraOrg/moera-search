@@ -70,14 +70,21 @@ public class SearchNodesController {
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
 
-        if (limit == 0 || ObjectUtils.isEmpty(query)) {
+        if (limit == 0) {
             return Collections.emptyList();
         }
 
+        String clientName = requestContext.getClientName(Scope.VIEW_PEOPLE);
         int maxSize = limit;
 
+        if (ObjectUtils.isEmpty(query)) {
+            if (ObjectUtils.isEmpty(clientName)) {
+                return Collections.emptyList();
+            }
+            return database.read(() -> nodeSearchRepository.searchClose(clientName, sheriff, maxSize));
+        }
+
         return database.read(() -> {
-            String clientName = requestContext.getClientName(Scope.VIEW_PEOPLE);
             var result = new ArrayList<SearchNodeInfo>();
             var used = new HashSet<String>();
             if (!ObjectUtils.isEmpty(clientName)) {

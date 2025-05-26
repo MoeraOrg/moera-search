@@ -29,6 +29,35 @@ public class NodeSearchRepository {
     @Inject
     private Database database;
 
+    public List<SearchNodeInfo> searchClose(String clientName, String sheriffName, int limit) {
+        var args = new HashMap<String, Object>();
+        args.put("clientName", clientName);
+        args.put("sheriffName", sheriffName);
+        args.put("limit", limit);
+
+        return database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $clientName})-[c:CLOSE_TO]->(n:MoeraNode)
+            WHERE
+            """
+                + SHERIFF_FILTER
+                + """
+            WITH n, c.distance AS distance
+            ORDER BY distance ASC
+            LIMIT $limit
+            OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
+            RETURN n, distance, a.shape AS shape, mf
+            """,
+            args
+        ).stream().map(r -> {
+            var node = r.get("n").asNode();
+            var distance = r.get("distance").asFloat();
+            var avatarShape = r.get("shape").asString(null);
+            var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
+            return SearchNodeInfoUtil.build(node, avatar, avatarShape, distance);
+        }).toList();
+    }
+
     public int countCloseByNamePrefix(String clientName, String prefix, String sheriffName) {
         var args = new HashMap<String, Object>();
         args.put("clientName", clientName);
