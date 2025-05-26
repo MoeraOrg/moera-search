@@ -1,5 +1,7 @@
 package org.moera.search.util;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Base64;
@@ -13,6 +15,10 @@ public class Util {
 
     public static Timestamp toTimestamp(Long epochSecond) {
         return epochSecond != null ? Timestamp.from(Instant.ofEpochSecond(epochSecond)) : null;
+    }
+
+    public static String ue(Object s) {
+        return URLEncoder.encode(s.toString(), StandardCharsets.UTF_8);
     }
 
     public static SafeString he(Object s) {

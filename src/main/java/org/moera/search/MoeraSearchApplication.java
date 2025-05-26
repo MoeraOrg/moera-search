@@ -11,6 +11,7 @@ import org.moera.search.config.Config;
 import org.moera.search.global.CacheControlInterceptor;
 import org.moera.search.global.DatabaseSessionInterceptor;
 import org.moera.search.global.RequestRateInterceptor;
+import org.moera.search.global.VirtualPageInterceptor;
 import org.moera.search.ui.helper.HelperSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,9 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
 
     @Inject
     private AuthenticationInterceptor authenticationInterceptor;
+
+    @Inject
+    private VirtualPageInterceptor virtualPageInterceptor;
 
     @Inject
     private ApplicationContext applicationContext;
@@ -82,6 +86,7 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
         registry.addInterceptor(requestRateInterceptor).order(-3);
         registry.addInterceptor(databaseSessionInterceptor).order(-2);
         registry.addInterceptor(authenticationInterceptor).order(-1);
+        registry.addInterceptor(virtualPageInterceptor);
         registry.addInterceptor(cacheControlInterceptor);
     }
 
