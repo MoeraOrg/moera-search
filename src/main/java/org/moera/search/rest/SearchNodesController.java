@@ -77,7 +77,7 @@ public class SearchNodesController {
         String clientName = requestContext.getClientName(Scope.VIEW_PEOPLE);
         int maxSize = limit;
 
-        if (ObjectUtils.isEmpty(query)) {
+        if (query == null || query.trim().isEmpty()) {
             if (ObjectUtils.isEmpty(clientName)) {
                 return Collections.emptyList();
             }
@@ -203,6 +203,12 @@ public class SearchNodesController {
         var clientName = requestContext.getClientName(Scope.VIEW_PEOPLE);
 
         var page = new SearchNodePageInfo();
+
+        if (filter.getQuery() == null || filter.getQuery().trim().isEmpty()) {
+            page.setNodes(Collections.emptyList());
+            return page;
+        }
+
         var counts = database.read(() -> {
             boolean validNodeNamePrefix = isValidNodeNamePrefix(filter.getQuery());
 
