@@ -292,6 +292,7 @@ public class MediaOperations {
             ThumbnailUtil.thumbnailOf(path.toFile(), contentType)
                 .sourceRegion(region)
                 .size(300, 300)
+                .outputFormat(previewFormat.format)
                 .toOutputStream(out);
 
             return putInPlace(
