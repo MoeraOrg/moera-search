@@ -18,6 +18,7 @@ import org.moera.search.data.EntryRepository;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
 import org.moera.search.index.Index;
+import org.moera.search.index.TransientIndexException;
 import org.moera.search.scanner.ingest.SheriffIngest;
 import org.moera.search.util.SafeInteger;
 import org.moera.search.util.Util;
@@ -139,35 +140,41 @@ public class SearchEntriesController {
         }
         sheriffIngest.activate(filter.getSheriffName());
 
-        var searchResult = index.search(
-            filter.getEntryType(),
-            filter.getText(),
-            filter.getHashtags(),
-            filter.getPublisherName(),
-            Boolean.TRUE.equals(filter.getInNewsfeed()),
-            filter.getOwners(),
-            filter.getRepliedTo(),
-            filter.getMinImageCount(),
-            filter.getMaxImageCount(),
-            filter.getVideoPresent(),
-            Util.toTimestamp(filter.getCreatedAfter()),
-            Util.toTimestamp(filter.getCreatedBefore()),
-            requestContext.hasClientScope(Scope.VIEW_CONTENT),
-            filter.getPage(),
-            filter.getLimit()
-        );
-        var entries = searchResult.total() > 0
-            ? database.read(
-                () -> entryRepository.findDocuments(
-                    filter.getEntryType(), searchResult.documentIds(), filter.getSheriffName()
-                )
-            )
-            : Collections.<SearchEntryInfo>emptyList();
-
         var page = new SearchTextPageInfo();
         page.setPage(filter.getPage());
-        page.setTotal(searchResult.total());
-        page.setEntries(entries);
+
+        try {
+            var searchResult = index.search(
+                filter.getEntryType(),
+                filter.getText(),
+                filter.getHashtags(),
+                filter.getPublisherName(),
+                Boolean.TRUE.equals(filter.getInNewsfeed()),
+                filter.getOwners(),
+                filter.getRepliedTo(),
+                filter.getMinImageCount(),
+                filter.getMaxImageCount(),
+                filter.getVideoPresent(),
+                Util.toTimestamp(filter.getCreatedAfter()),
+                Util.toTimestamp(filter.getCreatedBefore()),
+                requestContext.hasClientScope(Scope.VIEW_CONTENT),
+                filter.getPage(),
+                filter.getLimit()
+            );
+            var entries = searchResult.total() > 0
+                ? database.read(
+                    () -> entryRepository.findDocuments(
+                        filter.getEntryType(), searchResult.documentIds(), filter.getSheriffName()
+                    )
+                )
+                : Collections.<SearchEntryInfo>emptyList();
+
+            page.setTotal(searchResult.total());
+            page.setEntries(entries);
+        } catch (TransientIndexException e) {
+            page.setEntries(Collections.emptyList());
+        }
+
         return page;
     }
 
