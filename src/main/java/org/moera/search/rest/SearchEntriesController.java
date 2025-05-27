@@ -165,6 +165,7 @@ public class SearchEntriesController {
             : Collections.<SearchEntryInfo>emptyList();
 
         var page = new SearchTextPageInfo();
+        page.setPage(filter.getPage());
         page.setTotal(searchResult.total());
         page.setEntries(entries);
         return page;
