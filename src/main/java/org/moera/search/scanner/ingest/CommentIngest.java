@@ -43,6 +43,9 @@ public class CommentIngest {
     private HashtagIngest hashtagIngest;
 
     @Inject
+    private AttachmentIngest attachmentIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -112,7 +115,7 @@ public class CommentIngest {
 
     public String update(String nodeName, CommentInfo comment, Supplier<String> carteSupplier, boolean force) {
         updateDatabase(nodeName, comment, carteSupplier, force);
-        return updateIndex(nodeName, comment);
+        return updateIndex(nodeName, comment, force);
     }
 
     private void updateDatabase(String nodeName, CommentInfo comment, Supplier<String> carteSupplier, boolean force) {
@@ -137,6 +140,7 @@ public class CommentIngest {
             }
         );
         hashtagIngest.ingest(nodeName, comment);
+        attachmentIngest.ingest(nodeName, comment);
         mediaManager.previewAndSavePrivateMedia(
             nodeName,
             carteSupplier,
@@ -154,13 +158,15 @@ public class CommentIngest {
         );
     }
 
-    private String updateIndex(String nodeName, CommentInfo comment) {
+    private String updateIndex(String nodeName, CommentInfo comment, boolean force) {
         String documentId = database.read(() ->
             commentRepository.getDocumentId(nodeName, comment.getPostingId(), comment.getId())
         );
-        var revision = documentId != null ? index.getRevision(documentId) : null;
-        if (revision != null && revision.sameRevision(comment)) {
-            return documentId;
+        if (!force) {
+            var revision = documentId != null ? index.getRevision(documentId) : null;
+            if (revision != null && revision.sameRevision(comment)) {
+                return documentId;
+            }
         }
 
         var document = new IndexedDocument(nodeName, comment);

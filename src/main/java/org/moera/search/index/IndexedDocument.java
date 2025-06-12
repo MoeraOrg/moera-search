@@ -29,6 +29,8 @@ public class IndexedDocument {
     private String subjectRu;
     private String text;
     private String textRu;
+    private String mediaText;
+    private String mediaTextRu;
     private int imageCount;
     private boolean videoPresent;
     private List<String> hashtags;
@@ -64,6 +66,7 @@ public class IndexedDocument {
     private void analyzeBody(Body body, List<MediaAttachment> media) {
         subject = body.getSubject();
         text = getText(body);
+        mediaText = getMediaText(media);
         var counts = BodyUtil.countBodyMedia(body, media);
         imageCount = counts.imageCount();
         videoPresent = counts.videoPresent();
@@ -88,6 +91,24 @@ public class IndexedDocument {
             }
         }
         return buf.toString();
+    }
+
+    private static String getMediaText(List<MediaAttachment> media) {
+        if (ObjectUtils.isEmpty(media)) {
+            return null;
+        }
+
+        var buf = new StringBuilder();
+        for (var attachment : media) {
+            if (attachment.getMedia() != null && !ObjectUtils.isEmpty(attachment.getMedia().getTextContent())) {
+                if (!buf.isEmpty()) {
+                    buf.append(' ');
+                }
+                buf.append(attachment.getMedia().getTextContent());
+            }
+        }
+
+        return !buf.isEmpty() ? buf.toString() : null;
     }
 
     public String getNodeName() {
@@ -192,6 +213,22 @@ public class IndexedDocument {
 
     public void setTextRu(String textRu) {
         this.textRu = textRu;
+    }
+
+    public String getMediaText() {
+        return mediaText;
+    }
+
+    public void setMediaText(String mediaText) {
+        this.mediaText = mediaText;
+    }
+
+    public String getMediaTextRu() {
+        return mediaTextRu;
+    }
+
+    public void setMediaTextRu(String mediaTextRu) {
+        this.mediaTextRu = mediaTextRu;
     }
 
     public int getImageCount() {

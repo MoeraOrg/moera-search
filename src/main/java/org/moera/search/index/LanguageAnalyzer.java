@@ -31,13 +31,19 @@ public class LanguageAnalyzer {
                 document.setTextRu(document.getText());
             }
         }
+        if (!ObjectUtils.isEmpty(document.getMediaText())) {
+            var lang = detector.detectLanguageOf(Util.clearHtml(document.getMediaText()));
+            if (lang == Language.RUSSIAN) {
+                document.setMediaTextRu(document.getMediaText());
+            }
+        }
     }
 
     public List<String> getSearchFields(String text) {
         var lang = detector.detectLanguageOf(text);
         return switch (lang) {
-            case RUSSIAN -> List.of("subject^2", "text", "subjectRu^2", "textRu");
-            default -> List.of("subject^2", "text");
+            case RUSSIAN -> List.of("subject^2", "text", "mediaText", "subjectRu^2", "textRu", "mediaTextRu");
+            default -> List.of("subject^2", "text", "mediaText");
         };
     }
 

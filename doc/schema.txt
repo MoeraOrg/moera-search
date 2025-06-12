@@ -4,6 +4,12 @@ Neo4j Database Schema
 Nodes
 -----
 
+(:Attachment)
+mediaId:            string NOT NULL
+mimeType:           string NOT NULL
+size:               int NOT NULL
+textContent:        string
+
 (:CacheMediaDigest)
 nodeName:           string NOT NULL
 mediaId:            string NOT NULL
@@ -171,6 +177,8 @@ version:            int NOT NULL
 
 Relationships
 -------------
+
+(:Posting|Comment)<-[:ATTACHED]->(:Attachment)
 
 (:MoeraNode|Posting|Comment|Reaction)-[:AVATAR]->(:MediaFile)
 shape:              string

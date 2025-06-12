@@ -46,6 +46,14 @@ OpenSearch Mappings
       "type": "text",
       "analyzer": "russian"
     },
+    "mediaText": {
+      "type": "text",
+      "analyzer": "english"
+    },
+    "mediaTextRu": {
+      "type": "text",
+      "analyzer": "russian"
+    },
     "imageCount": {
       "type": "integer",
       "null_value": 0

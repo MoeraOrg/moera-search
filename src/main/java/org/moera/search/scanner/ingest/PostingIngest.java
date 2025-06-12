@@ -51,6 +51,9 @@ public class PostingIngest {
     private HashtagIngest hashtagIngest;
 
     @Inject
+    private AttachmentIngest attachmentIngest;
+
+    @Inject
     private MediaManager mediaManager;
 
     @Inject
@@ -117,7 +120,7 @@ public class PostingIngest {
 
     public String update(String nodeName, PostingInfo posting, Supplier<String> carteSupplier, boolean force) {
         updateDatabase(nodeName, posting, carteSupplier, force);
-        return updateIndex(nodeName, posting);
+        return updateIndex(nodeName, posting, force);
     }
 
     private void updateDatabase(String nodeName, PostingInfo posting, Supplier<String> carteSupplier, boolean force) {
@@ -138,6 +141,7 @@ public class PostingIngest {
             }
         );
         hashtagIngest.ingest(nodeName, posting);
+        attachmentIngest.ingest(nodeName, posting);
         mediaManager.previewAndSavePrivateMedia(
             nodeName,
             carteSupplier,
@@ -153,11 +157,13 @@ public class PostingIngest {
         );
     }
 
-    private String updateIndex(String nodeName, PostingInfo posting) {
+    private String updateIndex(String nodeName, PostingInfo posting, boolean force) {
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, posting.getId()));
-        var revision = documentId != null ? index.getRevision(documentId) : null;
-        if (revision != null && revision.sameRevision(posting)) {
-            return documentId;
+        if (!force) {
+            var revision = documentId != null ? index.getRevision(documentId) : null;
+            if (revision != null && revision.sameRevision(posting)) {
+                return documentId;
+            }
         }
 
         var document = new IndexedDocument(nodeName, posting);
