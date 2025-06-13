@@ -2,12 +2,15 @@ package org.moera.search.index;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.PostingOperations;
+import org.moera.lib.node.types.PrivateMediaFileInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.util.BodyUtil;
@@ -95,20 +98,17 @@ public class IndexedDocument {
 
     private static String getMediaText(List<MediaAttachment> media) {
         if (ObjectUtils.isEmpty(media)) {
-            return null;
+            return "";
         }
 
-        var buf = new StringBuilder();
-        for (var attachment : media) {
-            if (attachment.getMedia() != null && !ObjectUtils.isEmpty(attachment.getMedia().getTextContent())) {
-                if (!buf.isEmpty()) {
-                    buf.append(' ');
-                }
-                buf.append(attachment.getMedia().getTextContent());
-            }
-        }
+        String mediaText = media.stream()
+            .map(MediaAttachment::getMedia)
+            .filter(Objects::nonNull)
+            .map(PrivateMediaFileInfo::getTextContent)
+            .filter(tc -> !ObjectUtils.isEmpty(tc))
+            .collect(Collectors.joining(" "));
 
-        return !buf.isEmpty() ? buf.toString() : null;
+        return !ObjectUtils.isEmpty(mediaText) ? mediaText : "";
     }
 
     public String getNodeName() {

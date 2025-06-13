@@ -120,6 +120,21 @@ public class PostingRepository {
         );
     }
 
+    public void setHeading(String nodeName, String postingId, String heading) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("heading", heading);
+
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            SET p.heading = $heading
+            """,
+            args
+        );
+    }
+
     public void addAvatar(String nodeName, String postingId, String mediaFileId, String shape) {
         database.tx().run(
             """

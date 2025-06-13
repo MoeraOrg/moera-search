@@ -145,6 +145,23 @@ public class CommentRepository {
         );
     }
 
+    public void setHeading(String nodeName, String postingId, String commentId, String heading) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("commentId", commentId);
+        args.put("heading", heading);
+
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(c:Comment {id: $commentId})
+            SET c.heading = $heading
+            """,
+            args
+        );
+    }
+
     public void addAvatar(String nodeName, String postingId, String commentId, String mediaFileId, String shape) {
         database.tx().run(
             """

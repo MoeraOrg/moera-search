@@ -16,6 +16,8 @@ import org.moera.search.scanner.ingest.NodeIngest;
 import org.moera.search.scanner.updates.BlockingUpdate;
 import org.moera.search.scanner.updates.CommentAddUpdate;
 import org.moera.search.scanner.updates.CommentDeleteUpdate;
+import org.moera.search.scanner.updates.CommentHeadingUpdateUpdate;
+import org.moera.search.scanner.updates.CommentMediaTextUpdateUpdate;
 import org.moera.search.scanner.updates.CommentReactionAddUpdate;
 import org.moera.search.scanner.updates.CommentReactionDeleteUpdate;
 import org.moera.search.scanner.updates.CommentReactionsDeleteAllUpdate;
@@ -23,6 +25,8 @@ import org.moera.search.scanner.updates.CommentUpdateUpdate;
 import org.moera.search.scanner.updates.FriendshipUpdate;
 import org.moera.search.scanner.updates.PostingAddUpdate;
 import org.moera.search.scanner.updates.PostingDeleteUpdate;
+import org.moera.search.scanner.updates.PostingHeadingUpdateUpdate;
+import org.moera.search.scanner.updates.PostingMediaTextUpdateUpdate;
 import org.moera.search.scanner.updates.PostingReactionAddUpdate;
 import org.moera.search.scanner.updates.PostingReactionDeleteUpdate;
 import org.moera.search.scanner.updates.PostingReactionsDeleteAllUpdate;
@@ -346,6 +350,69 @@ public class SearchProcessor {
                         )
                     );
                 }
+                break;
+            }
+            case POSTING_UPDATE_HEADING: {
+                var details = notification.getPostingHeadingUpdate();
+                log.info(
+                    "Node {} updated heading of posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new PostingHeadingUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getHeading()
+                    )
+                );
+                break;
+            }
+            case COMMENT_UPDATE_HEADING: {
+                var details = notification.getCommentHeadingUpdate();
+                log.info(
+                    "Node {} updated heading of comment {} to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getCommentId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new CommentHeadingUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
+                        details.getHeading()
+                    )
+                );
+                break;
+            }
+            case POSTING_UPDATE_MEDIA_TEXT: {
+                var details = notification.getPostingMediaTextUpdate();
+                log.info(
+                    "Node {} updated text of media {} attached to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getMediaId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new PostingMediaTextUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getMediaId(),
+                        details.getTextContent()
+                    )
+                );
+                break;
+            }
+            case COMMENT_UPDATE_MEDIA_TEXT: {
+                var details = notification.getCommentMediaTextUpdate();
+                log.info(
+                    "Node {} updated text of media {} attached to comment {} to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getMediaId()),
+                    LogUtil.format(details.getCommentId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new CommentMediaTextUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
+                        details.getMediaId(), details.getTextContent()
+                    )
+                );
                 break;
             }
         }
