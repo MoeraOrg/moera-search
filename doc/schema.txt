@@ -55,7 +55,18 @@ INDEX comment_scan ON (scan, scannedAt)
 INDEX comment_scan_reactions ON (scanReactions, reactionsScannedAt)
 
 (:Entry)
+id:                 string NOT NULL
+revisionId:         string NOT NULL
+ownerFullName:      string
+heading:            string NOT NULL
+bodyPreview:        string NOT NULL         (Body)
+imageCount:         int NOT NULL
+videoPresent:       boolean NOT NULL
+createdAt:          int NOT NULL            (sec timestamp)
+editedAt:           int                     (sec timestamp)
+viewPrincipal:      string
 documentId:         string
+sheriffMarks:       string[]
 moment:             int
 UNIQUE entry_document_id ON (documentId)
 INDEX entry_moment ON (moment)
