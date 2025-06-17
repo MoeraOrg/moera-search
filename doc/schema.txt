@@ -5,69 +5,69 @@ Nodes
 -----
 
 (:Attachment)
-mediaId:            string NOT NULL
-mimeType:           string NOT NULL
-size:               int NOT NULL
-textContent:        string
+mediaId             string NOT NULL
+mimeType            string NOT NULL
+size                int NOT NULL
+textContent         string
 
 (:CacheMediaDigest)
-nodeName:           string NOT NULL
-mediaId:            string NOT NULL
-digest:             byte[] NOT NULL
+nodeName            string NOT NULL
+mediaId             string NOT NULL
+digest              byte[] NOT NULL
 INDEX cache_media_digest_primary ON (nodeName, mediaId)
 
 (:CachePostingDigest)
-nodeName:           string NOT NULL
-postingId:          string NOT NULL
-revisionId:         string NOT NULL
-digest:             byte[] NOT NULL
+nodeName            string NOT NULL
+postingId           string NOT NULL
+revisionId          string NOT NULL
+digest              byte[] NOT NULL
 INDEX cache_posting_digest_primary ON (nodeName, postingId, revisionId)
 
 (:CacheCommentDigest)
-nodeName:           string NOT NULL
-postingId:          string NOT NULL
-commentId:          string
-revisionId:         string NOT NULL
-digest:             byte[] NOT NULL
+nodeName            string NOT NULL
+postingId           string NOT NULL
+commentId           string
+revisionId          string NOT NULL
+digest              byte[] NOT NULL
 INDEX cache_comment_digest_primary ON (nodeName, postingId, commentId, revisionId)
 
 (:Comment)
-id:                 string NOT NULL
-revisionId:         string NOT NULL
-ownerFullName:      string
-heading:            string NOT NULL
-repliedTo:          string                  (SearchRepliedTo)
-bodyPreview:        string NOT NULL         (Body)
-imageCount:         int NOT NULL
-videoPresent:       boolean NOT NULL
-createdAt:          int NOT NULL            (sec timestamp)
-editedAt:           int                     (sec timestamp)
-viewPrincipal:      string
-scan:               boolean/int             (ScanStatus)
-scannedAt:          int                     (ms timestamp)
-scanReactions:      boolean/int             (ScanStatus)
-reactionsScannedAt: int                     (ms timestamp)
-documentId:         string
-sheriffMarks:       string[]
-moment:             int
+id                  string NOT NULL
+revisionId          string NOT NULL
+ownerFullName       string
+heading             string NOT NULL
+repliedTo           string                  (SearchRepliedTo)
+bodyPreview         string NOT NULL         (Body)
+imageCount          int NOT NULL
+videoPresent        boolean NOT NULL
+createdAt           int NOT NULL            (sec timestamp)
+editedAt            int                     (sec timestamp)
+viewPrincipal       string
+scan                boolean/int             (ScanStatus)
+scannedAt           int                     (ms timestamp)
+scanReactions       boolean/int             (ScanStatus)
+reactionsScannedAt  int                     (ms timestamp)
+documentId          string
+sheriffMarks        string[]
+moment              int
 INDEX comment_id ON (id)
 INDEX comment_scan ON (scan, scannedAt)
 INDEX comment_scan_reactions ON (scanReactions, reactionsScannedAt)
 
 (:Entry)
-id:                 string NOT NULL
-revisionId:         string NOT NULL
-ownerFullName:      string
-heading:            string NOT NULL
-bodyPreview:        string NOT NULL         (Body)
-imageCount:         int NOT NULL
-videoPresent:       boolean NOT NULL
-createdAt:          int NOT NULL            (sec timestamp)
-editedAt:           int                     (sec timestamp)
-viewPrincipal:      string
-documentId:         string
-sheriffMarks:       string[]
-moment:             int
+id                  string NOT NULL
+revisionId          string NOT NULL
+ownerFullName       string
+heading             string NOT NULL
+bodyPreview         string NOT NULL         (Body)
+imageCount          int NOT NULL
+videoPresent        boolean NOT NULL
+createdAt           int NOT NULL            (sec timestamp)
+editedAt            int                     (sec timestamp)
+viewPrincipal       string
+documentId          string
+sheriffMarks        string[]
+moment              int
 UNIQUE entry_document_id ON (documentId)
 INDEX entry_moment ON (moment)
 
@@ -79,50 +79,50 @@ deadline            int NOT NULL INDEX      (ms timestamp)
 INDEX favor_deadline ON (deadline)
 
 (:Hashtag)
-name:               string NOT NULL
+name                string NOT NULL
 createdAt           int NOT NULL            (ms timestamp)
 UNIQUE hashtag_name ON (name)
 
 (:Job)
-id:                 string NOT NULL
-jobType:            string NOT NULL
-jobKey:             string INDEX
-parameters:         string NOT NULL
-state:              string
-retries:            int
-waitUntil:          int                     (ms timestamp)
+id                  string NOT NULL
+jobType             string NOT NULL
+jobKey              string INDEX
+parameters          string NOT NULL
+state               string
+retries             int
+waitUntil           int                     (ms timestamp)
 UNIQUE job_id ON (id)
 INDEX job_key ON (jobKey)
 
 (:MediaFile)
-id:                 string NOT NULL
-mimeType:           string NOT NULL
-sizeX:              int
-sizeY:              int
-orientation:        int NOT NULL
-fileSize:           int NOT NULL
-exposed:            boolean NOT NULL
-digest:             byte[]
-createdAt:          int NOT NULL            (ms timestamp)
+id                  string NOT NULL
+mimeType            string NOT NULL
+sizeX               int
+sizeY               int
+orientation         int NOT NULL
+fileSize            int NOT NULL
+exposed             boolean NOT NULL
+digest              byte[]
+createdAt           int NOT NULL            (ms timestamp)
 UNIQUE media_file_id ON (id)
 
 (:MoeraNode)
-name:               string NOT NULL
-fullName:           string
-title:              string
-scanProfile:        boolean/int             (ScanStatus)
-profileScannedAt:   int                     (ms timestamp)
-subscriberId:       string
-scanPeople:         boolean/int             (ScanStatus)
-peopleScannedAt:    int                     (ms timestamp)
-closeToUpdatedAt:   int                     (ms timestamp)
-closeToCleanedUpAt: int                     (ms timestamp)
-scanTimeline:       boolean/int             (ScanStatus)
-timelineScannedAt:  int                     (ms timestamp)
-scanSheriff:        boolean/int             (ScanStatus)
-sheriffScannedAt:   int                     (ms timestamp)
-sheriffMarks:       string[]
-ownerSheriffMarks:  string[]
+name                string NOT NULL
+fullName            string
+title               string
+scanProfile         boolean/int             (ScanStatus)
+profileScannedAt    int                     (ms timestamp)
+subscriberId        string
+scanPeople          boolean/int             (ScanStatus)
+peopleScannedAt     int                     (ms timestamp)
+closeToUpdatedAt    int                     (ms timestamp)
+closeToCleanedUpAt  int                     (ms timestamp)
+scanTimeline        boolean/int             (ScanStatus)
+timelineScannedAt   int                     (ms timestamp)
+scanSheriff         boolean/int             (ScanStatus)
+sheriffScannedAt    int                     (ms timestamp)
+sheriffMarks        string[]
+ownerSheriffMarks   string[]
 UNIQUE moera_node_name ON (name)
 FULLTEXT moera_node_full_name ON (fullName)
 INDEX moera_node_scan_profile ON (scanProfile, profileScannedAt)
@@ -132,59 +132,59 @@ INDEX moera_node_close_to_cleaned_up ON (closeToCleanedUpAt)
 INDEX moera_node_scan_timeline ON (scanTimeline, timelineScannedAt)
 
 (:NamingService) UNIQUE
-scanTimestamp:      int NOT NULL
-scannedAt:          int                     (ms timestamp)
+scanTimestamp       int NOT NULL
+scannedAt           int                     (ms timestamp)
 
 (:PendingUpdate)
-id:                 string NOT NULL
-type:               string NOT NULL
-jobParameters:      string NOT NULL
-createdAt:          int NOT NULL            (ms timestamp)
+id                  string NOT NULL
+type                string NOT NULL
+jobParameters       string NOT NULL
+createdAt           int NOT NULL            (ms timestamp)
 UNIQUE pending_update_id ON (id)
 
 (:Posting)
-id:                 string NOT NULL
-revisionId:         string NOT NULL
-ownerFullName:      string
-heading:            string NOT NULL
-bodyPreview:        string NOT NULL         (Body)
-imageCount:         int NOT NULL
-videoPresent:       boolean NOT NULL
-createdAt:          int NOT NULL            (sec timestamp)
-editedAt:           int                     (sec timestamp)
-viewPrincipal:      string
-scan:               boolean/int             (ScanStatus)
-scannedAt:          int                     (ms timestamp)
-scanComments:       boolean/int             (ScanStatus)
-commentsScannedAt:  int                     (ms timestamp)
-scanReactions:      boolean/int             (ScanStatus)
-reactionsScannedAt: int                     (ms timestamp)
-documentId:         string
-sheriffMarks:       string[]
-moment:             int
+id                  string NOT NULL
+revisionId          string NOT NULL
+ownerFullName       string
+heading             string NOT NULL
+bodyPreview         string NOT NULL         (Body)
+imageCount          int NOT NULL
+videoPresent        boolean NOT NULL
+createdAt           int NOT NULL            (sec timestamp)
+editedAt            int                     (sec timestamp)
+viewPrincipal       string
+scan                boolean/int             (ScanStatus)
+scannedAt           int                     (ms timestamp)
+scanComments        boolean/int             (ScanStatus)
+commentsScannedAt   int                     (ms timestamp)
+scanReactions       boolean/int             (ScanStatus)
+reactionsScannedAt  int                     (ms timestamp)
+documentId          string
+sheriffMarks        string[]
+moment              int
 INDEX posting_id ON (id)
 INDEX posting_scan ON (scan, scannedAt)
 INDEX posting_scan_comments ON (scanComments, commentsScannedAt)
 INDEX posting_scan_reactions ON (scanReactions, reactionsScannedAt)
 
 (:Publication)
-feedName:           string NOT NULL
-storyId:            string NOT NULL
-publishedAt:        int NOT NULL            (sec timestamp)
+feedName            string NOT NULL
+storyId             string NOT NULL
+publishedAt         int NOT NULL            (sec timestamp)
 INDEX publication_feed_name ON (feedName)
 INDEX publication_published_at ON (publishedAt)
 
 (:Reaction)
-ownerFullName:      string
-negative:           boolean NOT NULL
-emoji:              int NOT NULL
-createdAt:          int NOT NULL            (sec timestamp)
-viewPrincipal:      string
+ownerFullName       string
+negative            boolean NOT NULL
+emoji               int NOT NULL
+createdAt           int NOT NULL            (sec timestamp)
+viewPrincipal       string
 
 (:Upgrade) UNIQUE
 
 (:Version) UNIQUE
-version:            int NOT NULL
+version             int NOT NULL
 
 Relationships
 -------------
@@ -192,7 +192,7 @@ Relationships
 (:Posting|Comment)<-[:ATTACHED]->(:Attachment)
 
 (:MoeraNode|Posting|Comment|Reaction)-[:AVATAR]->(:MediaFile)
-shape:              string
+shape               string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
 blockedOperation:   string NOT NULL         (BlockedOperation)
@@ -200,8 +200,8 @@ blockedOperation:   string NOT NULL         (BlockedOperation)
 (:Favor)-[:CAUSED_BY]->(:Publication|Comment|Reaction)
 
 (:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
-distance:           float NOT NULL
-updatedAt:          int NOT NULL            (ms timestamp)
+distance            float NOT NULL
+updatedAt           int NOT NULL            (ms timestamp)
 
 (:Publication)-[:CONTAINS]->(:Posting)
 
@@ -212,7 +212,7 @@ updatedAt:          int NOT NULL            (ms timestamp)
 (:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
 (:Posting|Comment)-[:MEDIA_PREVIEW]->(:MediaFile)
-mediaId:            string
+mediaId             string
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)
 
@@ -231,7 +231,7 @@ mediaId:            string
 (:MoeraNode)<-[:SOURCE]-(:Posting)
 
 (:MoeraNode)-[:SUBSCRIBED]->(:MoeraNode)
-feedName:           string NOT NULL
+feedName            string NOT NULL
 
 (:MoeraNode)<-[:SUBSCRIBES]-(:Job)
 
