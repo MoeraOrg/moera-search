@@ -1,14 +1,18 @@
 package org.moera.search.data;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.PostingOperations;
+import org.moera.lib.node.types.RecommendedPostingInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
+import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.util.BodyUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
@@ -392,6 +396,71 @@ public class PostingRepository {
                 "now", Instant.now().toEpochMilli()
             )
         );
+    }
+
+    public List<RecommendedPostingInfo> findPopular(int limit) {
+        return database.tx().run(
+            """
+            MATCH (p:Posting)
+            ORDER BY p.popularity DESC
+            WITH p
+            WHERE p.popularity IS NOT NULL AND p.popularity > 0
+            LIMIT $limit
+            MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
+            OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
+            RETURN
+                n.name AS nodeName,
+                p.id AS postingId,
+                o AS owner,
+                mf AS avatar,
+                a.shape AS avatarShape,
+                p.heading AS heading,
+                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
+                COUNT {
+                    (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
+                } AS dayReactions,
+                COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
+                COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
+            """,
+            Map.of(
+                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
+                "limit", limit
+            )
+        ).list(this::buildRecommendedPosting);
+    }
+
+    /*
+     * Record fields:
+     *
+     * String nodeName
+     * String postingId
+     * Node owner
+     * Node avatar (optional)
+     * String avatarShape (optional)
+     * String heading (optional)
+     * int totalReactions
+     * int dayReactions
+     * int totalComments
+     * int dayComments
+     */
+    private RecommendedPostingInfo buildRecommendedPosting(org.neo4j.driver.Record r) {
+        var info = new RecommendedPostingInfo();
+        info.setNodeName(r.get("nodeName").asString());
+        info.setPostingId(r.get("postingId").asString(null));
+        var owner = r.get("owner").asNode();
+        info.setOwnerName(owner.get("name").asString(null));
+        info.setOwnerFullName(owner.get("fullName").asString(null));
+        var avatarShape = r.get("avatarShape").asString(null);
+        var avatar = r.get("avatar").isNull() ? null : new MediaFile(r.get("avatar").asNode());
+        if (avatar != null) {
+            info.setOwnerAvatar(AvatarImageUtil.build(avatar, avatarShape));
+        }
+        info.setHeading(r.get("heading").asString(null));
+        info.setTotalPositiveReactions(r.get("totalReactions").asInt(0));
+        info.setLastDayPositiveReactions(r.get("dayReactions").asInt(0));
+        info.setTotalComments(r.get("totalComments").asInt(0));
+        info.setLastDayComments(r.get("dayComments").asInt(0));
+        return info;
     }
 
     public void refreshReadPopularity() {
