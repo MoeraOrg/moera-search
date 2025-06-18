@@ -429,6 +429,68 @@ public class PostingRepository {
         ).list(this::buildRecommendedPosting);
     }
 
+    public List<RecommendedPostingInfo> findReadPopular(int limit) {
+        return database.tx().run(
+            """
+            MATCH (p:Posting)
+            ORDER BY p.readPopularity DESC
+            WITH p
+            WHERE p.readPopularity IS NOT NULL AND p.readPopularity > 0
+            LIMIT $limit
+            MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
+            OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
+            RETURN
+                n.name AS nodeName,
+                p.id AS postingId,
+                o AS owner,
+                mf AS avatar,
+                a.shape AS avatarShape,
+                p.heading AS heading,
+                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
+                COUNT {
+                    (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
+                } AS dayReactions,
+                COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
+                COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
+            """,
+            Map.of(
+                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
+                "limit", limit
+            )
+        ).list(this::buildRecommendedPosting);
+    }
+
+    public List<RecommendedPostingInfo> findCommentPopular(int limit) {
+        return database.tx().run(
+            """
+            MATCH (p:Posting)
+            ORDER BY p.commentPopularity DESC
+            WITH p
+            WHERE p.commentPopularity IS NOT NULL AND p.commentPopularity > 0
+            LIMIT $limit
+            MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
+            OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
+            RETURN
+                n.name AS nodeName,
+                p.id AS postingId,
+                o AS owner,
+                mf AS avatar,
+                a.shape AS avatarShape,
+                p.heading AS heading,
+                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
+                COUNT {
+                    (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
+                } AS dayReactions,
+                COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
+                COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
+            """,
+            Map.of(
+                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
+                "limit", limit
+            )
+        ).list(this::buildRecommendedPosting);
+    }
+
     /*
      * Record fields:
      *

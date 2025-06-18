@@ -39,7 +39,7 @@ public class RecommendationPostingController {
 
     @GetMapping
     public List<RecommendedPostingInfo> popular(@RequestParam(required = false) Integer limit) {
-        log.info("GET recommendations/postings (limit = {})", LogUtil.format(limit));
+        log.info("GET /recommendations/postings (limit = {})", LogUtil.format(limit));
 
         if (limit == null) {
             limit = DEFAULT_POSTINGS_PER_REQUEST;
@@ -56,6 +56,48 @@ public class RecommendationPostingController {
         int size = limit;
 
         return database.read(() -> postingRepository.findPopular(size));
+    }
+
+    @GetMapping("/reading")
+    public List<RecommendedPostingInfo> popularForReading(@RequestParam(required = false) Integer limit) {
+        log.info("GET /recommendations/postings/reading (limit = {})", LogUtil.format(limit));
+
+        if (limit == null) {
+            limit = DEFAULT_POSTINGS_PER_REQUEST;
+        }
+        if (limit > MAX_POSTINGS_PER_REQUEST) {
+            limit = MAX_POSTINGS_PER_REQUEST;
+        }
+        ValidationUtil.assertion(limit >= 0, "limit.invalid");
+
+        if (limit == 0) {
+            return Collections.emptyList();
+        }
+
+        int size = limit;
+
+        return database.read(() -> postingRepository.findReadPopular(size));
+    }
+
+    @GetMapping("/commenting")
+    public List<RecommendedPostingInfo> popularForCommenting(@RequestParam(required = false) Integer limit) {
+        log.info("GET /recommendations/postings/commenting (limit = {})", LogUtil.format(limit));
+
+        if (limit == null) {
+            limit = DEFAULT_POSTINGS_PER_REQUEST;
+        }
+        if (limit > MAX_POSTINGS_PER_REQUEST) {
+            limit = MAX_POSTINGS_PER_REQUEST;
+        }
+        ValidationUtil.assertion(limit >= 0, "limit.invalid");
+
+        if (limit == 0) {
+            return Collections.emptyList();
+        }
+
+        int size = limit;
+
+        return database.read(() -> postingRepository.findCommentPopular(size));
     }
 
 }
