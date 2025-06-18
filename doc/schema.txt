@@ -162,10 +162,16 @@ reactionsScannedAt  int                     (ms timestamp)
 documentId          string
 sheriffMarks        string[]
 moment              int
+readPopularity     float
+commentPopularity  float
+popularity          float
 INDEX posting_id ON (id)
 INDEX posting_scan ON (scan, scannedAt)
 INDEX posting_scan_comments ON (scanComments, commentsScannedAt)
 INDEX posting_scan_reactions ON (scanReactions, reactionsScannedAt)
+INDEX posting_read_popularity ON (readPopularity)
+INDEX posting_comment_popularity ON (commentPopularity)
+INDEX posting_popularity ON (popularity)
 
 (:Publication)
 feedName            string NOT NULL

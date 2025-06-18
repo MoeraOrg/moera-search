@@ -4,11 +4,13 @@ import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
+import org.moera.search.Workload;
 import org.moera.search.api.Feed;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.data.PublicationRepository;
+import org.moera.search.global.RequestCounter;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -17,11 +19,19 @@ import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.CommentsScanUpdate;
 import org.moera.search.scanner.updates.PostingReactionsScanUpdate;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
 @Component
 public class PostingIngest {
+
+    private static final Logger log = LoggerFactory.getLogger(PostingIngest.class);
+
+    @Inject
+    private RequestCounter requestCounter;
 
     @Inject
     private Database database;
@@ -235,6 +245,25 @@ public class PostingIngest {
                 document.setNews(publicationRepository.getPublishers(nodeName, postingId, Feed.NEWS));
             });
             index.update(documentId, document);
+        }
+    }
+
+    @Scheduled(fixedDelayString = Workload.POSTING_POPULARITY_REFRESH_PERIOD)
+    public void refreshPopularity() {
+        if (!database.isReady()) {
+            return;
+        }
+
+        try (var ignored = requestCounter.allot()) {
+            try (var ignored2 = database.open()) {
+                log.info("Refreshing popularity of postings");
+
+                database.writeNoResult(() -> postingRepository.refreshReadPopularity());
+                database.writeNoResult(() -> postingRepository.refreshCommentPopularity());
+                database.writeNoResult(() -> postingRepository.refreshPopularity());
+
+                log.info("Done refreshing popularity of postings");
+            }
         }
     }
 

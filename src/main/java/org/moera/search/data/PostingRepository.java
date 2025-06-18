@@ -394,4 +394,42 @@ public class PostingRepository {
         );
     }
 
+    public void refreshReadPopularity() {
+        database.tx().run(
+            """
+            MATCH (p:Posting)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Publication|Reaction)
+            WITH p, f.value * (1.0 - (toFloat($now - f.createdAt) / 3600000 / f.decayHours)^2) AS rest
+            WITH p, sum(rest) AS popularity
+            SET p.readPopularity = popularity
+            """,
+            Map.of("now", Instant.now().toEpochMilli())
+        );
+    }
+
+    public void refreshCommentPopularity() {
+        database.tx().run(
+            """
+            MATCH (p:Posting)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Comment)
+            WITH p, f.value * (1.0 - (toFloat($now - f.createdAt) / 3600000 / f.decayHours)^2) AS rest
+            WITH p, sum(rest) AS popularity
+            SET p.commentPopularity = popularity
+            """,
+            Map.of("now", Instant.now().toEpochMilli())
+        );
+    }
+
+    public void refreshPopularity() {
+        database.tx().run(
+            """
+            MATCH (
+                p:Posting
+                WHERE p.readPopularity IS NOT NULL AND p.readPopularity > 0
+                    OR p.commentPopularity IS NOT NULL AND p.commentPopularity > 0
+            )
+            SET p.popularity = coalesce(p.readPopularity, 0.0) + coalesce(p.commentPopularity, 0.0)
+            """,
+            Map.of("now", Instant.now().toEpochMilli())
+        );
+    }
+
 }

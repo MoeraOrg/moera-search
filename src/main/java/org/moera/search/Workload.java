@@ -34,4 +34,6 @@ public class Workload {
     public static final int UPGRADER_UPDATE_START_PERIOD = 15000; // ms
     public static final int UPGRADER_MAX_STARTED_UPDATES = 50;
 
+    public static final String POSTING_POPULARITY_REFRESH_PERIOD = "PT1H";
+
 }
