@@ -162,9 +162,10 @@ reactionsScannedAt  int                     (ms timestamp)
 documentId          string
 sheriffMarks        string[]
 moment              int
-readPopularity     float
-commentPopularity  float
+readPopularity      float
+commentPopularity   float
 popularity          float
+recommendationOrder int NOT NULL
 INDEX posting_id ON (id)
 INDEX posting_scan ON (scan, scannedAt)
 INDEX posting_scan_comments ON (scanComments, commentsScannedAt)
@@ -172,6 +173,7 @@ INDEX posting_scan_reactions ON (scanReactions, reactionsScannedAt)
 INDEX posting_read_popularity ON (readPopularity)
 INDEX posting_comment_popularity ON (commentPopularity)
 INDEX posting_popularity ON (popularity)
+INDEX posting_recommendation_order ON (recommendationOrder)
 
 (:Publication)
 feedName            string NOT NULL
@@ -215,6 +217,8 @@ updatedAt           int NOT NULL            (ms timestamp)
 
 (:Favor)-[:DONE_TO]->(:MoeraNode|Posting)
 
+(:MoeraNode)-[:DONT_RECOMMEND]->(:MoeraNode|Posting)
+
 (:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
 (:Posting|Comment)-[:MEDIA_PREVIEW]->(:MediaFile)
@@ -242,3 +246,5 @@ feedName            string NOT NULL
 (:MoeraNode)<-[:SUBSCRIBES]-(:Job)
 
 (:Comment)-[:UNDER]->(:Posting)
+
+(:MoeraNode)-[:WAS_RECOMMENDED]->(:Posting)

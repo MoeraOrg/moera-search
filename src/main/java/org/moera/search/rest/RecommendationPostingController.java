@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.RecommendedPostingInfo;
+import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.auth.RequestContext;
@@ -55,7 +56,14 @@ public class RecommendationPostingController {
 
         int size = limit;
 
-        return database.read(() -> postingRepository.findPopular(size));
+        return database.read(() -> {
+            String clientName = requestContext.getClientName(Scope.IDENTIFY);
+            if (clientName == null) {
+                return postingRepository.findPopular(size);
+            } else {
+                return postingRepository.findRecommended(clientName, size);
+            }
+        });
     }
 
     @GetMapping("/reading")

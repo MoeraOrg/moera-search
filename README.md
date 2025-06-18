@@ -13,8 +13,8 @@
 
 ## Installation instructions
 
-1. As prerequisites, you need to have Java 17+, Neo4j Community 2025.04+ and OpenSearch 2.19+
-   installed.
+1. As prerequisites, you need to have Java 17+, Neo4j Community 2025.04+ (with APOC plugin)
+   and OpenSearch 2.19+ installed.
 2. Create an empty Neo4j database and an empty OpenSearch index.
 3. Create a directory `<media>`, where the server will keep media files.
 4. Go to the source directory.

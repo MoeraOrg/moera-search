@@ -141,7 +141,10 @@ public class PostingIngest {
             }
         }
 
-        database.writeNoResult(() -> postingRepository.fillPosting(nodeName, posting.getId(), posting));
+        database.writeNoResult(() -> {
+            postingRepository.fillPosting(nodeName, posting.getId(), posting);
+            postingRepository.updateRecommendationOrder(nodeName, posting.getId());
+        });
         mediaManager.downloadAndSaveAvatar(
             nodeName,
             posting.getOwnerAvatar(),

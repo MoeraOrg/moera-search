@@ -20,6 +20,26 @@ import org.springframework.util.ObjectUtils;
 @Component
 public class PostingRepository {
 
+    private static final String RETURN_RECOMMENDATIONS =
+        """
+        LIMIT $limit
+        MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
+        OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
+        RETURN
+            n.name AS nodeName,
+            p.id AS postingId,
+            o AS owner,
+            mf AS avatar,
+            a.shape AS avatarShape,
+            p.heading AS heading,
+            COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
+            COUNT {
+                (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
+            } AS dayReactions,
+            COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
+            COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
+        """;
+
     @Inject
     private Database database;
 
@@ -398,93 +418,46 @@ public class PostingRepository {
         );
     }
 
-    public List<RecommendedPostingInfo> findPopular(int limit) {
+    private List<RecommendedPostingInfo> findPopular(String fieldName, int limit) {
         return database.tx().run(
             """
             MATCH (p:Posting)
-            ORDER BY p.popularity DESC
+            ORDER BY p.%1$s DESC
             WITH p
-            WHERE p.popularity IS NOT NULL AND p.popularity > 0
-            LIMIT $limit
-            MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
-            OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
-            RETURN
-                n.name AS nodeName,
-                p.id AS postingId,
-                o AS owner,
-                mf AS avatar,
-                a.shape AS avatarShape,
-                p.heading AS heading,
-                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
-                COUNT {
-                    (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
-                } AS dayReactions,
-                COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
-                COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
-            """,
+            WHERE p.%1$s IS NOT NULL AND p.%1$s > 0
+            """.formatted(fieldName) + RETURN_RECOMMENDATIONS,
             Map.of(
                 "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
                 "limit", limit
             )
         ).list(this::buildRecommendedPosting);
+    }
+
+    public List<RecommendedPostingInfo> findPopular(int limit) {
+        return findPopular("popularity", limit);
     }
 
     public List<RecommendedPostingInfo> findReadPopular(int limit) {
-        return database.tx().run(
-            """
-            MATCH (p:Posting)
-            ORDER BY p.readPopularity DESC
-            WITH p
-            WHERE p.readPopularity IS NOT NULL AND p.readPopularity > 0
-            LIMIT $limit
-            MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
-            OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
-            RETURN
-                n.name AS nodeName,
-                p.id AS postingId,
-                o AS owner,
-                mf AS avatar,
-                a.shape AS avatarShape,
-                p.heading AS heading,
-                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
-                COUNT {
-                    (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
-                } AS dayReactions,
-                COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
-                COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
-            """,
-            Map.of(
-                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
-                "limit", limit
-            )
-        ).list(this::buildRecommendedPosting);
+        return findPopular("readPopularity", limit);
     }
 
     public List<RecommendedPostingInfo> findCommentPopular(int limit) {
+        return findPopular("commentPopularity", limit);
+    }
+
+    public List<RecommendedPostingInfo> findRecommended(String clientName, int limit) {
         return database.tx().run(
             """
-            MATCH (p:Posting)
-            ORDER BY p.commentPopularity DESC
-            WITH p
-            WHERE p.commentPopularity IS NOT NULL AND p.commentPopularity > 0
-            LIMIT $limit
-            MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
-            OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
-            RETURN
-                n.name AS nodeName,
-                p.id AS postingId,
-                o AS owner,
-                mf AS avatar,
-                a.shape AS avatarShape,
-                p.heading AS heading,
-                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS totalReactions,
-                COUNT {
-                    (p)<-[:REACTS_TO]-(r:Reaction WHERE r.negative = false AND r.createdAt > $yesterday)
-                } AS dayReactions,
-                COUNT {(p)<-[:UNDER]-(:Comment)} AS totalComments,
-                COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
-            """,
+            MATCH (c:MoeraNode {name: $clientName})-[:SUBSCRIBED|FRIEND]->(fr:MoeraNode)
+                  <-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)-[:SOURCE]->(n:MoeraNode)
+            WHERE
+                NOT EXISTS { MATCH (c)-[:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n) }
+                AND NOT EXISTS { MATCH (c)-[:WAS_RECOMMENDED|DONT_RECOMMEND]->(p) }
+                AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
+            ORDER BY p.recommendationOrder DESC
+            """ + RETURN_RECOMMENDATIONS,
             Map.of(
+                "clientName", clientName,
                 "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
                 "limit", limit
             )
@@ -560,6 +533,24 @@ public class PostingRepository {
             SET p.popularity = coalesce(p.readPopularity, 0.0) + coalesce(p.commentPopularity, 0.0)
             """,
             Map.of("now", Instant.now().toEpochMilli())
+        );
+    }
+
+    // TODO take publications in timelines of other users into account
+    public void updateRecommendationOrder(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            WITH
+                p,
+                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS r,
+                COUNT {(p)<-[:UNDER]-(:Comment)} AS c
+            SET p.recommendationOrder = p.createdAt + toInteger(apoc.math.tanh((r + c * 5) / 35.0) * 600000);
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
         );
     }
 

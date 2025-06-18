@@ -7,6 +7,7 @@ import org.moera.lib.node.types.CommentInfo;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
+import org.moera.search.data.PostingRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -26,6 +27,9 @@ public class CommentIngest {
 
     @Inject
     private EntryRepository entryRepository;
+
+    @Inject
+    private PostingRepository postingRepository;
 
     @Inject
     private CommentRepository commentRepository;
@@ -58,9 +62,10 @@ public class CommentIngest {
     private UpdateQueue updateQueue;
 
     public void ingest(String nodeName, CommentInfo comment, Supplier<String> carteSupplier) {
-        database.writeNoResult(() ->
-            commentRepository.createComment(nodeName, comment.getPostingId(), comment.getId())
-        );
+        database.writeNoResult(() -> {
+            commentRepository.createComment(nodeName, comment.getPostingId(), comment.getId());
+            postingRepository.updateRecommendationOrder(nodeName, comment.getPostingId());
+        });
         if (!comment.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(comment.getOwnerName());
         }
@@ -193,7 +198,10 @@ public class CommentIngest {
         if (documentId != null) {
             index.delete(documentId);
         }
-        database.writeNoResult(() -> commentRepository.deleteComment(nodeName, postingId, commentId));
+        database.writeNoResult(() -> {
+            commentRepository.deleteComment(nodeName, postingId, commentId);
+            postingRepository.updateRecommendationOrder(nodeName, postingId);
+        });
     }
 
     public void deleteAll(String nodeName, String postingId) {
@@ -203,7 +211,10 @@ public class CommentIngest {
         if (!documentIds.isEmpty()) {
             index.deleteBulk(documentIds);
         }
-        database.writeNoResult(() -> commentRepository.deleteAllComments(nodeName, postingId));
+        database.writeNoResult(() -> {
+            commentRepository.deleteAllComments(nodeName, postingId);
+            postingRepository.updateRecommendationOrder(nodeName, postingId);
+        });
     }
 
 }

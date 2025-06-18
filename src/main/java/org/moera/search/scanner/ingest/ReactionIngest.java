@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.ReactionInfo;
 import org.moera.search.data.Database;
+import org.moera.search.data.PostingRepository;
 import org.moera.search.data.ReactionRepository;
 import org.moera.search.media.MediaManager;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,9 @@ public class ReactionIngest {
 
     @Inject
     private Database database;
+
+    @Inject
+    private PostingRepository postingRepository;
 
     @Inject
     private ReactionRepository reactionRepository;
@@ -30,7 +34,12 @@ public class ReactionIngest {
         if (!reaction.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(reaction.getOwnerName());
         }
-        database.writeNoResult(() -> reactionRepository.createReaction(nodeName, reaction));
+        database.writeNoResult(() -> {
+            reactionRepository.createReaction(nodeName, reaction);
+            if (reaction.getCommentId() == null) {
+                postingRepository.updateRecommendationOrder(nodeName, reaction.getPostingId());
+            }
+        });
 
         MediaManager.AvatarSaver avatarSaver;
         if (reaction.getCommentId() == null) {
@@ -56,7 +65,10 @@ public class ReactionIngest {
 
     public void delete(String nodeName, String postingId, String ownerName) {
         favorIngest.deleteReaction(nodeName, postingId, ownerName);
-        database.writeNoResult(() -> reactionRepository.deleteReaction(nodeName, postingId, ownerName));
+        database.writeNoResult(() -> {
+            reactionRepository.deleteReaction(nodeName, postingId, ownerName);
+            postingRepository.updateRecommendationOrder(nodeName, postingId);
+        });
     }
 
     public void delete(String nodeName, String postingId, String commentId, String ownerName) {
@@ -66,7 +78,10 @@ public class ReactionIngest {
 
     public void deleteAll(String nodeName, String postingId) {
         favorIngest.deleteAllReactions(nodeName, postingId);
-        database.writeNoResult(() -> reactionRepository.deleteAllReactions(nodeName, postingId));
+        database.writeNoResult(() -> {
+            reactionRepository.deleteAllReactions(nodeName, postingId);
+            postingRepository.updateRecommendationOrder(nodeName, postingId);
+        });
     }
 
     public void deleteAllInComments(String nodeName, String postingId) {
