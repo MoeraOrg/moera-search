@@ -40,8 +40,9 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     private ObjectMapper objectMapper;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-            throws IOException {
+    public boolean preHandle(
+        HttpServletRequest request, HttpServletResponse response, Object handler
+    ) throws IOException {
         try {
             processAuthParameters(request);
             return true;
@@ -51,8 +52,9 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         }
     }
 
-    private void handleError(HttpServletResponse response, HttpStatus status, String errorCode, String wwwAuthHeader)
-            throws IOException {
+    private void handleError(
+        HttpServletResponse response, HttpStatus status, String errorCode, String wwwAuthHeader
+    ) throws IOException {
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, wwwAuthHeader);
         response.setStatus(status.value());
         String message = messageSource.getMessage(errorCode, null, Locale.getDefault());
