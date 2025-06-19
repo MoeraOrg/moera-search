@@ -7,9 +7,11 @@ import java.util.stream.Collectors;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.RecommendedPostingInfo;
+import org.moera.lib.node.types.Result;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.auth.AuthenticationException;
 import org.moera.search.auth.RequestContext;
 import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
@@ -19,6 +21,8 @@ import org.moera.search.util.PostingLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -146,6 +150,46 @@ public class RecommendationPostingController {
         int size = limit;
 
         return database.read(() -> postingRepository.findCommentPopular(sheriffName, size));
+    }
+
+    @PostMapping("/accepted/{nodeName}/{postingId}")
+    public Result acceptRecommendation(@PathVariable String nodeName, @PathVariable String postingId) {
+        log.info(
+            "POST /recommendations/postings/accepted/{nodeName}/{postingId} (nodeName = {}, postingId = {})",
+            LogUtil.format(nodeName), LogUtil.format(postingId)
+        );
+
+        var clientName = requestContext.getClientName(Scope.UPDATE_FEEDS);
+        if (clientName == null) {
+            throw new AuthenticationException();
+        }
+
+        database.writeNoResult(() -> {
+            postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId);
+            postingRepository.acceptRecommendation(clientName, nodeName, postingId);
+        });
+
+        return Result.OK;
+    }
+
+    @PostMapping("/rejected/{nodeName}/{postingId}")
+    public Result rejectRecommendation(@PathVariable String nodeName, @PathVariable String postingId) {
+        log.info(
+            "POST /recommendations/postings/rejected/{nodeName}/{postingId} (nodeName = {}, postingId = {})",
+            LogUtil.format(nodeName), LogUtil.format(postingId)
+        );
+
+        var clientName = requestContext.getClientName(Scope.UPDATE_FEEDS);
+        if (clientName == null) {
+            throw new AuthenticationException();
+        }
+
+        database.writeNoResult(() -> {
+            postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId);
+            postingRepository.rejectRecommendation(clientName, nodeName, postingId);
+        });
+
+        return Result.OK;
     }
 
 }

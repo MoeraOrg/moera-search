@@ -528,6 +528,52 @@ public class PostingRepository {
         return info;
     }
 
+    public void clearRecommendationAcceptance(String clientName, String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $clientName})
+                  -[a:WAS_RECOMMENDED|DONT_RECOMMEND]->
+                  (:Posting {id: $postingId})-[:SOURCE]->(:MoeraNode {name: $nodeName})
+            DELETE a
+            """,
+            Map.of(
+                "clientName", clientName,
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
+    public void acceptRecommendation(String clientName, String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (c:MoeraNode {name: $clientName}),
+                  (p:Posting {id: $postingId})-[:SOURCE]->(:MoeraNode {name: $nodeName})
+            MERGE (c)-[:WAS_RECOMMENDED]->(p)
+            """,
+            Map.of(
+                "clientName", clientName,
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
+    public void rejectRecommendation(String clientName, String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (c:MoeraNode {name: $clientName}),
+                  (p:Posting {id: $postingId})-[:SOURCE]->(:MoeraNode {name: $nodeName})
+            MERGE (c)-[:DONT_RECOMMEND]->(p)
+            """,
+            Map.of(
+                "clientName", clientName,
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
     public void refreshReadPopularity() {
         database.tx().run(
             """
