@@ -41,7 +41,7 @@ public class NodeSearchRepository {
             WHERE
             """
                 + SHERIFF_FILTER
-                + """
+            + """
             WITH n, c.distance AS distance
             ORDER BY distance ASC
             LIMIT $limit
@@ -70,7 +70,7 @@ public class NodeSearchRepository {
             WHERE lower(n.name) STARTS WITH $prefix AND
             """
                 + SHERIFF_FILTER
-                + """
+            + """
             RETURN count(n) AS total
             """,
             args

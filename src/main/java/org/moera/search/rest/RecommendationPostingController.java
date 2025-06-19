@@ -42,8 +42,14 @@ public class RecommendationPostingController {
     private PostingRepository postingRepository;
 
     @GetMapping
-    public List<RecommendedPostingInfo> popular(@RequestParam(required = false) Integer limit) {
-        log.info("GET /recommendations/postings (limit = {})", LogUtil.format(limit));
+    public List<RecommendedPostingInfo> popular(
+        @RequestParam(required = false) String sheriffName,
+        @RequestParam(required = false) Integer limit
+    ) {
+        log.info(
+            "GET /recommendations/postings (sheriffName = {}, limit = {})",
+            LogUtil.format(sheriffName), LogUtil.format(limit)
+        );
 
         if (limit == null) {
             limit = DEFAULT_POSTINGS_PER_REQUEST;
@@ -62,9 +68,9 @@ public class RecommendationPostingController {
         return database.read(() -> {
             String clientName = requestContext.getClientName(Scope.IDENTIFY);
             if (clientName == null) {
-                return postingRepository.findPopular(size);
+                return postingRepository.findPopular(sheriffName, size);
             } else {
-                var recommended = postingRepository.findRecommended(clientName, size);
+                var recommended = postingRepository.findRecommended(clientName, sheriffName, size);
                 if (recommended.size() >= size) {
                     return recommended;
                 }
@@ -73,7 +79,7 @@ public class RecommendationPostingController {
                 var used = recommended.stream()
                     .map(r -> new PostingLocation(r.getNodeName(), r.getPostingId()))
                     .collect(Collectors.toSet());
-                var other = postingRepository.findRecommendedByNobody(clientName, size);
+                var other = postingRepository.findRecommendedByNobody(clientName, sheriffName, size);
                 int i = 0;
                 while (list.size() < size && i < other.size()) {
                     var item = other.get(i);
@@ -89,8 +95,14 @@ public class RecommendationPostingController {
     }
 
     @GetMapping("/reading")
-    public List<RecommendedPostingInfo> popularForReading(@RequestParam(required = false) Integer limit) {
-        log.info("GET /recommendations/postings/reading (limit = {})", LogUtil.format(limit));
+    public List<RecommendedPostingInfo> popularForReading(
+        @RequestParam(required = false) String sheriffName,
+        @RequestParam(required = false) Integer limit
+    ) {
+        log.info(
+            "GET /recommendations/postings/reading (sheriffName = {}, limit = {})",
+            LogUtil.format(sheriffName), LogUtil.format(limit)
+        );
 
         if (limit == null) {
             limit = DEFAULT_POSTINGS_PER_REQUEST;
@@ -106,12 +118,18 @@ public class RecommendationPostingController {
 
         int size = limit;
 
-        return database.read(() -> postingRepository.findReadPopular(size));
+        return database.read(() -> postingRepository.findReadPopular(sheriffName, size));
     }
 
     @GetMapping("/commenting")
-    public List<RecommendedPostingInfo> popularForCommenting(@RequestParam(required = false) Integer limit) {
-        log.info("GET /recommendations/postings/commenting (limit = {})", LogUtil.format(limit));
+    public List<RecommendedPostingInfo> popularForCommenting(
+        @RequestParam(required = false) String sheriffName,
+        @RequestParam(required = false) Integer limit
+    ) {
+        log.info(
+            "GET /recommendations/postings/commenting (sheriffName = {}, limit = {})",
+            LogUtil.format(sheriffName), LogUtil.format(limit)
+        );
 
         if (limit == null) {
             limit = DEFAULT_POSTINGS_PER_REQUEST;
@@ -127,7 +145,7 @@ public class RecommendationPostingController {
 
         int size = limit;
 
-        return database.read(() -> postingRepository.findCommentPopular(size));
+        return database.read(() -> postingRepository.findCommentPopular(sheriffName, size));
     }
 
 }

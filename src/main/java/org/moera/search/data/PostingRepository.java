@@ -22,8 +22,14 @@ public class PostingRepository {
 
     private static final String RETURN_RECOMMENDATIONS =
         """
-        LIMIT $limit
         MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
+        WHERE
+            $sheriffName IS NULL
+            OR
+                (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))
+                AND (o.ownerSheriffMarks IS NULL OR NOT ($sheriffName IN o.ownerSheriffMarks))
+                AND (p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks))
+        LIMIT $limit
         OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
         RETURN
             n.name AS nodeName,
@@ -418,7 +424,12 @@ public class PostingRepository {
         );
     }
 
-    private List<RecommendedPostingInfo> findPopularByField(String fieldName, int limit) {
+    private List<RecommendedPostingInfo> findPopularByField(String fieldName, String sheriffName, int limit) {
+        var args = new HashMap<String, Object>();
+        args.put("sheriffName", sheriffName);
+        args.put("yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond());
+        args.put("limit", limit);
+
         return database.tx().run(
             """
             MATCH (p:Posting)
@@ -426,26 +437,29 @@ public class PostingRepository {
             WITH p
             WHERE p.%1$s IS NOT NULL AND p.%1$s > 0
             """.formatted(fieldName) + RETURN_RECOMMENDATIONS,
-            Map.of(
-                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
-                "limit", limit
-            )
+            args
         ).list(this::buildRecommendedPosting);
     }
 
-    public List<RecommendedPostingInfo> findPopular(int limit) {
-        return findPopularByField("popularity", limit);
+    public List<RecommendedPostingInfo> findPopular(String sheriffName, int limit) {
+        return findPopularByField("popularity", sheriffName, limit);
     }
 
-    public List<RecommendedPostingInfo> findReadPopular(int limit) {
-        return findPopularByField("readPopularity", limit);
+    public List<RecommendedPostingInfo> findReadPopular(String sheriffName, int limit) {
+        return findPopularByField("readPopularity", sheriffName, limit);
     }
 
-    public List<RecommendedPostingInfo> findCommentPopular(int limit) {
-        return findPopularByField("commentPopularity", limit);
+    public List<RecommendedPostingInfo> findCommentPopular(String sheriffName, int limit) {
+        return findPopularByField("commentPopularity", sheriffName, limit);
     }
 
-    public List<RecommendedPostingInfo> findRecommended(String clientName, int limit) {
+    public List<RecommendedPostingInfo> findRecommended(String clientName, String sheriffName, int limit) {
+        var args = new HashMap<String, Object>();
+        args.put("clientName", clientName);
+        args.put("sheriffName", sheriffName);
+        args.put("yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond());
+        args.put("limit", limit);
+
         return database.tx().run(
             """
             MATCH (c:MoeraNode {name: $clientName})-[:SUBSCRIBED|FRIEND]->(fr:MoeraNode)
@@ -456,15 +470,17 @@ public class PostingRepository {
                 AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
             ORDER BY p.recommendationOrder DESC
             """ + RETURN_RECOMMENDATIONS,
-            Map.of(
-                "clientName", clientName,
-                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
-                "limit", limit
-            )
+            args
         ).list(this::buildRecommendedPosting);
     }
 
-    public List<RecommendedPostingInfo> findRecommendedByNobody(String clientName, int limit) {
+    public List<RecommendedPostingInfo> findRecommendedByNobody(String clientName, String sheriffName, int limit) {
+        var args = new HashMap<String, Object>();
+        args.put("clientName", clientName);
+        args.put("sheriffName", sheriffName);
+        args.put("yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond());
+        args.put("limit", limit);
+
         return database.tx().run(
             """
             MATCH (c:MoeraNode {name: $clientName}), (p:Posting)-[:SOURCE]->(n:MoeraNode)
@@ -474,11 +490,7 @@ public class PostingRepository {
                 AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
             ORDER BY p.popularity IS NOT NULL DESC, p.popularity DESC, p.recommendationOrder DESC
             """ + RETURN_RECOMMENDATIONS,
-            Map.of(
-                "clientName", clientName,
-                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
-                "limit", limit
-            )
+            args
         ).list(this::buildRecommendedPosting);
     }
 
