@@ -236,7 +236,7 @@ public class NodeRepository {
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
-            MERGE (n)-[b:BLOCKS {blockedOperation: $blockedOperation}]->(p)
+            MERGE (n)-[:BLOCKS {blockedOperation: $blockedOperation}]->(p)
             """,
             Map.of(
                 "name", name,
@@ -559,6 +559,32 @@ public class NodeRepository {
             Map.of(
                 "sheriffName", sheriffName,
                 "name", name
+            )
+        );
+    }
+
+    public void addDontRecommend(String name, String peerName) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name}), (p:MoeraNode {name: $peerName})
+            MERGE (n)-[:DONT_RECOMMEND]->(p)
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName
+            )
+        );
+    }
+
+    public void deleteDontRecommend(String name, String peerName) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode {name: $name})-[d:DONT_RECOMMEND]->(p:MoeraNode {name: $peerName})
+            DELETE d
+            """,
+            Map.of(
+                "name", name,
+                "peerName", peerName
             )
         );
     }

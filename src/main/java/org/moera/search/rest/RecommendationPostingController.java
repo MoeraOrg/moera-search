@@ -11,6 +11,7 @@ import org.moera.lib.node.types.Result;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.lib.util.LogUtil;
+import org.moera.search.api.model.ObjectNotFoundFailure;
 import org.moera.search.auth.AuthenticationException;
 import org.moera.search.auth.RequestContext;
 import org.moera.search.data.Database;
@@ -171,6 +172,11 @@ public class RecommendationPostingController {
             throw new AuthenticationException();
         }
 
+        var exists = database.read(() -> postingRepository.exists(nodeName, postingId));
+        if (!exists) {
+            throw new ObjectNotFoundFailure("not-found");
+        }
+
         database.writeNoResult(() -> {
             postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId);
             postingRepository.acceptRecommendation(clientName, nodeName, postingId);
@@ -189,6 +195,11 @@ public class RecommendationPostingController {
         var clientName = requestContext.getClientName(Scope.UPDATE_FEEDS);
         if (clientName == null) {
             throw new AuthenticationException();
+        }
+
+        var exists = database.read(() -> postingRepository.exists(nodeName, postingId));
+        if (!exists) {
+            throw new ObjectNotFoundFailure("not-found");
         }
 
         database.writeNoResult(() -> {
