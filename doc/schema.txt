@@ -24,6 +24,13 @@ mediaId             string NOT NULL
 digest              byte[] NOT NULL
 INDEX cache_media_digest_primary ON (nodeName, mediaId)
 
+(:CachePopularPostings)
+sheriffName         string NOT NULL
+popular             string NOT NULL
+popularReading      string NOT NULL
+popularCommenting   string NOT NULL
+deadline            int NOT NULL            (ms timestamp)
+
 (:CachePostingDigest)
 nodeName            string NOT NULL
 postingId           string NOT NULL
@@ -75,7 +82,7 @@ INDEX entry_moment ON (moment)
 value               float NOT NULL
 decayHours          int NOT NULL
 createdAt           int NOT NULL            (ms timestamp)
-deadline            int NOT NULL INDEX      (ms timestamp)
+deadline            int NOT NULL            (ms timestamp)
 INDEX favor_deadline ON (deadline)
 
 (:Hashtag)
@@ -86,7 +93,7 @@ UNIQUE hashtag_name ON (name)
 (:Job)
 id                  string NOT NULL
 jobType             string NOT NULL
-jobKey              string INDEX
+jobKey              string
 parameters          string NOT NULL
 state               string
 retries             int

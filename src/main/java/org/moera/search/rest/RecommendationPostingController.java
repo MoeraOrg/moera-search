@@ -14,14 +14,17 @@ import org.moera.lib.util.LogUtil;
 import org.moera.search.api.model.ObjectNotFoundFailure;
 import org.moera.search.auth.AuthenticationException;
 import org.moera.search.auth.RequestContext;
+import org.moera.search.data.CachePopularPostingsRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
+import org.moera.search.global.RequestCounter;
 import org.moera.search.scanner.ingest.SheriffIngest;
 import org.moera.search.util.PostingLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,6 +42,9 @@ public class RecommendationPostingController {
     private static final int MAX_POSTINGS_PER_REQUEST = 200;
 
     @Inject
+    private RequestCounter requestCounter;
+
+    @Inject
     private RequestContext requestContext;
 
     @Inject
@@ -48,16 +54,19 @@ public class RecommendationPostingController {
     private PostingRepository postingRepository;
 
     @Inject
+    private CachePopularPostingsRepository cachePopularPostingsRepository;
+
+    @Inject
     private SheriffIngest sheriffIngest;
 
     @GetMapping
     public List<RecommendedPostingInfo> popular(
-        @RequestParam(required = false) String sheriffName,
+        @RequestParam(required = false) String sheriff,
         @RequestParam(required = false) Integer limit
     ) {
         log.info(
-            "GET /recommendations/postings (sheriffName = {}, limit = {})",
-            LogUtil.format(sheriffName), LogUtil.format(limit)
+            "GET /recommendations/postings (sheriff = {}, limit = {})",
+            LogUtil.format(sheriff), LogUtil.format(limit)
         );
 
         if (limit == null) {
@@ -67,7 +76,7 @@ public class RecommendationPostingController {
             limit = MAX_POSTINGS_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
-        sheriffIngest.activate(sheriffName);
+        sheriffIngest.activate(sheriff);
 
         if (limit == 0) {
             return Collections.emptyList();
@@ -75,12 +84,17 @@ public class RecommendationPostingController {
 
         int size = limit;
 
-        return database.read(() -> {
+        return database.write(() -> {
             String clientName = requestContext.getClientName(Scope.IDENTIFY);
             if (clientName == null) {
-                return postingRepository.findPopular(sheriffName, size);
+                var cached = cachePopularPostingsRepository.getPopular(sheriff);
+                if (cached == null) {
+                    cached = postingRepository.findPopular(sheriff, MAX_POSTINGS_PER_REQUEST);
+                    cachePopularPostingsRepository.setPopular(sheriff, cached);
+                }
+                return cached.subList(0, Math.min(cached.size(), size));
             } else {
-                var recommended = postingRepository.findRecommended(clientName, sheriffName, size);
+                var recommended = postingRepository.findRecommended(clientName, sheriff, size);
                 if (recommended.size() >= size) {
                     return recommended;
                 }
@@ -89,7 +103,7 @@ public class RecommendationPostingController {
                 var used = recommended.stream()
                     .map(r -> new PostingLocation(r.getNodeName(), r.getPostingId()))
                     .collect(Collectors.toSet());
-                var other = postingRepository.findRecommendedByNobody(clientName, sheriffName, size);
+                var other = postingRepository.findRecommendedByNobody(clientName, sheriff, size);
                 int i = 0;
                 while (list.size() < size && i < other.size()) {
                     var item = other.get(i);
@@ -106,12 +120,12 @@ public class RecommendationPostingController {
 
     @GetMapping("/reading")
     public List<RecommendedPostingInfo> popularForReading(
-        @RequestParam(required = false) String sheriffName,
+        @RequestParam(required = false) String sheriff,
         @RequestParam(required = false) Integer limit
     ) {
         log.info(
-            "GET /recommendations/postings/reading (sheriffName = {}, limit = {})",
-            LogUtil.format(sheriffName), LogUtil.format(limit)
+            "GET /recommendations/postings/reading (sheriff = {}, limit = {})",
+            LogUtil.format(sheriff), LogUtil.format(limit)
         );
 
         if (limit == null) {
@@ -121,7 +135,7 @@ public class RecommendationPostingController {
             limit = MAX_POSTINGS_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
-        sheriffIngest.activate(sheriffName);
+        sheriffIngest.activate(sheriff);
 
         if (limit == 0) {
             return Collections.emptyList();
@@ -129,17 +143,24 @@ public class RecommendationPostingController {
 
         int size = limit;
 
-        return database.read(() -> postingRepository.findReadPopular(sheriffName, size));
+        return database.write(() -> {
+            var cached = cachePopularPostingsRepository.getPopularReading(sheriff);
+            if (cached == null) {
+                cached = postingRepository.findReadPopular(sheriff, MAX_POSTINGS_PER_REQUEST);
+                cachePopularPostingsRepository.setPopularReading(sheriff, cached);
+            }
+            return cached.subList(0, Math.min(cached.size(), size));
+        });
     }
 
     @GetMapping("/commenting")
     public List<RecommendedPostingInfo> popularForCommenting(
-        @RequestParam(required = false) String sheriffName,
+        @RequestParam(required = false) String sheriff,
         @RequestParam(required = false) Integer limit
     ) {
         log.info(
-            "GET /recommendations/postings/commenting (sheriffName = {}, limit = {})",
-            LogUtil.format(sheriffName), LogUtil.format(limit)
+            "GET /recommendations/postings/commenting (sheriff = {}, limit = {})",
+            LogUtil.format(sheriff), LogUtil.format(limit)
         );
 
         if (limit == null) {
@@ -149,7 +170,7 @@ public class RecommendationPostingController {
             limit = MAX_POSTINGS_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
-        sheriffIngest.activate(sheriffName);
+        sheriffIngest.activate(sheriff);
 
         if (limit == 0) {
             return Collections.emptyList();
@@ -157,7 +178,14 @@ public class RecommendationPostingController {
 
         int size = limit;
 
-        return database.read(() -> postingRepository.findCommentPopular(sheriffName, size));
+        return database.write(() -> {
+            var cached = cachePopularPostingsRepository.getPopularCommenting(sheriff);
+            if (cached == null) {
+                cached = postingRepository.findCommentPopular(sheriff, MAX_POSTINGS_PER_REQUEST);
+                cachePopularPostingsRepository.setPopularCommenting(sheriff, cached);
+            }
+            return cached.subList(0, Math.min(cached.size(), size));
+        });
     }
 
     @PostMapping("/accepted/{nodeName}/{postingId}")
@@ -208,6 +236,20 @@ public class RecommendationPostingController {
         });
 
         return Result.OK;
+    }
+
+    @Scheduled(fixedDelayString = "PT1H")
+    public void purgeExpiredCache() {
+        if (!database.isReady()) {
+            return;
+        }
+
+        try (var ignored = requestCounter.allot()) {
+            try (var ignored2 = database.open()) {
+                log.debug("Deleting expired popular postings cache");
+                cachePopularPostingsRepository.deleteExpired();
+            }
+        }
     }
 
 }
