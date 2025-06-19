@@ -10,6 +10,14 @@ mimeType            string NOT NULL
 size                int NOT NULL
 textContent         string
 
+(:CacheCommentDigest)
+nodeName            string NOT NULL
+postingId           string NOT NULL
+commentId           string
+revisionId          string NOT NULL
+digest              byte[] NOT NULL
+INDEX cache_comment_digest_primary ON (nodeName, postingId, commentId, revisionId)
+
 (:CacheMediaDigest)
 nodeName            string NOT NULL
 mediaId             string NOT NULL
@@ -22,14 +30,6 @@ postingId           string NOT NULL
 revisionId          string NOT NULL
 digest              byte[] NOT NULL
 INDEX cache_posting_digest_primary ON (nodeName, postingId, revisionId)
-
-(:CacheCommentDigest)
-nodeName            string NOT NULL
-postingId           string NOT NULL
-commentId           string
-revisionId          string NOT NULL
-digest              byte[] NOT NULL
-INDEX cache_comment_digest_primary ON (nodeName, postingId, commentId, revisionId)
 
 (:Comment)
 id                  string NOT NULL
