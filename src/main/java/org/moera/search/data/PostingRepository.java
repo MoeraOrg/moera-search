@@ -418,7 +418,7 @@ public class PostingRepository {
         );
     }
 
-    private List<RecommendedPostingInfo> findPopular(String fieldName, int limit) {
+    private List<RecommendedPostingInfo> findPopularByField(String fieldName, int limit) {
         return database.tx().run(
             """
             MATCH (p:Posting)
@@ -434,15 +434,15 @@ public class PostingRepository {
     }
 
     public List<RecommendedPostingInfo> findPopular(int limit) {
-        return findPopular("popularity", limit);
+        return findPopularByField("popularity", limit);
     }
 
     public List<RecommendedPostingInfo> findReadPopular(int limit) {
-        return findPopular("readPopularity", limit);
+        return findPopularByField("readPopularity", limit);
     }
 
     public List<RecommendedPostingInfo> findCommentPopular(int limit) {
-        return findPopular("commentPopularity", limit);
+        return findPopularByField("commentPopularity", limit);
     }
 
     public List<RecommendedPostingInfo> findRecommended(String clientName, int limit) {
@@ -455,6 +455,24 @@ public class PostingRepository {
                 AND NOT EXISTS { MATCH (c)-[:WAS_RECOMMENDED|DONT_RECOMMEND]->(p) }
                 AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
             ORDER BY p.recommendationOrder DESC
+            """ + RETURN_RECOMMENDATIONS,
+            Map.of(
+                "clientName", clientName,
+                "yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond(),
+                "limit", limit
+            )
+        ).list(this::buildRecommendedPosting);
+    }
+
+    public List<RecommendedPostingInfo> findRecommendedByNobody(String clientName, int limit) {
+        return database.tx().run(
+            """
+            MATCH (c:MoeraNode {name: $clientName}), (p:Posting)-[:SOURCE]->(n:MoeraNode)
+            WHERE
+                NOT EXISTS { MATCH (c)-[:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n) }
+                AND NOT EXISTS { MATCH (c)-[:WAS_RECOMMENDED|DONT_RECOMMEND]->(p) }
+                AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
+            ORDER BY p.popularity IS NOT NULL DESC, p.popularity DESC, p.recommendationOrder DESC
             """ + RETURN_RECOMMENDATIONS,
             Map.of(
                 "clientName", clientName,

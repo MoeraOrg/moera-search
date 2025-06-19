@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
+import org.moera.search.util.PostingLocation;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,9 +12,6 @@ public class UpgradeRepository {
 
     @Inject
     private Database database;
-
-    public record PostingLocation(String nodeName, String postingId) {
-    }
 
     public List<PostingLocation> findPostingsToRescan(int limit) {
         return database.tx().run(
