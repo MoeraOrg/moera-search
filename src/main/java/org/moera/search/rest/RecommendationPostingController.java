@@ -17,6 +17,7 @@ import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
+import org.moera.search.scanner.ingest.SheriffIngest;
 import org.moera.search.util.PostingLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,9 @@ public class RecommendationPostingController {
     @Inject
     private PostingRepository postingRepository;
 
+    @Inject
+    private SheriffIngest sheriffIngest;
+
     @GetMapping
     public List<RecommendedPostingInfo> popular(
         @RequestParam(required = false) String sheriffName,
@@ -62,6 +66,7 @@ public class RecommendationPostingController {
             limit = MAX_POSTINGS_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
+        sheriffIngest.activate(sheriffName);
 
         if (limit == 0) {
             return Collections.emptyList();
@@ -115,6 +120,7 @@ public class RecommendationPostingController {
             limit = MAX_POSTINGS_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
+        sheriffIngest.activate(sheriffName);
 
         if (limit == 0) {
             return Collections.emptyList();
@@ -142,6 +148,7 @@ public class RecommendationPostingController {
             limit = MAX_POSTINGS_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
+        sheriffIngest.activate(sheriffName);
 
         if (limit == 0) {
             return Collections.emptyList();
