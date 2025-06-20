@@ -247,7 +247,7 @@ public class RecommendationPostingController {
         try (var ignored = requestCounter.allot()) {
             try (var ignored2 = database.open()) {
                 log.debug("Deleting expired popular postings cache");
-                cachePopularPostingsRepository.deleteExpired();
+                database.writeNoResult(() -> cachePopularPostingsRepository.deleteExpired());
             }
         }
     }
