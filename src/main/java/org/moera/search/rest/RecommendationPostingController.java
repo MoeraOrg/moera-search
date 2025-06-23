@@ -82,40 +82,46 @@ public class RecommendationPostingController {
             return Collections.emptyList();
         }
 
+        String clientName = requestContext.getClientName(Scope.IDENTIFY);
         int size = limit;
 
-        return database.write(() -> {
-            String clientName = requestContext.getClientName(Scope.IDENTIFY);
-            if (clientName == null) {
+        if (clientName == null) {
+            return database.write(() -> {
                 var cached = cachePopularPostingsRepository.getPopular(sheriff);
                 if (cached == null) {
                     cached = postingRepository.findPopular(sheriff, MAX_POSTINGS_PER_REQUEST);
                     cachePopularPostingsRepository.setPopular(sheriff, cached);
                 }
                 return cached.subList(0, Math.min(cached.size(), size));
-            } else {
+            });
+        } else {
+            return database.read(() -> {
+                log.debug("Finding recommendations");
                 var recommended = postingRepository.findRecommended(clientName, sheriff, size);
                 if (recommended.size() >= size) {
+                    log.debug("Found enough recommendations");
                     return recommended;
                 }
 
+                log.debug("Found {} recommendations, looking for additional ones", LogUtil.format(recommended.size()));
                 var list = new ArrayList<>(recommended);
                 var used = recommended.stream()
                     .map(r -> new PostingLocation(r.getNodeName(), r.getPostingId()))
                     .collect(Collectors.toSet());
                 var other = postingRepository.findRecommendedByNobody(clientName, sheriff, size);
-                int i = 0;
-                while (list.size() < size && i < other.size()) {
-                    var item = other.get(i);
+                log.debug("Found {} additional recommendations", LogUtil.format(other.size()));
+                for (var item : other) {
                     var key = new PostingLocation(item.getNodeName(), item.getPostingId());
                     if (!used.contains(key)) {
                         list.add(item);
+                        if (list.size() >= size) {
+                            break;
+                        }
                     }
-                    i++;
                 }
                 return list;
-            }
-        });
+            });
+        }
     }
 
     @GetMapping("/reading")
