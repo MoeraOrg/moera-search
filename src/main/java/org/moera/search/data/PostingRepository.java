@@ -24,11 +24,14 @@ public class PostingRepository {
         """
         MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
         WHERE
-            $sheriffName IS NULL
-            OR
-                (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))
-                AND (o.ownerSheriffMarks IS NULL OR NOT ($sheriffName IN o.ownerSheriffMarks))
-                AND (p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks))
+            (n.badRecommendation IS NULL OR NOT n.badRecommendation)
+            AND (
+                $sheriffName IS NULL
+                OR
+                    (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))
+                    AND (o.ownerSheriffMarks IS NULL OR NOT ($sheriffName IN o.ownerSheriffMarks))
+                    AND (p.sheriffMarks IS NULL OR NOT ($sheriffName IN p.sheriffMarks))
+            )
         LIMIT $limit
         OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)
         RETURN
