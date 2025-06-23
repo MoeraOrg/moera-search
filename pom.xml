@@ -5,7 +5,7 @@
 
     <groupId>org.moera</groupId>
     <artifactId>moera-search</artifactId>
-    <version>0.0.8-SNAPSHOT</version>
+    <version>0.0.8</version>
     <name>moera-search</name>
     <description>Moera search engine</description>
     <packaging>war</packaging>
