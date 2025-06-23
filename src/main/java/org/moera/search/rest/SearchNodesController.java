@@ -69,6 +69,7 @@ public class SearchNodesController {
             limit = MAX_NODES_PER_REQUEST;
         }
         ValidationUtil.assertion(limit >= 0, "limit.invalid");
+        sheriffIngest.activate(sheriff);
 
         if (limit == 0) {
             return Collections.emptyList();

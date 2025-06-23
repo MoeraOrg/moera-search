@@ -2,6 +2,7 @@ package org.moera.search.scanner.ingest;
 
 import jakarta.inject.Inject;
 
+import org.moera.search.api.model.ObjectNotFoundFailure;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.scanner.UpdateQueue;
@@ -31,7 +32,7 @@ public class SheriffIngest {
         }
         var exists = database.read(() -> nodeRepository.exists(name));
         if (!exists) {
-            return;
+            throw new ObjectNotFoundFailure("sheriff.not-found");
         }
         var scannedSheriff = database.read(() -> nodeRepository.isScannedSheriff(name));
         if (!scannedSheriff) {
