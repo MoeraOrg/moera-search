@@ -467,11 +467,12 @@ public class PostingRepository {
             """
             MATCH (c:MoeraNode {name: $clientName})-[:SUBSCRIBED|FRIEND]->(fr:MoeraNode)
                   <-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)-[:SOURCE]->(n:MoeraNode)
-            WHERE
-                NOT EXISTS { MATCH (c)-[:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n) }
-                AND NOT EXISTS { MATCH (c)-[:WAS_RECOMMENDED|DONT_RECOMMEND]->(p) }
-                AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
             ORDER BY p.recommendationOrder DESC
+            OPTIONAL MATCH (c)-[cn:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n)
+            OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND]->(p)
+            OPTIONAL MATCH (c)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})-[:CONTAINS]->(p)
+            WITH c, p, n, cn, cp, pb
+            WHERE cn IS NULL AND cp IS NULL AND pb IS NULL
             """ + RETURN_RECOMMENDATIONS,
             args
         ).list(this::buildRecommendedPosting);
@@ -487,11 +488,12 @@ public class PostingRepository {
         return database.tx().run(
             """
             MATCH (c:MoeraNode {name: $clientName}), (p:Posting)-[:SOURCE]->(n:MoeraNode)
-            WHERE
-                NOT EXISTS { MATCH (c)-[:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n) }
-                AND NOT EXISTS { MATCH (c)-[:WAS_RECOMMENDED|DONT_RECOMMEND]->(p) }
-                AND NOT EXISTS { MATCH (c)<-[:PUBLISHED_IN]-(:Publication {feedName: "timeline"})-[:CONTAINS]->(p) }
             ORDER BY p.popularity IS NOT NULL DESC, p.popularity DESC, p.recommendationOrder DESC
+            OPTIONAL MATCH (c)-[cn:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n)
+            OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND]->(p)
+            OPTIONAL MATCH (c)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})-[:CONTAINS]->(p)
+            WITH c, p, n, cn, cp, pb
+            WHERE cn IS NULL AND cp IS NULL AND pb IS NULL
             """ + RETURN_RECOMMENDATIONS,
             args
         ).list(this::buildRecommendedPosting);
