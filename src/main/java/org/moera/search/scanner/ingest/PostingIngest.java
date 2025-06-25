@@ -76,6 +76,8 @@ public class PostingIngest {
     private UpdateQueue updateQueue;
 
     public void ingest(String nodeName, PostingInfo posting, Supplier<String> carteSupplier) {
+        var novice = database.read(() -> postingRepository.isNoviceOrReturned(nodeName));
+
         database.writeNoResult(() -> postingRepository.createPosting(nodeName, posting.getId()));
         if (!posting.getOwnerName().equals(nodeName)) {
             nodeIngest.newNode(posting.getOwnerName());
@@ -110,6 +112,9 @@ public class PostingIngest {
                 }
             }
         });
+        if (novice) {
+            favorIngest.novice(nodeName, posting.getId());
+        }
 
         var documentId = update(nodeName, posting, carteSupplier);
         if (documentId != null) {
@@ -201,6 +206,7 @@ public class PostingIngest {
         commentIngest.deleteAll(nodeName, postingId);
         reactionIngest.deleteAll(nodeName, postingId);
         deleteAllPublications(nodeName, postingId);
+        favorIngest.deleteNovice(nodeName, postingId);
         // delete the document first, so in the case of failure we will not lose documentId
         String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId != null) {

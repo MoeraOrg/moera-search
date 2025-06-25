@@ -22,7 +22,7 @@ public class PostingRepository {
 
     private static final String RETURN_RECOMMENDATIONS =
         """
-        MATCH (p)-[:SOURCE]->(n:MoeraNode), (p)-[:OWNER]->(o:MoeraNode)
+        MATCH (p)-[:OWNER]->(o:MoeraNode)
         WHERE
             (n.badRecommendation IS NULL OR NOT n.badRecommendation)
             AND (
@@ -427,6 +427,21 @@ public class PostingRepository {
         );
     }
 
+    public boolean isNoviceOrReturned(String nodeName) {
+        var list = database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting)
+            ORDER BY p.createdAt DESC
+            LIMIT 3
+            RETURN p.createdAt AS createdAt
+            """,
+            Map.of("nodeName", nodeName)
+        ).list();
+        return list.size() < 3
+            || Instant.ofEpochSecond(list.get(2).get("createdAt").asLong())
+                    .isBefore(Instant.now().minus(30, ChronoUnit.DAYS));
+    }
+
     private List<RecommendedPostingInfo> findPopularByField(String fieldName, String sheriffName, int limit) {
         var args = new HashMap<String, Object>();
         args.put("sheriffName", sheriffName);
@@ -435,9 +450,9 @@ public class PostingRepository {
 
         return database.tx().run(
             """
-            MATCH (p:Posting)
+            MATCH (p:Posting)-[:SOURCE]->(n:MoeraNode)
             ORDER BY p.%1$s DESC
-            WITH p
+            WITH p, n
             WHERE p.%1$s IS NOT NULL AND p.%1$s > 0
             """.formatted(fieldName) + RETURN_RECOMMENDATIONS,
             args
@@ -465,13 +480,20 @@ public class PostingRepository {
 
         return database.tx().run(
             """
-            MATCH (c:MoeraNode {name: $clientName})-[:SUBSCRIBED|FRIEND]->(fr:MoeraNode)
-                  <-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)-[:SOURCE]->(n:MoeraNode)
+            MATCH (c:MoeraNode {name: $clientName})
+            CALL (c) {
+                MATCH (c)-[:SUBSCRIBED|FRIEND]->(fr:MoeraNode)<-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)
+                RETURN p
+                UNION
+                MATCH (:System)<-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)
+                RETURN p
+            }
             ORDER BY p.recommendationOrder DESC
+            MATCH (p)-[:SOURCE]->(n:MoeraNode)
             OPTIONAL MATCH (c)-[cn:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n)
             OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND]->(p)
             OPTIONAL MATCH (c)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})-[:CONTAINS]->(p)
-            WITH c, p, n, cn, cp, pb
+            WITH p, n, cn, cp, pb
             WHERE cn IS NULL AND cp IS NULL AND pb IS NULL
             """ + RETURN_RECOMMENDATIONS,
             args
@@ -492,7 +514,7 @@ public class PostingRepository {
             OPTIONAL MATCH (c)-[cn:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n)
             OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND]->(p)
             OPTIONAL MATCH (c)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})-[:CONTAINS]->(p)
-            WITH c, p, n, cn, cp, pb
+            WITH p, n, cn, cp, pb
             WHERE cn IS NULL AND cp IS NULL AND pb IS NULL
             """ + RETURN_RECOMMENDATIONS,
             args
@@ -625,8 +647,9 @@ public class PostingRepository {
             WITH
                 p,
                 COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS r,
-                COUNT {(p)<-[:UNDER]-(:Comment)} AS c
-            SET p.recommendationOrder = p.createdAt + toInteger(apoc.math.tanh((r + c * 5) / 35.0) * 600000);
+                COUNT {(p)<-[:UNDER]-(:Comment)} AS c,
+                COUNT {(p)<-[:DONE_TO]-(:Favor)-[:CAUSED_BY]->(:Onboarding)} AS ob
+            SET p.recommendationOrder = p.createdAt + toInteger(apoc.math.tanh((r + c * 5 + ob * 25) / 35.0) * 600000);
             """,
             Map.of(
                 "nodeName", nodeName,

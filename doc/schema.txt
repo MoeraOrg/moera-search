@@ -143,6 +143,8 @@ INDEX moera_node_scan_timeline ON (scanTimeline, timelineScannedAt)
 scanTimestamp       int NOT NULL
 scannedAt           int                     (ms timestamp)
 
+(:Onboarding) UNIQUE
+
 (:PendingUpdate)
 id                  string NOT NULL
 type                string NOT NULL
@@ -182,6 +184,7 @@ INDEX posting_read_popularity ON (readPopularity)
 INDEX posting_comment_popularity ON (commentPopularity)
 INDEX posting_popularity ON (popularity)
 INDEX posting_recommendation_order ON (recommendationOrder)
+INDEX posting_created_at ON (createdAt)
 
 (:Publication)
 feedName            string NOT NULL
@@ -196,6 +199,8 @@ negative            boolean NOT NULL
 emoji               int NOT NULL
 createdAt           int NOT NULL            (sec timestamp)
 viewPrincipal       string
+
+(:System) UNIQUE
 
 (:Upgrade) UNIQUE
 
@@ -213,7 +218,7 @@ shape               string
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
 blockedOperation:   string NOT NULL         (BlockedOperation)
 
-(:Favor)-[:CAUSED_BY]->(:Publication|Comment|Reaction)
+(:Favor)-[:CAUSED_BY]->(:Publication|Comment|Reaction|Onboarding)
 
 (:MoeraNode)-[:CLOSE_TO]->(:MoeraNode)
 distance            float NOT NULL
@@ -221,7 +226,7 @@ updatedAt           int NOT NULL            (ms timestamp)
 
 (:Publication)-[:CONTAINS]->(:Posting)
 
-(:Favor)-[:DONE_BY]->(:MoeraNode)
+(:Favor)-[:DONE_BY]->(:MoeraNode|System)
 
 (:Favor)-[:DONE_TO]->(:MoeraNode|Posting)
 

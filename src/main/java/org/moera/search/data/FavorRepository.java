@@ -328,6 +328,44 @@ public class FavorRepository {
         );
     }
 
+    public void createNoviceFavors(String nodeName, String postingId, long createdAt, long deadline) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            CREATE (f:Favor)
+            CREATE (f)-[:DONE_TO]->(p)
+            CREATE (f)-[:DONE_BY]->(:Machine)
+            CREATE (f)-[:CAUSED_BY]->(:Onboarding)
+            SET f.value = $value,
+                f.decayHours = $decayHours,
+                f.createdAt = $createdAt,
+                f.deadline = $deadline
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId,
+                "value", FavorType.NOVICE.getValue(),
+                "decayHours", FavorType.NOVICE.getDecayHours(),
+                "createdAt", createdAt,
+                "deadline", deadline
+            )
+        );
+    }
+
+    public void deleteNoviceFavors(String nodeName, String postingId) {
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})<-[:DONE_TO]-(f:Favor)
+                  -[:CAUSED_BY]->(:Onboarding)
+            DETACH DELETE f
+            """,
+            Map.of(
+                "nodeName", nodeName,
+                "postingId", postingId
+            )
+        );
+    }
+
     public void purgeExpired() {
         database.tx().run(
             """

@@ -140,6 +140,22 @@ public class FavorIngest {
         database.writeNoResult(() -> favorRepository.deleteAllReactionsInComments(nodeName, postingId));
     }
 
+    public void novice(String nodeName, String postingId) {
+        Instant createdAt = Instant.now();
+        Instant deadline = createdAt.plus(FavorType.NOVICE.getDecayHours(), ChronoUnit.HOURS);
+        if (deadline.isBefore(Instant.now())) {
+            return;
+        }
+
+        database.writeNoResult(() ->
+            favorRepository.createNoviceFavors(nodeName, postingId, createdAt.toEpochMilli(), deadline.toEpochMilli())
+        );
+    }
+
+    public void deleteNovice(String nodeName, String postingId) {
+        database.writeNoResult(() -> favorRepository.deleteNoviceFavors(nodeName, postingId));
+    }
+
     @Scheduled(fixedDelayString = Workload.FAVORS_PURGE_PERIOD)
     public void purgeExpired() {
         if (!database.isReady()) {
