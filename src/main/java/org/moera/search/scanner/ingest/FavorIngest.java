@@ -10,6 +10,7 @@ import org.moera.search.Workload;
 import org.moera.search.data.Database;
 import org.moera.search.data.FavorRepository;
 import org.moera.search.data.FavorType;
+import org.moera.search.data.PostingRepository;
 import org.moera.search.global.RequestCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,9 @@ public class FavorIngest {
 
     @Inject
     private FavorRepository favorRepository;
+
+    @Inject
+    private PostingRepository postingRepository;
 
     public void publication(
         String nodeName, String postingId, String publisherName, String storyId, long publishedAt
@@ -166,7 +170,10 @@ public class FavorIngest {
             try (var ignored2 = database.open()) {
                 log.info("Purging expired favors");
 
-                database.writeNoResult(() -> favorRepository.purgeExpired());
+                database.writeNoResult(() -> {
+                    postingRepository.updateUnfavoredRecommendationOrder();
+                    favorRepository.purgeExpired();
+                });
             }
         }
     }

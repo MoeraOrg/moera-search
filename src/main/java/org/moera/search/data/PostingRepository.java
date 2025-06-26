@@ -49,6 +49,17 @@ public class PostingRepository {
             COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
         """;
 
+    // TODO take publications in timelines of other users into account
+    private static final String SET_RECOMMENDATION_ORDER =
+        """
+        WITH
+            p,
+            COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS r,
+            COUNT {(p)<-[:UNDER]-(:Comment)} AS c,
+            COUNT {(p)<-[:DONE_TO]-(:Favor)-[:CAUSED_BY]->(:Onboarding)} AS ob
+        SET p.recommendationOrder = p.createdAt + toInteger(apoc.math.tanh((r + c * 5 + ob * 25) / 35.0) * 600000);
+        """;
+
     @Inject
     private Database database;
 
@@ -639,22 +650,25 @@ public class PostingRepository {
         );
     }
 
-    // TODO take publications in timelines of other users into account
     public void updateRecommendationOrder(String nodeName, String postingId) {
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            WITH
-                p,
-                COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS r,
-                COUNT {(p)<-[:UNDER]-(:Comment)} AS c,
-                COUNT {(p)<-[:DONE_TO]-(:Favor)-[:CAUSED_BY]->(:Onboarding)} AS ob
-            SET p.recommendationOrder = p.createdAt + toInteger(apoc.math.tanh((r + c * 5 + ob * 25) / 35.0) * 600000);
-            """,
+            """ + SET_RECOMMENDATION_ORDER,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
             )
+        );
+    }
+
+    public void updateUnfavoredRecommendationOrder() {
+        database.tx().run(
+            """
+            MATCH (p:Posting)<-[:DONE_TO]-(f:Favor)
+            WHERE f.deadline < $now
+            """ + SET_RECOMMENDATION_ORDER,
+            Map.of("now", Instant.now().toEpochMilli())
         );
     }
 
