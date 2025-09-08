@@ -482,12 +482,15 @@ public class PostingRepository {
         return findPopularByField("commentPopularity", sheriffName, limit);
     }
 
-    public List<RecommendedPostingInfo> findRecommended(String clientName, String sheriffName, int limit) {
+    public List<RecommendedPostingInfo> findRecommended(
+        String clientName, String feedName, String sheriffName, int limit
+    ) {
         var args = new HashMap<String, Object>();
         args.put("clientName", clientName);
         args.put("sheriffName", sheriffName);
         args.put("yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond());
         args.put("limit", limit);
+        args.put("feedName", feedName);
 
         return database.tx().run(
             """
@@ -502,7 +505,7 @@ public class PostingRepository {
             ORDER BY p.recommendationOrder DESC
             MATCH (p)-[:SOURCE]->(n:MoeraNode)
             OPTIONAL MATCH (c)-[cn:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n)
-            OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND]->(p)
+            OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND {feedName: $feedName}]->(p)
             OPTIONAL MATCH (c)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})-[:CONTAINS]->(p)
             WITH p, n, cn, cp, pb
             WHERE cn IS NULL AND cp IS NULL AND pb IS NULL
@@ -511,19 +514,22 @@ public class PostingRepository {
         ).list(this::buildRecommendedPosting);
     }
 
-    public List<RecommendedPostingInfo> findRecommendedByNobody(String clientName, String sheriffName, int limit) {
+    public List<RecommendedPostingInfo> findRecommendedByNobody(
+        String clientName, String feedName, String sheriffName, int limit
+    ) {
         var args = new HashMap<String, Object>();
         args.put("clientName", clientName);
         args.put("sheriffName", sheriffName);
         args.put("yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond());
         args.put("limit", limit);
+        args.put("feedName", feedName);
 
         return database.tx().run(
             """
             MATCH (c:MoeraNode {name: $clientName}), (p:Posting)-[:SOURCE]->(n:MoeraNode)
             ORDER BY p.popularity IS NOT NULL DESC, p.popularity DESC, p.recommendationOrder DESC
             OPTIONAL MATCH (c)-[cn:SUBSCRIBED|BLOCKS|DONT_RECOMMEND]->(n)
-            OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND]->(p)
+            OPTIONAL MATCH (c)-[cp:WAS_RECOMMENDED|DONT_RECOMMEND {feedName: $feedName}]->(p)
             OPTIONAL MATCH (c)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})-[:CONTAINS]->(p)
             WITH p, n, cn, cp, pb
             WHERE cn IS NULL AND cp IS NULL AND pb IS NULL
@@ -566,48 +572,51 @@ public class PostingRepository {
         return info;
     }
 
-    public void clearRecommendationAcceptance(String clientName, String nodeName, String postingId) {
+    public void clearRecommendationAcceptance(String clientName, String nodeName, String postingId, String feedName) {
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $clientName})
-                  -[a:WAS_RECOMMENDED|DONT_RECOMMEND]->
+                  -[a:WAS_RECOMMENDED|DONT_RECOMMEND {feedName: $feedName}]->
                   (:Posting {id: $postingId})-[:SOURCE]->(:MoeraNode {name: $nodeName})
             DELETE a
             """,
             Map.of(
                 "clientName", clientName,
                 "nodeName", nodeName,
-                "postingId", postingId
+                "postingId", postingId,
+                "feedName", feedName
             )
         );
     }
 
-    public void acceptRecommendation(String clientName, String nodeName, String postingId) {
+    public void acceptRecommendation(String clientName, String nodeName, String postingId, String feedName) {
         database.tx().run(
             """
             MATCH (c:MoeraNode {name: $clientName}),
                   (p:Posting {id: $postingId})-[:SOURCE]->(:MoeraNode {name: $nodeName})
-            MERGE (c)-[:WAS_RECOMMENDED]->(p)
+            MERGE (c)-[:WAS_RECOMMENDED {feedName: $feedName}]->(p)
             """,
             Map.of(
                 "clientName", clientName,
                 "nodeName", nodeName,
-                "postingId", postingId
+                "postingId", postingId,
+                "feedName", feedName
             )
         );
     }
 
-    public void rejectRecommendation(String clientName, String nodeName, String postingId) {
+    public void rejectRecommendation(String clientName, String nodeName, String postingId, String feedName) {
         database.tx().run(
             """
             MATCH (c:MoeraNode {name: $clientName}),
                   (p:Posting {id: $postingId})-[:SOURCE]->(:MoeraNode {name: $nodeName})
-            MERGE (c)-[:DONT_RECOMMEND]->(p)
+            MERGE (c)-[:DONT_RECOMMEND {feedName: $feedName}]->(p)
             """,
             Map.of(
                 "clientName", clientName,
                 "nodeName", nodeName,
-                "postingId", postingId
+                "postingId", postingId,
+                "feedName", feedName
             )
         );
     }

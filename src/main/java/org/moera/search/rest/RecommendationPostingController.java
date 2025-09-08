@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.moera.search.api.Feed;
 
 @ApiController
 @RequestMapping("/moera/api/recommendations/postings")
@@ -61,13 +62,17 @@ public class RecommendationPostingController {
 
     @GetMapping
     public List<RecommendedPostingInfo> popular(
+        @RequestParam(required = false) String feed,
         @RequestParam(required = false) String sheriff,
         @RequestParam(required = false) Integer limit
     ) {
         log.info(
-            "GET /recommendations/postings (sheriff = {}, limit = {})",
-            LogUtil.format(sheriff), LogUtil.format(limit)
+            "GET /recommendations/postings (feed = {}, sheriff = {}, limit = {})",
+            LogUtil.format(feed), LogUtil.format(sheriff), LogUtil.format(limit)
         );
+        if (feed == null) {
+            feed = Feed.NEWS;
+        }
 
         if (limit == null) {
             limit = DEFAULT_POSTINGS_PER_REQUEST;
@@ -95,9 +100,10 @@ public class RecommendationPostingController {
                 return cached.subList(0, Math.min(cached.size(), size));
             });
         } else {
+            final String feedName = feed;
             return database.read(() -> {
                 log.debug("Finding recommendations");
-                var recommended = postingRepository.findRecommended(clientName, sheriff, size);
+                var recommended = postingRepository.findRecommended(clientName, feedName, sheriff, size);
                 if (recommended.size() >= size) {
                     log.debug("Found enough recommendations");
                     return recommended;
@@ -108,7 +114,7 @@ public class RecommendationPostingController {
                 var used = recommended.stream()
                     .map(r -> new PostingLocation(r.getNodeName(), r.getPostingId()))
                     .collect(Collectors.toSet());
-                var other = postingRepository.findRecommendedByNobody(clientName, sheriff, size);
+                var other = postingRepository.findRecommendedByNobody(clientName, feedName, sheriff, size);
                 log.debug("Found {} additional recommendations", LogUtil.format(other.size()));
                 for (var item : other) {
                     var key = new PostingLocation(item.getNodeName(), item.getPostingId());
@@ -195,11 +201,18 @@ public class RecommendationPostingController {
     }
 
     @PostMapping("/accepted/{nodeName}/{postingId}")
-    public Result acceptRecommendation(@PathVariable String nodeName, @PathVariable String postingId) {
+    public Result acceptRecommendation(
+        @PathVariable String nodeName,
+        @PathVariable String postingId,
+        @RequestParam(required = false) String feed
+    ) {
         log.info(
-            "POST /recommendations/postings/accepted/{nodeName}/{postingId} (nodeName = {}, postingId = {})",
-            LogUtil.format(nodeName), LogUtil.format(postingId)
+            "POST /recommendations/postings/accepted/{nodeName}/{postingId} (nodeName = {}, postingId = {}, feed = {})",
+            LogUtil.format(nodeName), LogUtil.format(postingId), LogUtil.format(feed)
         );
+        if (feed == null) {
+            feed = Feed.NEWS;
+        }
 
         var clientName = requestContext.getClientName(Scope.UPDATE_FEEDS);
         if (clientName == null) {
@@ -211,20 +224,28 @@ public class RecommendationPostingController {
             throw new ObjectNotFoundFailure("not-found");
         }
 
+        final String feedName = feed;
         database.writeNoResult(() -> {
-            postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId);
-            postingRepository.acceptRecommendation(clientName, nodeName, postingId);
+            postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId, feedName);
+            postingRepository.acceptRecommendation(clientName, nodeName, postingId, feedName);
         });
 
         return Result.OK;
     }
 
     @PostMapping("/rejected/{nodeName}/{postingId}")
-    public Result rejectRecommendation(@PathVariable String nodeName, @PathVariable String postingId) {
+    public Result rejectRecommendation(
+        @PathVariable String nodeName,
+        @PathVariable String postingId,
+        @RequestParam(required = false) String feed
+    ) {
         log.info(
-            "POST /recommendations/postings/rejected/{nodeName}/{postingId} (nodeName = {}, postingId = {})",
-            LogUtil.format(nodeName), LogUtil.format(postingId)
+            "POST /recommendations/postings/rejected/{nodeName}/{postingId} (nodeName = {}, postingId = {}, feed = {})",
+            LogUtil.format(nodeName), LogUtil.format(postingId), LogUtil.format(feed)
         );
+        if (feed == null) {
+            feed = Feed.NEWS;
+        }
 
         var clientName = requestContext.getClientName(Scope.UPDATE_FEEDS);
         if (clientName == null) {
@@ -236,9 +257,10 @@ public class RecommendationPostingController {
             throw new ObjectNotFoundFailure("not-found");
         }
 
+        final String feedName = feed;
         database.writeNoResult(() -> {
-            postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId);
-            postingRepository.rejectRecommendation(clientName, nodeName, postingId);
+            postingRepository.clearRecommendationAcceptance(clientName, nodeName, postingId, feedName);
+            postingRepository.rejectRecommendation(clientName, nodeName, postingId, feedName);
         });
 
         return Result.OK;

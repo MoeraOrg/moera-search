@@ -216,7 +216,7 @@ Relationships
 shape               string
 
 (:MoeraNode)-[:BLOCKS]->(:MoeraNode)
-blockedOperation:   string NOT NULL         (BlockedOperation)
+blockedOperation    string NOT NULL         (BlockedOperation)
 
 (:Favor)-[:CAUSED_BY]->(:Publication|Comment|Reaction|Onboarding)
 
@@ -230,7 +230,10 @@ updatedAt           int NOT NULL            (ms timestamp)
 
 (:Favor)-[:DONE_TO]->(:MoeraNode|Posting)
 
-(:MoeraNode)-[:DONT_RECOMMEND]->(:MoeraNode|Posting)
+(:MoeraNode)-[:DONT_RECOMMEND]->(:MoeraNode)
+
+(:MoeraNode)-[:DONT_RECOMMEND]->(:Posting)
+feedName            string NOT NULL
 
 (:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
@@ -261,3 +264,4 @@ feedName            string NOT NULL
 (:Comment)-[:UNDER]->(:Posting)
 
 (:MoeraNode)-[:WAS_RECOMMENDED]->(:Posting)
+feedName            string NOT NULL
