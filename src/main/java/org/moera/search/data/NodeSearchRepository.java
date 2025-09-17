@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
+import org.moera.lib.node.types.RecommendedNodeInfo;
 import org.moera.lib.node.types.SearchNodeInfo;
+import org.moera.search.api.model.RecommendedNodeInfoUtil;
 import org.moera.search.api.model.SearchNodeInfoUtil;
 import org.moera.search.util.Util;
 import org.springframework.stereotype.Component;
@@ -369,6 +371,32 @@ public class NodeSearchRepository {
             var avatarShape = r.get("shape").asString(null);
             var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
             return SearchNodeInfoUtil.build(node, avatar, avatarShape, blocked);
+        }).toList();
+    }
+
+    public List<RecommendedNodeInfo> searchActive(String sheriffName, int limit) {
+        var args = new HashMap<String, Object>();
+        args.put("sheriffName", sheriffName);
+        args.put("limit", limit);
+
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.activity IS NOT NULL AND
+            """
+                + SHERIFF_FILTER
+            + """
+            ORDER BY n.activity DESC
+            LIMIT $limit
+            OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
+            RETURN n, a.shape AS shape, mf
+            """,
+            args
+        ).stream().map(r -> {
+            var node = r.get("n").asNode();
+            var avatarShape = r.get("shape").asString(null);
+            var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
+            return RecommendedNodeInfoUtil.build(node, avatar, avatarShape);
         }).toList();
     }
 

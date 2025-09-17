@@ -131,6 +131,8 @@ sheriffScannedAt    int                     (ms timestamp)
 sheriffMarks        string[]
 ownerSheriffMarks   string[]
 badRecommendation   boolean
+activity            float
+activityUpdatedAt   int                     (ms timestamp)
 UNIQUE moera_node_name ON (name)
 FULLTEXT moera_node_full_name ON (fullName)
 INDEX moera_node_scan_profile ON (scanProfile, profileScannedAt)
@@ -138,6 +140,8 @@ INDEX moera_node_scan_people ON (scanPeople, peopleScannedAt)
 INDEX moera_node_close_to_updated ON (closeToUpdatedAt)
 INDEX moera_node_close_to_cleaned_up ON (closeToCleanedUpAt)
 INDEX moera_node_scan_timeline ON (scanTimeline, timelineScannedAt)
+INDEX moera_node_activity ON (activity)
+INDEX moera_node_activity_updated ON (activityUpdatedAt)
 
 (:NamingService) UNIQUE
 scanTimestamp       int NOT NULL

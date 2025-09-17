@@ -36,4 +36,8 @@ public class Workload {
 
     public static final String POSTING_POPULARITY_REFRESH_PERIOD = "PT1H";
 
+    public static final String ACTIVITY_CHECK_PERIOD = "PT15M";
+    public static final Duration ACTIVITY_UPDATE_PERIOD = Duration.of(1, ChronoUnit.DAYS);
+    public static final int ACTIVITY_UPDATE_MAX_NODES = 500;
+
 }

@@ -1,5 +1,6 @@
 package org.moera.search.data;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class NodeRepository {
+
+    private static final int POSTING_ACTIVITY_DECAY_HOURS = 90 * 24;
 
     @Inject
     private Database database;
@@ -585,6 +588,30 @@ public class NodeRepository {
             Map.of(
                 "name", name,
                 "peerName", peerName
+            )
+        );
+    }
+
+    public void updateActivity(int limit) {
+        database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.activityUpdatedAt IS NULL OR n.activityUpdatedAt < $deadline
+            ORDER BY n.activityUpdatedAt ASC
+            LIMIT $limit
+            WITH n
+            MATCH (n)<-[:SOURCE]-(p:Posting)
+            WHERE p.createdAt > $bottom
+            WITH n, (1.0 - (toFloat($now - p.createdAt * 1000) / 3600000 / $decayHours)^2) AS rest
+            WITH n, sum(rest) AS activity
+            SET n.activity = activity, n.activityUpdatedAt = $now
+            """,
+            Map.of(
+                "deadline", Instant.now().minus(Workload.ACTIVITY_UPDATE_PERIOD).toEpochMilli(),
+                "limit", limit,
+                "bottom", Instant.now().minus(Duration.ofHours(POSTING_ACTIVITY_DECAY_HOURS)).getEpochSecond(),
+                "decayHours", POSTING_ACTIVITY_DECAY_HOURS,
+                "now", Instant.now().toEpochMilli()
             )
         );
     }
