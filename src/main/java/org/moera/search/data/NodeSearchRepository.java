@@ -389,14 +389,21 @@ public class NodeSearchRepository {
             ORDER BY n.activity DESC
             LIMIT $limit
             OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
-            RETURN n, a.shape AS shape, mf
+            RETURN
+                n,
+                a.shape AS shape,
+                mf,
+                COUNT {(n)<-[:SUBSCRIBED {feedName: "timeline"}]-(s:MoeraNode)} AS subscribers,
+                COUNT {(n)<-[:PUBLISHED_IN]-(pb:Publication {feedName: "timeline"})} AS postings
             """,
             args
         ).stream().map(r -> {
             var node = r.get("n").asNode();
             var avatarShape = r.get("shape").asString(null);
             var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
-            return RecommendedNodeInfoUtil.build(node, avatar, avatarShape);
+            var subscribers = r.get("subscribers").asInt(0);
+            var postings = r.get("postings").asInt(0);
+            return RecommendedNodeInfoUtil.build(node, avatar, avatarShape, subscribers, postings);
         }).toList();
     }
 
