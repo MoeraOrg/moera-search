@@ -80,7 +80,7 @@ public class SearchNodesController {
 
         if (query == null || query.trim().isEmpty()) {
             if (ObjectUtils.isEmpty(clientName)) {
-                return Collections.emptyList();
+                return database.read(() -> nodeSearchRepository.searchDefault(sheriff, maxSize));
             }
             return database.read(() -> nodeSearchRepository.searchClose(clientName, sheriff, maxSize));
         }

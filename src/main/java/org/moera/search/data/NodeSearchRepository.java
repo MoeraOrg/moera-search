@@ -374,6 +374,35 @@ public class NodeSearchRepository {
         }).toList();
     }
 
+    public List<SearchNodeInfo> searchDefault(String sheriffName, int limit) {
+        var args = new HashMap<String, Object>();
+        args.put("sheriffName", sheriffName);
+        args.put("limit", limit);
+
+        return database.tx().run(
+            """
+            MATCH (n:MoeraNode)
+            WHERE n.activity IS NOT NULL AND
+            """
+                + SHERIFF_FILTER
+                + """
+            ORDER BY n.activity DESC
+            LIMIT $limit
+            OPTIONAL MATCH (n)-[a:AVATAR]->(mf:MediaFile)
+            RETURN
+                n,
+                a.shape AS shape,
+                mf
+            """,
+            args
+        ).stream().map(r -> {
+            var node = r.get("n").asNode();
+            var avatarShape = r.get("shape").asString(null);
+            var avatar = r.get("mf").isNull() ? null : new MediaFile(r.get("mf").asNode());
+            return SearchNodeInfoUtil.build(node, avatar, avatarShape, false);
+        }).toList();
+    }
+
     public List<RecommendedNodeInfo> searchActive(String sheriffName, int limit) {
         var args = new HashMap<String, Object>();
         args.put("sheriffName", sheriffName);
