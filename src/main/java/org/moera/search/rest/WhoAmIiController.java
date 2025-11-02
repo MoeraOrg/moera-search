@@ -2,6 +2,7 @@ package org.moera.search.rest;
 
 import jakarta.inject.Inject;
 
+import org.moera.lib.node.types.NodeType;
 import org.moera.lib.node.types.WhoAmI;
 import org.moera.search.config.Config;
 import org.moera.search.global.ApiController;
@@ -29,6 +30,7 @@ public class WhoAmIiController {
         whoAmI.setNodeName(config.getNodeName());
         whoAmI.setFullName(config.getNodeFullName());
         whoAmI.setTitle(config.getNodeTitle());
+        whoAmI.setType(NodeType.SEARCH);
 
         return whoAmI;
     }

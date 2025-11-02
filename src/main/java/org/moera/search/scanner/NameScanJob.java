@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.moera.lib.node.types.NodeType;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.SubscriberDescription;
 import org.moera.lib.node.types.SubscriptionType;
@@ -15,8 +16,12 @@ import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.updates.PeopleScanUpdate;
 import org.moera.search.scanner.updates.SheriffScanUpdate;
 import org.moera.search.scanner.updates.TimelineScanUpdate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {
+
+    private static final Logger log = LoggerFactory.getLogger(NameScanJob.class);
 
     public static class Parameters {
 
@@ -136,6 +141,12 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
             checkpoint();
         }
 
+        if (!isIndexable(state.whoAmI.getType())) {
+            log.info("Node {} is of type {}, not indexable", parameters.nodeName, state.whoAmI.getType().name());
+            database.writeNoResult(() -> nodeRepository.scanSucceeded(parameters.nodeName));
+            success();
+        }
+
         if (state.subscriberId == null) {
             var description = new SubscriberDescription();
             description.setType(SubscriptionType.SEARCH);
@@ -154,6 +165,10 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
         }
 
         database.writeNoResult(() -> nodeRepository.scanSucceeded(parameters.nodeName));
+    }
+
+    private boolean isIndexable(NodeType type) {
+        return type == null || type == NodeType.REGULAR;
     }
 
     @Override
