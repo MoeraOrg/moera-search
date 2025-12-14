@@ -621,6 +621,17 @@ public class PostingRepository {
         );
     }
 
+    public void zeroReadPopularity() {
+        database.tx().run(
+            """
+            MATCH (p:Posting WHERE p.readPopularity IS NOT NULL AND p.readPopularity > 0)
+            OPTIONAL MATCH (p)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Publication|Reaction)
+            WHERE f IS NULL
+            SET p.readPopularity = 0.0
+            """
+        );
+    }
+
     public void refreshReadPopularity() {
         database.tx().run(
             """
@@ -630,6 +641,17 @@ public class PostingRepository {
             SET p.readPopularity = popularity
             """,
             Map.of("now", Instant.now().toEpochMilli())
+        );
+    }
+
+    public void zeroCommentPopularity() {
+        database.tx().run(
+            """
+            MATCH (p:Posting WHERE p.commentPopularity IS NOT NULL AND p.commentPopularity > 0)
+            OPTIONAL MATCH (p)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Comment)
+            WHERE f IS NULL
+            SET p.commentPopularity = 0.0
+            """
         );
     }
 

@@ -267,7 +267,9 @@ public class PostingIngest {
             try (var ignored2 = database.open()) {
                 log.info("Refreshing popularity of postings");
 
+                database.writeNoResult(() -> postingRepository.zeroReadPopularity());
                 database.writeNoResult(() -> postingRepository.refreshReadPopularity());
+                database.writeNoResult(() -> postingRepository.zeroCommentPopularity());
                 database.writeNoResult(() -> postingRepository.refreshCommentPopularity());
                 database.writeNoResult(() -> postingRepository.refreshPopularity());
 
