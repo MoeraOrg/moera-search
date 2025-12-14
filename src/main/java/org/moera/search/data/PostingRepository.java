@@ -479,7 +479,7 @@ public class PostingRepository {
     }
 
     public List<RecommendedPostingInfo> findCommentPopular(String sheriffName, int limit) {
-        return findPopularByField("commentPopularity", sheriffName, limit);
+        return findPopularByField("commentFad", sheriffName, limit);
     }
 
     public List<RecommendedPostingInfo> findRecommended(
@@ -650,7 +650,7 @@ public class PostingRepository {
             MATCH (p:Posting WHERE p.commentPopularity IS NOT NULL AND p.commentPopularity > 0)
             OPTIONAL MATCH (p)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Comment)
             WHERE f IS NULL
-            SET p.commentPopularity = 0.0
+            SET p.commentPopularity = 0.0, p.commentFad = 0.0
             """
         );
     }
@@ -659,9 +659,11 @@ public class PostingRepository {
         database.tx().run(
             """
             MATCH (p:Posting)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Comment)
-            WITH p, f.value * (1.0 - (toFloat($now - f.createdAt) / 3600000 / f.decayHours)^2) AS rest
-            WITH p, sum(rest) AS popularity
-            SET p.commentPopularity = popularity
+            WITH p, f, toFloat($now - f.createdAt) / 3600000 / f.decayHours AS ratio
+            WITH p, f.value * (1.0 - ratio^2) AS rest, f.value * (1.0 - ratio^2 * 4) AS halfRest
+            WITH p, rest, CASE WHEN halfRest > 0 THEN halfRest ELSE 0.0 END AS halfRest
+            WITH p, sum(rest) AS popularity, sum(halfRest) AS fad
+            SET p.commentPopularity = popularity, p.commentFad = fad
             """,
             Map.of("now", Instant.now().toEpochMilli())
         );

@@ -178,6 +178,7 @@ sheriffMarks        string[]
 moment              int
 readPopularity      float
 commentPopularity   float
+commentFad          float
 popularity          float
 recommendationOrder int NOT NULL
 INDEX posting_id ON (id)
@@ -186,6 +187,7 @@ INDEX posting_scan_comments ON (scanComments, commentsScannedAt)
 INDEX posting_scan_reactions ON (scanReactions, reactionsScannedAt)
 INDEX posting_read_popularity ON (readPopularity)
 INDEX posting_comment_popularity ON (commentPopularity)
+INDEX posting_comment_fad ON (commentFad)
 INDEX posting_popularity ON (popularity)
 INDEX posting_recommendation_order ON (recommendationOrder)
 INDEX posting_created_at ON (createdAt)
