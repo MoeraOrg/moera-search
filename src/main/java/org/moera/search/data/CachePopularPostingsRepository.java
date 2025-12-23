@@ -30,6 +30,8 @@ public class CachePopularPostingsRepository {
         var query =
             """
             OPTIONAL MATCH (ch:CachePopularPostings {sheriffName: $sheriffName})
+            ORDER BY ch.deadline DESC
+            LIMIT 1
             RETURN ch.%s AS value
             """.formatted(fieldName);
 
