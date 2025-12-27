@@ -5,7 +5,7 @@
 
     <groupId>org.moera</groupId>
     <artifactId>moera-search</artifactId>
-    <version>0.5.1</version>
+    <version>0.5.2</version>
     <name>moera-search</name>
     <description>Moera search engine</description>
     <packaging>jar</packaging>

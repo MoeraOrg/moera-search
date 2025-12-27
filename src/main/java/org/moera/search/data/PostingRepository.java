@@ -479,7 +479,20 @@ public class PostingRepository {
     }
 
     public List<RecommendedPostingInfo> findCommentPopular(String sheriffName, int limit) {
-        return findPopularByField("commentFad", sheriffName, limit);
+        var args = new HashMap<String, Object>();
+        args.put("sheriffName", sheriffName);
+        args.put("yesterday", Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond());
+        args.put("limit", limit);
+
+        return database.tx().run(
+            """
+            MATCH (p:Posting)-[:SOURCE]->(n:MoeraNode)
+            ORDER BY coalesce(p.commentFad, 0.0) DESC, p.commentPopularity DESC
+            WITH p, n
+            WHERE p.commentPopularity IS NOT NULL AND p.commentPopularity > 0
+            """ + RETURN_RECOMMENDATIONS,
+            args
+        ).list(this::buildRecommendedPosting);
     }
 
     public List<RecommendedPostingInfo> findRecommended(
@@ -660,7 +673,7 @@ public class PostingRepository {
             """
             MATCH (p:Posting)<-[:DONE_TO]-(f:Favor)-[:CAUSED_BY]->(:Comment)
             WITH p, f, toFloat($now - f.createdAt) / 3600000 / f.decayHours AS ratio
-            WITH p, f.value * (1.0 - ratio^2) AS rest, f.value * (1.0 - ratio^2 * 4) AS halfRest
+            WITH p, f.value * (1.0 - ratio^2) AS rest, f.value * (1.0 - ratio^2 * 9) AS halfRest
             WITH p, rest, CASE WHEN halfRest > 0 THEN halfRest ELSE 0.0 END AS halfRest
             WITH p, sum(rest) AS popularity, sum(halfRest) AS fad
             SET p.commentPopularity = popularity, p.commentFad = fad
