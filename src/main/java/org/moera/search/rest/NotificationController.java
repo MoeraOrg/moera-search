@@ -1,12 +1,11 @@
 package org.moera.search.rest;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import jakarta.inject.Inject;
+import jakarta.json.JsonException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.crypto.CryptoUtil;
 import org.moera.lib.naming.NodeName;
 import org.moera.lib.node.types.NotificationPacket;
@@ -17,10 +16,10 @@ import org.moera.lib.node.types.validate.ValidationFailure;
 import org.moera.lib.node.types.validate.ValidationUtil;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.api.NamingCache;
+import org.moera.search.api.fingerprint.NotificationPacketFingerprintBuilder;
 import org.moera.search.auth.IncorrectSignatureException;
 import org.moera.search.global.ApiController;
 import org.moera.search.global.NoCache;
-import org.moera.search.api.fingerprint.NotificationPacketFingerprintBuilder;
 import org.moera.search.rest.notification.NotificationRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.method.HandlerMethod;
+import tools.jackson.databind.ObjectMapper;
 
 @ApiController
 @RequestMapping("/moera/api/notifications")
@@ -70,7 +70,7 @@ public class NotificationController {
         Notification notification;
         try {
             notification = objectMapper.readValue(packet.getNotification(), type.getStructure());
-        } catch (IOException e) {
+        } catch (JsonException e) {
             throw new ValidationFailure("notification.notification.invalid");
         }
 

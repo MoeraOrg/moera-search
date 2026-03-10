@@ -6,17 +6,11 @@ import java.util.List;
 import java.util.UUID;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.moera.lib.util.LogUtil;
 import org.moera.search.job.Job;
 import org.moera.search.job.Jobs;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 public abstract class PendingUpdate<P> {
-
-    private static final Logger log = LoggerFactory.getLogger(PendingUpdate.class);
 
     private UUID id;
     private P jobParameters;
@@ -61,14 +55,7 @@ public abstract class PendingUpdate<P> {
         if (encoded == null) {
             return;
         }
-        try {
-            setJobParameters(objectMapper.readValue(encoded, getJobParametersClass()));
-        } catch (JsonProcessingException e) {
-            log.error(
-                "Error decoding job parameters (encoded = {}, class = {})",
-                LogUtil.format(encoded), getJobParametersClass().getCanonicalName(), e
-            );
-        }
+        setJobParameters(objectMapper.readValue(encoded, getJobParametersClass()));
     }
 
     public Instant getCreatedAt() {

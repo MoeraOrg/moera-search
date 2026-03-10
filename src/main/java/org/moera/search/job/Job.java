@@ -7,8 +7,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.crypto.CryptoUtil;
 import org.moera.lib.node.carte.Carte;
 import org.moera.lib.node.exception.MoeraNodeApiAuthenticationException;
@@ -27,6 +25,7 @@ import org.moera.search.index.TransientIndexException;
 import org.moera.search.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 public abstract class Job<P, S> implements Runnable {
 
@@ -64,13 +63,13 @@ public abstract class Job<P, S> implements Runnable {
         this.parameters = parameters;
     }
 
-    protected abstract void setParameters(String parameters, ObjectMapper objectMapper) throws JsonProcessingException;
+    protected abstract void setParameters(String parameters, ObjectMapper objectMapper);
 
     S getState() {
         return state;
     }
 
-    protected abstract void setState(String state, ObjectMapper objectMapper) throws JsonProcessingException;
+    protected abstract void setState(String state, ObjectMapper objectMapper);
 
     void setJobs(Jobs jobs) {
         this.jobs = jobs;
@@ -286,7 +285,7 @@ public abstract class Job<P, S> implements Runnable {
     protected String generateCarte(String targetNodeName, Scope clientScope, Scope adminScope) {
         try {
             return Carte.generate(
-                config.getNodeName(), jobs.getLocalAddress(), Instant.now(), signingKey(), targetNodeName,
+                config.getNodeName(), jobs.getLocalAddresses(), Instant.now(), signingKey(), targetNodeName,
                 clientScope.getMask(), adminScope.getMask()
             );
         } catch (Exception e) {

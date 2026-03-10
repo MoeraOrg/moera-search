@@ -2,8 +2,6 @@ package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.exception.MoeraNodeException;
 import org.moera.lib.node.types.Scope;
 import org.moera.search.api.MoeraNodeUncheckedException;
@@ -15,6 +13,7 @@ import org.moera.search.scanner.signature.ReactionSignatureVerifier;
 import org.moera.search.scanner.signature.SignatureVerificationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Parameters, PostingReactionsScanJob.State> {
 
@@ -88,12 +87,12 @@ public class PostingReactionsScanJob extends Job<PostingReactionsScanJob.Paramet
     }
 
     @Override
-    protected void setParameters(String parameters, ObjectMapper objectMapper) throws JsonProcessingException {
+    protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, Parameters.class);
     }
 
     @Override
-    protected void setState(String state, ObjectMapper objectMapper) throws JsonProcessingException {
+    protected void setState(String state, ObjectMapper objectMapper) {
         this.state = objectMapper.readValue(state, State.class);
     }
 

@@ -2,8 +2,6 @@ package org.moera.search.scanner;
 
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.NodeType;
 import org.moera.lib.node.types.Scope;
 import org.moera.lib.node.types.SubscriberDescription;
@@ -18,6 +16,7 @@ import org.moera.search.scanner.updates.SheriffScanUpdate;
 import org.moera.search.scanner.updates.TimelineScanUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> {
 
@@ -106,12 +105,12 @@ public class NameScanJob extends Job<NameScanJob.Parameters, NameScanJob.State> 
     }
 
     @Override
-    protected void setParameters(String parameters, ObjectMapper objectMapper) throws JsonProcessingException {
+    protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, Parameters.class);
     }
 
     @Override
-    protected void setState(String state, ObjectMapper objectMapper) throws JsonProcessingException {
+    protected void setState(String state, ObjectMapper objectMapper) {
         this.state = objectMapper.readValue(state, State.class);
     }
 

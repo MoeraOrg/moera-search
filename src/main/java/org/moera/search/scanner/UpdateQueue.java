@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.moera.search.Workload;
 import org.moera.search.data.Database;
 import org.moera.search.data.DatabaseInitializedEvent;
@@ -76,13 +75,7 @@ public class UpdateQueue {
             queue.add(update);
         }
         autowireCapableBeanFactory.autowireBean(update);
-        database.writeNoResult(() -> {
-            try {
-                pendingUpdateRepository.create(update);
-            } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Cannot serialize the update object", e);
-            }
-        });
+        database.writeNoResult(() -> pendingUpdateRepository.create(update));
     }
 
     private void refresh() {

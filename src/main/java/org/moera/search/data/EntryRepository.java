@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.SearchEntryInfo;
 import org.moera.lib.node.types.SearchEntryOperations;
 import org.moera.lib.node.types.SearchEntryType;
@@ -18,14 +16,11 @@ import org.moera.search.api.Feed;
 import org.moera.search.api.model.AvatarImageUtil;
 import org.moera.search.api.model.PublicMediaFileInfoUtil;
 import org.moera.search.util.MomentFinder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class EntryRepository {
-
-    private static final Logger log = LoggerFactory.getLogger(EntryRepository.class);
 
     @Inject
     private Database database;
@@ -320,11 +315,7 @@ public class EntryRepository {
         info.setVideoPresent(entry.get("videoPresent").asBoolean(false));
         var repliedTo = entry.get("repliedTo").asString(null);
         if (repliedTo != null) {
-            try {
-                info.setRepliedTo(objectMapper.readValue(repliedTo, SearchRepliedTo.class));
-            } catch (JsonProcessingException e) {
-                log.error("Cannot deserialize repliedTo", e);
-            }
+            info.setRepliedTo(objectMapper.readValue(repliedTo, SearchRepliedTo.class));
         }
         info.setCreatedAt(entry.get("createdAt").asLong(0));
         var viewPrincipal = entry.get("viewPrincipal").asString(null);

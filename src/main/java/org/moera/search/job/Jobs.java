@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -14,9 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import jakarta.inject.Inject;
+import jakarta.json.JsonException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.util.LogUtil;
 import org.moera.search.config.Config;
 import org.moera.search.config.NotConfiguredException;
@@ -34,6 +34,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class Jobs {
@@ -46,7 +47,7 @@ public class Jobs {
 
     private boolean ready = false;
 
-    private InetAddress localAddress;
+    private List<InetAddress> localAddresses;
 
     @Inject
     private Config config;
@@ -76,28 +77,20 @@ public class Jobs {
     @EventListener(DatabaseInitializedEvent.class)
     public void init() {
         ready = true;
-        localAddress = getLocalAddr();
+        localAddresses = getLocalAddrs();
         load();
         applicationEventPublisher.publishEvent(new JobsManagerInitializedEvent(this));
     }
 
-    private InetAddress getLocalAddr() {
+    private List<InetAddress> getLocalAddrs() {
         if (config.getAddress() != null) {
-            if (Character.isDigit(config.getAddress().charAt(0))) {
-                try {
-                    return InetAddress.getByName(config.getAddress());
-                } catch (UnknownHostException e) {
-                    log.error("Configured IP address {} is invalid", LogUtil.format(config.getAddress()));
+            try {
+                InetAddress[] ips = InetAddress.getAllByName(config.getAddress());
+                if (ips != null && ips.length > 0) {
+                    return List.of(ips);
                 }
-            } else {
-                try {
-                    InetAddress[] ips = InetAddress.getAllByName(config.getAddress());
-                    if (ips != null && ips.length > 0) {
-                        return ips[0];
-                    }
-                } catch (UnknownHostException e) {
-                    log.error("Could not resolve the configured domain {}", LogUtil.format(config.getAddress()));
-                }
+            } catch (UnknownHostException e) {
+                log.error("Could not resolve the configured address {}", LogUtil.format(config.getAddress()));
             }
         }
 
@@ -108,7 +101,7 @@ public class Jobs {
             local = "127.0.0.1";
         }
         try {
-            return InetAddress.getByName(local);
+            return List.of(InetAddress.getAllByName(local));
         } catch (UnknownHostException e) {
             throw new NotConfiguredException("Cannot resolve local address and no address is configured (node.address)");
         }
@@ -118,8 +111,8 @@ public class Jobs {
         return ready;
     }
 
-    public InetAddress getLocalAddress() {
-        return localAddress;
+    public List<InetAddress> getLocalAddresses() {
+        return localAddresses;
     }
 
     public <P, T extends Job<P, ?>> UUID run(Class<T> klass, P parameters) {
@@ -223,7 +216,7 @@ public class Jobs {
             if (pendingJob.getState() != null) {
                 job.setState(pendingJob.getState(), objectMapper);
             }
-        } catch (JsonProcessingException e) {
+        } catch (JsonException e) {
             log.error("Cannot load a job", e);
         }
 

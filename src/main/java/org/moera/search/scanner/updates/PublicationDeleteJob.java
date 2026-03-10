@@ -2,10 +2,9 @@ package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.search.job.Job;
 import org.moera.search.scanner.ingest.PostingIngest;
+import tools.jackson.databind.ObjectMapper;
 
 public class PublicationDeleteJob extends Job<PublicationDeleteJob.Parameters, Object> {
 
@@ -58,7 +57,7 @@ public class PublicationDeleteJob extends Job<PublicationDeleteJob.Parameters, O
     }
 
     @Override
-    protected void setParameters(String parameters, ObjectMapper objectMapper) throws JsonProcessingException {
+    protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, PublicationDeleteJob.Parameters.class);
     }
 

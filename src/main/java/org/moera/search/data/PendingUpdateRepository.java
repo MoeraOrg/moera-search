@@ -11,13 +11,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.neo4j.driver.types.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class PendingUpdateRepository {
@@ -33,7 +32,7 @@ public class PendingUpdateRepository {
     @Inject
     private AutowireCapableBeanFactory autowireCapableBeanFactory;
 
-    public void create(PendingUpdate<?> update) throws JsonProcessingException {
+    public void create(PendingUpdate<?> update) {
         var args = new HashMap<String, Object>();
         args.put("id", update.getId().toString());
         args.put("type", update.getClass().getCanonicalName());

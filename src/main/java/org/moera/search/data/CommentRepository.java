@@ -6,22 +6,17 @@ import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.api.model.SearchRepliedToUtil;
 import org.moera.search.util.BodyUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class CommentRepository {
-
-    private static final Logger log = LoggerFactory.getLogger(CommentRepository.class);
 
     @Inject
     private Database database;
@@ -102,12 +97,8 @@ public class CommentRepository {
         args.put("ownerFullName", info.getOwnerFullName());
         args.put("heading", info.getHeading());
         if (info.getRepliedTo() != null) {
-            try {
-                String repliedTo = objectMapper.writeValueAsString(SearchRepliedToUtil.build(info.getRepliedTo()));
-                args.put("repliedTo", repliedTo);
-            } catch (JsonProcessingException e) {
-                log.error("Cannot convert repliedTo to JSON", e);
-            }
+            String repliedTo = objectMapper.writeValueAsString(SearchRepliedToUtil.build(info.getRepliedTo()));
+            args.put("repliedTo", repliedTo);
         } else {
             args.put("repliedTo", null);
         }
