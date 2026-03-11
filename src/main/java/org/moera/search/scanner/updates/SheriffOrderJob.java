@@ -3,13 +3,13 @@ package org.moera.search.scanner.updates;
 import jakarta.inject.Inject;
 
 import org.moera.search.data.NodeRepository;
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.SheriffMarkIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
-public class SheriffOrderJob extends Job<SheriffOrderJob.Parameters, Object> {
+public class SheriffOrderJob extends StatelessJob<SheriffOrderJob.Parameters> {
 
     public static class Parameters {
 
@@ -99,11 +99,6 @@ public class SheriffOrderJob extends Job<SheriffOrderJob.Parameters, Object> {
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, SheriffOrderJob.Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

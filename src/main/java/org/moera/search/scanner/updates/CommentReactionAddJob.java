@@ -5,14 +5,14 @@ import jakarta.inject.Inject;
 import org.moera.lib.node.types.Scope;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.CommentRepository;
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.ReactionIngest;
 import org.moera.search.scanner.signature.ReactionSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
-public class CommentReactionAddJob extends Job<CommentReactionAddJob.Parameters, Object> {
+public class CommentReactionAddJob extends StatelessJob<CommentReactionAddJob.Parameters> {
 
     public static class Parameters {
 
@@ -86,11 +86,6 @@ public class CommentReactionAddJob extends Job<CommentReactionAddJob.Parameters,
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

@@ -2,11 +2,11 @@ package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.NodeIngest;
 import tools.jackson.databind.ObjectMapper;
 
-public class SubscriptionJob extends Job<SubscriptionJob.Parameters, Object> {
+public class SubscriptionJob extends StatelessJob<SubscriptionJob.Parameters> {
 
     public static class Parameters {
 
@@ -69,11 +69,6 @@ public class SubscriptionJob extends Job<SubscriptionJob.Parameters, Object> {
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, SubscriptionJob.Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

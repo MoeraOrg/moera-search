@@ -2,13 +2,13 @@ package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.AttachmentIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
-public class CommentMediaTextUpdateJob extends Job<CommentMediaTextUpdateJob.Parameters, Object> {
+public class CommentMediaTextUpdateJob extends StatelessJob<CommentMediaTextUpdateJob.Parameters> {
 
     public static class Parameters {
 
@@ -83,11 +83,6 @@ public class CommentMediaTextUpdateJob extends Job<CommentMediaTextUpdateJob.Par
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, CommentMediaTextUpdateJob.Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

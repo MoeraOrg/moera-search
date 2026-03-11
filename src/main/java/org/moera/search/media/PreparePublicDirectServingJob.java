@@ -6,12 +6,12 @@ import jakarta.inject.Inject;
 
 import org.moera.search.data.MediaFile;
 import org.moera.search.data.MediaFileRepository;
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
-public class PreparePublicDirectServingJob extends Job<PreparePublicDirectServingJob.Parameters, Object> {
+public class PreparePublicDirectServingJob extends StatelessJob<PreparePublicDirectServingJob.Parameters> {
 
     public static class Parameters {
 
@@ -36,11 +36,6 @@ public class PreparePublicDirectServingJob extends Job<PreparePublicDirectServin
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

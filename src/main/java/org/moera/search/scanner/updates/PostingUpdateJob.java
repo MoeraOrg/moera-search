@@ -6,14 +6,14 @@ import org.moera.lib.node.types.Scope;
 import org.moera.search.api.NodeApi;
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.PostingIngest;
 import org.moera.search.scanner.signature.PostingSignatureVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
-public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
+public class PostingUpdateJob extends StatelessJob<PostingUpdateJob.Parameters> {
 
     public static class Parameters {
 
@@ -85,11 +85,6 @@ public class PostingUpdateJob extends Job<PostingUpdateJob.Parameters, Object> {
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, PostingUpdateJob.Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

@@ -2,11 +2,11 @@ package org.moera.search.scanner.updates;
 
 import jakarta.inject.Inject;
 
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.PostingIngest;
 import tools.jackson.databind.ObjectMapper;
 
-public class PublicationDeleteJob extends Job<PublicationDeleteJob.Parameters, Object> {
+public class PublicationDeleteJob extends StatelessJob<PublicationDeleteJob.Parameters> {
 
     public static class Parameters {
 
@@ -59,11 +59,6 @@ public class PublicationDeleteJob extends Job<PublicationDeleteJob.Parameters, O
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, PublicationDeleteJob.Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override

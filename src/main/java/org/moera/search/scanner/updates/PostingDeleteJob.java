@@ -4,13 +4,13 @@ import jakarta.inject.Inject;
 
 import org.moera.search.data.NodeRepository;
 import org.moera.search.data.PostingRepository;
-import org.moera.search.job.Job;
+import org.moera.search.job.StatelessJob;
 import org.moera.search.scanner.ingest.PostingIngest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
-public class PostingDeleteJob extends Job<PostingDeleteJob.Parameters, Object> {
+public class PostingDeleteJob extends StatelessJob<PostingDeleteJob.Parameters> {
 
     public static class Parameters {
 
@@ -60,11 +60,6 @@ public class PostingDeleteJob extends Job<PostingDeleteJob.Parameters, Object> {
     @Override
     protected void setParameters(String parameters, ObjectMapper objectMapper) {
         this.parameters = objectMapper.readValue(parameters, PostingDeleteJob.Parameters.class);
-    }
-
-    @Override
-    protected void setState(String state, ObjectMapper objectMapper) {
-        this.state = null;
     }
 
     @Override
