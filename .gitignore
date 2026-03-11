@@ -7,3 +7,4 @@
 /log/
 /application-dev*.yml
 /media/
+/.ssl/

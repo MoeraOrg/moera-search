@@ -1,7 +1,6 @@
 package org.moera.search;
 
 import java.security.Security;
-
 import jakarta.inject.Inject;
 
 import com.github.jknack.handlebars.springmvc.HandlebarsViewResolver;
@@ -19,9 +18,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -66,18 +65,20 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
 
     @Bean
     public TaskExecutor namingTaskExecutor() {
-        return buildTaskExecutor(config.getPools().getNaming());
+        return buildTaskExecutor(config.getPools().getNaming(), "naming");
     }
 
     @Bean
     public TaskExecutor jobTaskExecutor() {
-        return buildTaskExecutor(config.getPools().getJob());
+        return buildTaskExecutor(config.getPools().getJob(), "job");
     }
 
-    private ThreadPoolTaskExecutor buildTaskExecutor(int size) {
-        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(size);
-        taskExecutor.setMaxPoolSize(size);
+    private SimpleAsyncTaskExecutor buildTaskExecutor(int size, String threadName) {
+        SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
+        taskExecutor.setVirtualThreads(true);
+        taskExecutor.setConcurrencyLimit(size);
+        taskExecutor.setRejectTasksWhenLimitReached(true);
+        taskExecutor.setThreadNamePrefix(threadName + "-");
         return taskExecutor;
     }
 
