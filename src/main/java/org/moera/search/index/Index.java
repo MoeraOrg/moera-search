@@ -2,27 +2,25 @@ package org.moera.search.index;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import jakarta.inject.Inject;
 
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.moera.lib.node.types.SearchEntryType;
 import org.moera.search.config.Config;
 import org.moera.search.data.DatabaseInitializedEvent;
 import org.moera.search.data.EntryRevision;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -45,7 +43,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.DeleteOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfigParam;
-import org.opensearch.client.transport.rest_client.RestClientTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -70,48 +68,44 @@ public class Index {
     private OpenSearchClient client;
     private boolean ready = false;
 
-    private static final class TrustAllTrustManager implements X509TrustManager {
-
-        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            throw new CertificateException("All client connections to this client are forbidden.");
-        }
-
-        public void checkServerTrusted(X509Certificate[] chain, String authType) {
-        }
-
-        public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
-        }
-
-    }
-
     @EventListener(DatabaseInitializedEvent.class)
     private void init() throws GeneralSecurityException {
-        var credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(
-            AuthScope.ANY,
-            new UsernamePasswordCredentials(config.getIndex().getUser(), config.getIndex().getPassword())
+        var host = new HttpHost(
+            config.getIndex().getScheme(),
+            config.getIndex().getHost(),
+            config.getIndex().getPort()
         );
 
-        var sslContext = SSLContext.getInstance("TLS");
-        // TODO this should be configurable
-        sslContext.init(null, new TrustManager[]{new TrustAllTrustManager()}, new SecureRandom());
-        var restClient = RestClient
-            .builder(
-                new HttpHost(
-                    config.getIndex().getHost(),
-                    config.getIndex().getPort(),
-                    config.getIndex().getScheme()
-                )
-            )
-            .setHttpClientConfigCallback(
-                httpClientBuilder -> httpClientBuilder
+        var credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(
+            new AuthScope(host),
+            new UsernamePasswordCredentials(config.getIndex().getUser(), config.getIndex().getPassword().toCharArray())
+        );
+
+        // Insecure SSL: trust every certificate
+        var sslContext = SSLContextBuilder.create()
+            .loadTrustMaterial(null, TrustAllStrategy.INSTANCE)
+            .build();
+
+        // Insecure SSL: disable hostname verification
+        var tlsStrategy = ClientTlsStrategyBuilder.create()
+            .setSslContext(sslContext)
+            .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+            .buildAsync();
+
+        var connectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+            .setTlsStrategy(tlsStrategy)
+            .build();
+
+        var transport = ApacheHttpClient5TransportBuilder.builder(host)
+            .setMapper(new JacksonJsonpMapper())
+            .setHttpClientConfigCallback(httpClientBuilder ->
+                httpClientBuilder
                     .setDefaultCredentialsProvider(credentialsProvider)
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier((hostname, session) -> true)
+                    .setConnectionManager(connectionManager)
             )
             .build();
-        var transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+
         client = new OpenSearchClient(transport);
 
         log.info(

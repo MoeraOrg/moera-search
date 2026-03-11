@@ -37,8 +37,7 @@
         <metadata-extractor.version>2.19.0</metadata-extractor.version>
         <moeralib.version>0.18.1</moeralib.version>
         <neo4j-java-driver.version>6.0.3</neo4j-java-driver.version>
-        <opensearch-java.version>2.15.0</opensearch-java.version>
-        <opensearch-rest-client.version>2.19.1</opensearch-rest-client.version>
+        <opensearch-java.version>3.7.0</opensearch-java.version>
         <springdoc-openapi-ui.version>1.8.0</springdoc-openapi-ui.version>
         <thumbnailator.version>0.4.21</thumbnailator.version>
         <twelvemonkeys.version>3.13.1</twelvemonkeys.version>
@@ -121,11 +120,6 @@
             <groupId>org.opensearch.client</groupId>
             <artifactId>opensearch-java</artifactId>
             <version>${opensearch-java.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opensearch.client</groupId>
-            <artifactId>opensearch-rest-client</artifactId>
-            <version>${opensearch-rest-client.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.pemistahl</groupId>
