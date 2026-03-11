@@ -16,7 +16,9 @@ import org.springframework.util.ObjectUtils;
 public class BodyUtil {
 
     private static final Pattern VIDEO_TAGS = Pattern.compile("(?i)<(?:object|video|iframe)");
-    private static final Pattern HASHTAGS = Pattern.compile("(?U)(?:^|[\\s(\\[{>])(#\\w+)\\b");
+    private static final Pattern HASHTAGS = Pattern.compile(
+        "(?U)(?:^|[\\s(\\[{>])(#[\\p{L}\\p{Nd}_]*[\\p{L}_][\\p{L}\\p{Nd}_]*)\\b"
+    );
 
     public record BodyMediaCount(int imageCount, boolean videoPresent) {
     }
