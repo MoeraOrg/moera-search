@@ -6,6 +6,7 @@ import java.util.function.Function;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
+import org.moera.lib.Rules;
 import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.lib.naming.types.RegisteredNameInfo;
@@ -37,6 +38,12 @@ class SignatureVerifier {
             throw new SignatureVerificationException("Cannot get signing key for " + remoteNodeName);
         }
         return nameInfo.getSigningKey();
+    }
+
+    protected byte[] signingKeyAnonymousAllowed(String remoteNodeName, long at) {
+        return !Rules.ANONYMOUS_NODE_NAME.equals(remoteNodeName)
+            ? signingKey(remoteNodeName, at)
+            : Rules.ANONYMOUS_NODE_PUBLIC_KEY;
     }
 
     protected Function<String, byte[]> mediaDigest(String remoteNodeName, String carte) {

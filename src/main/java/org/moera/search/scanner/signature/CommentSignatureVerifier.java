@@ -111,7 +111,7 @@ public class CommentSignatureVerifier extends SignatureVerifier {
                 visited
             )
             : null;
-        byte[] signingKey = signingKey(commentInfo.getOwnerName(), commentInfo.getEditedAt());
+        byte[] signingKey = signingKeyAnonymousAllowed(commentInfo.getOwnerName(), commentInfo.getEditedAt());
         byte[] fingerprint = CommentFingerprintBuilder.build(
             commentInfo.getSignatureVersion(), commentInfo, mediaDigest(nodeName, carte), postingDigest, repliedToDigest
         );
@@ -159,7 +159,7 @@ public class CommentSignatureVerifier extends SignatureVerifier {
                 visited
             )
             : null;
-        byte[] signingKey = signingKey(commentInfo.getOwnerName(), commentInfo.getEditedAt());
+        byte[] signingKey = signingKeyAnonymousAllowed(commentInfo.getOwnerName(), commentInfo.getEditedAt());
         byte[] fingerprint = CommentFingerprintBuilder.build(
             commentInfo.getSignatureVersion(), commentInfo, commentRevisionInfo, mediaDigest(nodeName, carte),
             postingDigest, repliedToDigest

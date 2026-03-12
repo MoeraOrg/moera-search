@@ -3,6 +3,7 @@ package org.moera.search.scanner;
 import java.util.UUID;
 import jakarta.inject.Inject;
 
+import org.moera.lib.Rules;
 import org.moera.search.Workload;
 import org.moera.search.data.Database;
 import org.moera.search.data.NodeRepository;
@@ -46,6 +47,9 @@ public class NameScanner {
                     nodeRepository.findNamesToScan(Workload.NAME_SCANNERS_MAX_JOBS - runningCount)
                 );
                 for (var name : names) {
+                    if (Rules.ANONYMOUS_NODE_NAME.equals(name)) {
+                        continue;
+                    }
                     log.debug("Starting scanning of {}", name);
                     try {
                         UUID jobId = jobs.run(NameScanJob.class, new NameScanJob.Parameters(name));
