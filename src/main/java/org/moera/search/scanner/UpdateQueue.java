@@ -63,7 +63,7 @@ public class UpdateQueue {
             }
         }
 
-        Thread.ofVirtual().name("update-queue-refresh").start(this::refresh);
+        Thread.ofPlatform().name("update-queue-refresh").daemon().start(this::refresh);
 
         applicationEventPublisher.publishEvent(new UpdateQueueInitializedEvent(this));
     }

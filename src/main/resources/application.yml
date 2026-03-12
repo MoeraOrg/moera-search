@@ -3,7 +3,6 @@ server:
 
 spring:
   jackson.serialization.fail-on-empty-beans: false
-  threads.virtual.enabled: true
   task.scheduling.pool.size: 5
 
 springdoc:

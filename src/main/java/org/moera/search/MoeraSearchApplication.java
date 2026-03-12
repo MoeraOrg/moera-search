@@ -18,9 +18,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -73,11 +73,10 @@ public class MoeraSearchApplication implements WebMvcConfigurer {
         return buildTaskExecutor(config.getPools().getJob(), "job");
     }
 
-    private SimpleAsyncTaskExecutor buildTaskExecutor(int size, String threadName) {
-        SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
-        taskExecutor.setVirtualThreads(true);
-        taskExecutor.setConcurrencyLimit(size);
-        taskExecutor.setRejectTasksWhenLimitReached(true);
+    private ThreadPoolTaskExecutor buildTaskExecutor(int size, String threadName) {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(size);
+        taskExecutor.setMaxPoolSize(size);
         taskExecutor.setThreadNamePrefix(threadName + "-");
         return taskExecutor;
     }

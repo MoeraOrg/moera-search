@@ -33,7 +33,7 @@ public class Upgrader implements Runnable {
 
     @EventListener(UpdateQueueInitializedEvent.class)
     public void scan() {
-        Thread.ofVirtual().name("upgrader").start(this);
+        Thread.ofPlatform().name("upgrader").daemon().start(this);
     }
 
     @Override
