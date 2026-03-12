@@ -297,13 +297,17 @@ public class EntryRepository {
         info.setCommentId(r.get("commentId").asString(null));
         var owner = r.get("owner").asNode();
         info.setOwnerName(owner.get("name").asString(null));
-        info.setOwnerFullName(owner.get("fullName").asString(null));
+        var entry = r.get("entry").asNode();
+        var ownerFullName = entry.get("ownerFullName").asString(null);
+        if (ownerFullName == null) {
+            ownerFullName = owner.get("fullName").asString(null);
+        }
+        info.setOwnerFullName(ownerFullName);
         var avatarShape = r.get("avatarShape").asString(null);
         var avatar = r.get("avatar").isNull() ? null : new MediaFile(r.get("avatar").asNode());
         if (avatar != null) {
             info.setOwnerAvatar(AvatarImageUtil.build(avatar, avatarShape));
         }
-        var entry = r.get("entry").asNode();
         info.setBodyPreview(new Body(entry.get("bodyPreview").asString()));
         info.setHeading(entry.get("heading").asString(null));
         info.setImageCount(entry.get("imageCount").asInt(0));
