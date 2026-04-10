@@ -11,7 +11,6 @@ import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.PostingRepository;
 import org.moera.search.index.Index;
-import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
 import org.springframework.stereotype.Component;
 
@@ -97,8 +96,12 @@ public class AttachmentIngest {
     }
 
     private void updateIndex(String documentId, String mediaText) {
-        var document = new IndexedDocument();
+        var document = index.get(documentId);
+        if (document == null) {
+            return;
+        }
         document.setMediaText(mediaText);
+        document.setMediaTextRu(null);
         languageAnalyzer.analyze(document);
         index.update(documentId, document);
     }

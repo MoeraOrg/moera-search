@@ -58,6 +58,10 @@ OpenSearch Mappings
       "type": "integer",
       "null_value": 0
     },
+    "attachmentCount": {
+      "type": "integer",
+      "null_value": 0
+    },
     "videoPresent": {
       "type": "boolean",
       "null_value": false

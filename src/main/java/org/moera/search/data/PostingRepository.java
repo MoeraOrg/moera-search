@@ -139,6 +139,7 @@ public class PostingRepository {
         args.put("bodyPreview", bodyPreview.getEncoded());
         var counts = BodyUtil.countBodyMedia(info.getBody(), info.getMedia());
         args.put("imageCount", counts.imageCount());
+        args.put("attachmentCount", counts.attachmentCount());
         args.put("videoPresent", counts.videoPresent());
         args.put("createdAt", info.getCreatedAt());
         args.put("editedAt", info.getEditedAt());
@@ -153,6 +154,7 @@ public class PostingRepository {
                 p.heading = $heading,
                 p.bodyPreview = $bodyPreview,
                 p.imageCount = $imageCount,
+                p.attachmentCount = $attachmentCount,
                 p.videoPresent = $videoPresent,
                 p.createdAt = $createdAt,
                 p.editedAt = $editedAt,

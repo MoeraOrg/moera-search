@@ -247,6 +247,7 @@ public class Index {
         Integer minImageCount,
         Integer maxImageCount,
         Boolean videoPresent,
+        Boolean attachmentPresent,
         Timestamp createdAfter,
         Timestamp createdBefore,
         boolean signedIn,
@@ -301,6 +302,20 @@ public class Index {
         }
         if (videoPresent != null) {
             conditions.filter(termQuery("videoPresent", videoPresent));
+        }
+        if (attachmentPresent != null) {
+            var rangeQuery = new RangeQuery.Builder()
+                .field("attachmentCount");
+            if (attachmentPresent) {
+                rangeQuery.gte(JsonData.of(1));
+            } else {
+                rangeQuery.lte(JsonData.of(0));
+            }
+            conditions.filter(
+                new Query.Builder()
+                    .range(rangeQuery.build())
+                    .build()
+            );
         }
         if (createdAfter != null || createdBefore != null) {
             var rangeQuery = new RangeQuery.Builder()

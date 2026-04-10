@@ -20,21 +20,37 @@ public class BodyUtil {
         "(?U)(?:^|[\\s(\\[{>])(#[\\p{L}\\p{Nd}_]*[\\p{L}_][\\p{L}\\p{Nd}_]*)\\b"
     );
 
-    public record BodyMediaCount(int imageCount, boolean videoPresent) {
+    public record BodyMediaCount(int imageCount, int attachmentCount, boolean videoPresent) {
     }
 
     public static BodyMediaCount countBodyMedia(Body body, List<MediaAttachment> media) {
         int imageCount = 0;
+        int attachmentCount = 0;
+        var linkPreviews = !ObjectUtils.isEmpty(body.getLinkPreviews())
+            ? body.getLinkPreviews().stream()
+                .map(LinkPreview::getImageHash)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet())
+            : Collections.<String>emptySet();
         if (media != null) {
-            int linkMediaCount = 0;
-            if (body.getLinkPreviews() != null) {
-                linkMediaCount = (int) body.getLinkPreviews().stream().filter(lp -> lp.getImageHash() != null).count();
+            for (var attachment : media) {
+                if (attachment.getMedia() == null) {
+                    continue;
+                }
+                var hash = attachment.getMedia().getHash();
+                if (hash != null && linkPreviews.contains(hash)) {
+                    continue;
+                }
+                if (Boolean.TRUE.equals(attachment.getMedia().getAttachment())) {
+                    attachmentCount++;
+                } else {
+                    imageCount++;
+                }
             }
-            imageCount = media.size() - linkMediaCount;
         }
-        boolean videoPresent = VIDEO_TAGS.matcher(body.getText()).find();
+        boolean videoPresent = body.getText() != null && VIDEO_TAGS.matcher(body.getText()).find();
 
-        return new BodyMediaCount(imageCount, videoPresent);
+        return new BodyMediaCount(imageCount, attachmentCount, videoPresent);
     }
 
     public static PrivateMediaFileInfo findMediaForPreview(Body body, List<MediaAttachment> media) {

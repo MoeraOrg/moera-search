@@ -48,6 +48,7 @@ heading             string NOT NULL
 repliedTo           string                  (SearchRepliedTo)
 bodyPreview         string NOT NULL         (Body)
 imageCount          int NOT NULL
+attachmentCount     int NOT NULL
 videoPresent        boolean NOT NULL
 createdAt           int NOT NULL            (sec timestamp)
 editedAt            int                     (sec timestamp)
@@ -70,6 +71,7 @@ ownerFullName       string
 heading             string NOT NULL
 bodyPreview         string NOT NULL         (Body)
 imageCount          int NOT NULL
+attachmentCount     int NOT NULL
 videoPresent        boolean NOT NULL
 createdAt           int NOT NULL            (sec timestamp)
 editedAt            int                     (sec timestamp)
@@ -165,6 +167,7 @@ ownerFullName       string
 heading             string NOT NULL
 bodyPreview         string NOT NULL         (Body)
 imageCount          int NOT NULL
+attachmentCount     int NOT NULL
 videoPresent        boolean NOT NULL
 createdAt           int NOT NULL            (sec timestamp)
 editedAt            int                     (sec timestamp)

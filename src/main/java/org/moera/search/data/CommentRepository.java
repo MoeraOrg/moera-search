@@ -109,6 +109,7 @@ public class CommentRepository {
         args.put("bodyPreview", bodyPreviewEncoded);
         var counts = BodyUtil.countBodyMedia(info.getBody(), info.getMedia());
         args.put("imageCount", counts.imageCount());
+        args.put("attachmentCount", counts.attachmentCount());
         args.put("videoPresent", counts.videoPresent());
         args.put("createdAt", info.getCreatedAt());
         args.put("editedAt", info.getEditedAt());
@@ -125,6 +126,7 @@ public class CommentRepository {
                 c.repliedTo = $repliedTo,
                 c.bodyPreview = $bodyPreview,
                 c.imageCount = $imageCount,
+                c.attachmentCount = $attachmentCount,
                 c.videoPresent = $videoPresent,
                 c.createdAt = $createdAt,
                 c.editedAt = $editedAt,

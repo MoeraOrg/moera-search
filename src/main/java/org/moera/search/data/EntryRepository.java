@@ -65,6 +65,7 @@ public class EntryRepository {
         Integer minImageCount,
         Integer maxImageCount,
         Boolean videoPresent,
+        Boolean attachmentPresent,
         String sheriffName,
         boolean signedIn,
         Long before,
@@ -125,6 +126,13 @@ public class EntryRepository {
         if (videoPresent != null) {
             query.append(" AND e.videoPresent = $videoPresent");
             args.put("videoPresent", videoPresent);
+        }
+        if (attachmentPresent != null) {
+            if (attachmentPresent) {
+                query.append(" AND e.attachmentCount > 0");
+            } else {
+                query.append(" AND e.attachmentCount = 0");
+            }
         }
         if (sheriffName != null) {
             query.append(" AND (n.sheriffMarks IS NULL OR NOT ($sheriffName IN n.sheriffMarks))");
@@ -311,6 +319,7 @@ public class EntryRepository {
         info.setBodyPreview(new Body(entry.get("bodyPreview").asString()));
         info.setHeading(entry.get("heading").asString(null));
         info.setImageCount(entry.get("imageCount").asInt(0));
+        info.setAttachmentPresent(entry.get("attachmentCount").asInt(0) > 0);
         var mediaPreview = r.get("mediaPreview").isNull() ? null : new MediaFile(r.get("mediaPreview").asNode());
         if (mediaPreview != null) {
             info.setMediaPreview(PublicMediaFileInfoUtil.build(mediaPreview));

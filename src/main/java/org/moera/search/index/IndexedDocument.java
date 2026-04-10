@@ -33,6 +33,7 @@ public class IndexedDocument {
     private String mediaText;
     private String mediaTextRu;
     private int imageCount;
+    private int attachmentCount;
     private boolean videoPresent;
     private List<String> hashtags;
     private String viewPrincipal;
@@ -70,6 +71,7 @@ public class IndexedDocument {
         mediaText = MediaTextUtil.buildMediaText(media);
         var counts = BodyUtil.countBodyMedia(body, media);
         imageCount = counts.imageCount();
+        attachmentCount = counts.attachmentCount();
         videoPresent = counts.videoPresent();
         hashtags = BodyUtil.extractHashtags(body.getText());
     }
@@ -228,6 +230,14 @@ public class IndexedDocument {
 
     public void setVideoPresent(boolean videoPresent) {
         this.videoPresent = videoPresent;
+    }
+
+    public int getAttachmentCount() {
+        return attachmentCount;
+    }
+
+    public void setAttachmentCount(int attachmentCount) {
+        this.attachmentCount = attachmentCount;
     }
 
     public List<String> getHashtags() {
