@@ -8,6 +8,7 @@ Nodes
 mediaId             string NOT NULL
 mimeType            string NOT NULL
 size                int NOT NULL
+attachment          boolean
 title               string
 textContent         string
 

@@ -47,7 +47,10 @@ public class BodyUtil {
                 : Collections.emptySet();
             for (var attachment : media) {
                 if (attachment.getMedia() != null) {
-                    if (!linkPreviews.contains(attachment.getMedia().getHash())) {
+                    if (
+                        !Boolean.TRUE.equals(attachment.getMedia().getAttachment())
+                        && !linkPreviews.contains(attachment.getMedia().getHash())
+                    ) {
                         return attachment.getMedia();
                     }
                 }

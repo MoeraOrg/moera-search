@@ -51,6 +51,7 @@ public class AttachmentRepository {
         args.put("mediaId", mediaInfo.getId());
         args.put("mimeType", mediaInfo.getMimeType());
         args.put("size", mediaInfo.getSize());
+        args.put("attachment", mediaInfo.getAttachment());
         args.put("title", mediaInfo.getTitle());
         args.put("textContent", mediaInfo.getTextContent());
 
@@ -63,6 +64,7 @@ public class AttachmentRepository {
                        mediaId: $mediaId,
                        mimeType: $mimeType,
                        size: $size,
+                       attachment: $attachment,
                        title: $title,
                        textContent: $textContent
                    })
@@ -79,6 +81,7 @@ public class AttachmentRepository {
         args.put("mediaId", mediaInfo.getId());
         args.put("mimeType", mediaInfo.getMimeType());
         args.put("size", mediaInfo.getSize());
+        args.put("attachment", mediaInfo.getAttachment());
         args.put("title", mediaInfo.getTitle());
         args.put("textContent", mediaInfo.getTextContent());
 
@@ -92,6 +95,7 @@ public class AttachmentRepository {
                        mediaId: $mediaId,
                        mimeType: $mimeType,
                        size: $size,
+                       attachment: $attachment,
                        title: $title,
                        textContent: $textContent
                    })
