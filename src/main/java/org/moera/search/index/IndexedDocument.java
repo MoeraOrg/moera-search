@@ -2,18 +2,16 @@ package org.moera.search.index;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentOperations;
 import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.PostingOperations;
-import org.moera.lib.node.types.PrivateMediaFileInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.principal.Principal;
 import org.moera.search.util.BodyUtil;
+import org.moera.search.util.MediaTextUtil;
 import org.moera.search.util.Util;
 import org.springframework.util.ObjectUtils;
 
@@ -69,7 +67,7 @@ public class IndexedDocument {
     private void analyzeBody(Body body, List<MediaAttachment> media) {
         subject = body.getSubject();
         text = getText(body);
-        mediaText = getMediaText(media);
+        mediaText = MediaTextUtil.buildMediaText(media);
         var counts = BodyUtil.countBodyMedia(body, media);
         imageCount = counts.imageCount();
         videoPresent = counts.videoPresent();
@@ -94,21 +92,6 @@ public class IndexedDocument {
             }
         }
         return buf.toString();
-    }
-
-    private static String getMediaText(List<MediaAttachment> media) {
-        if (ObjectUtils.isEmpty(media)) {
-            return "";
-        }
-
-        String mediaText = media.stream()
-            .map(MediaAttachment::getMedia)
-            .filter(Objects::nonNull)
-            .map(PrivateMediaFileInfo::getTextContent)
-            .filter(tc -> !ObjectUtils.isEmpty(tc))
-            .collect(Collectors.joining(" "));
-
-        return !ObjectUtils.isEmpty(mediaText) ? mediaText : "";
     }
 
     public String getNodeName() {

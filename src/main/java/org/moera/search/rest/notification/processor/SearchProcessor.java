@@ -385,7 +385,7 @@ public class SearchProcessor {
             case POSTING_UPDATE_MEDIA_TEXT: {
                 var details = notification.getPostingMediaTextUpdate();
                 log.info(
-                    "Node {} updated text of media {} attached to posting {}",
+                    "Node {} updated extracted data of media {} attached to posting {}",
                     LogUtil.format(notification.getSenderNodeName()),
                     LogUtil.format(details.getMediaId()),
                     LogUtil.format(details.getPostingId())
@@ -393,7 +393,7 @@ public class SearchProcessor {
                 updateQueue.offer(
                     new PostingMediaTextUpdateUpdate(
                         notification.getSenderNodeName(), details.getPostingId(), details.getMediaId(),
-                        details.getTextContent()
+                        details.getTitle(), details.getTextContent()
                     )
                 );
                 break;
@@ -401,7 +401,7 @@ public class SearchProcessor {
             case COMMENT_UPDATE_MEDIA_TEXT: {
                 var details = notification.getCommentMediaTextUpdate();
                 log.info(
-                    "Node {} updated text of media {} attached to comment {} to posting {}",
+                    "Node {} updated extracted data of media {} attached to comment {} to posting {}",
                     LogUtil.format(notification.getSenderNodeName()),
                     LogUtil.format(details.getMediaId()),
                     LogUtil.format(details.getCommentId()),
@@ -410,7 +410,7 @@ public class SearchProcessor {
                 updateQueue.offer(
                     new CommentMediaTextUpdateUpdate(
                         notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
-                        details.getMediaId(), details.getTextContent()
+                        details.getMediaId(), details.getTitle(), details.getTextContent()
                     )
                 );
                 break;

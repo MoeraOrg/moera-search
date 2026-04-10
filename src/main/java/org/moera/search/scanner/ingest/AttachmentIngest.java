@@ -62,8 +62,14 @@ public class AttachmentIngest {
         });
     }
 
-    public void updateText(String nodeName, String postingId, String mediaId, String textContent) {
-        database.writeNoResult(() -> attachmentRepository.setTextContent(nodeName, postingId, mediaId, textContent));
+    public void updateText(String nodeName, String postingId, String mediaId, String title, String textContent) {
+        if (title == null && textContent == null) {
+            return;
+        }
+
+        database.writeNoResult(() ->
+            attachmentRepository.updateMediaText(nodeName, postingId, mediaId, title, textContent)
+        );
         var documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
         if (documentId == null) {
             return;
@@ -72,9 +78,15 @@ public class AttachmentIngest {
         updateIndex(documentId, mediaText);
     }
 
-    public void updateText(String nodeName, String postingId, String commentId, String mediaId, String textContent) {
+    public void updateText(
+        String nodeName, String postingId, String commentId, String mediaId, String title, String textContent
+    ) {
+        if (title == null && textContent == null) {
+            return;
+        }
+
         database.writeNoResult(() ->
-            attachmentRepository.setTextContent(nodeName, postingId, commentId, mediaId, textContent)
+            attachmentRepository.updateMediaText(nodeName, postingId, commentId, mediaId, title, textContent)
         );
         var documentId = database.read(() -> commentRepository.getDocumentId(nodeName, postingId, commentId));
         if (documentId == null) {

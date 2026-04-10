@@ -11,8 +11,10 @@ public class PostingMediaTextUpdateUpdate extends PendingUpdate<PostingMediaText
     public PostingMediaTextUpdateUpdate() {
     }
 
-    public PostingMediaTextUpdateUpdate(String nodeName, String postingId, String mediaId, String textContent) {
-        super(new PostingMediaTextUpdateJob.Parameters(nodeName, postingId, mediaId, textContent));
+    public PostingMediaTextUpdateUpdate(
+        String nodeName, String postingId, String mediaId, String title, String textContent
+    ) {
+        super(new PostingMediaTextUpdateJob.Parameters(nodeName, postingId, mediaId, title, textContent));
     }
 
     @Override

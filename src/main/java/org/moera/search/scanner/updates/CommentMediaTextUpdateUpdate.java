@@ -12,9 +12,11 @@ public class CommentMediaTextUpdateUpdate extends PendingUpdate<CommentMediaText
     }
 
     public CommentMediaTextUpdateUpdate(
-        String nodeName, String postingId, String commentId, String mediaId, String textContent
+        String nodeName, String postingId, String commentId, String mediaId, String title, String textContent
     ) {
-        super(new CommentMediaTextUpdateJob.Parameters(nodeName, postingId, commentId, mediaId, textContent));
+        super(new CommentMediaTextUpdateJob.Parameters(
+            nodeName, postingId, commentId, mediaId, title, textContent
+        ));
     }
 
     @Override

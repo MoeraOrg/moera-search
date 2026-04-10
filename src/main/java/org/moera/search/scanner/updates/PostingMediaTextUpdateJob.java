@@ -15,15 +15,17 @@ public class PostingMediaTextUpdateJob extends StatelessJob<PostingMediaTextUpda
         private String nodeName;
         private String postingId;
         private String mediaId;
+        private String title;
         private String textContent;
 
         public Parameters() {
         }
 
-        public Parameters(String nodeName, String postingId, String mediaId, String textContent) {
+        public Parameters(String nodeName, String postingId, String mediaId, String title, String textContent) {
             this.nodeName = nodeName;
             this.postingId = postingId;
             this.mediaId = mediaId;
+            this.title = title;
             this.textContent = textContent;
         }
 
@@ -59,6 +61,14 @@ public class PostingMediaTextUpdateJob extends StatelessJob<PostingMediaTextUpda
             this.textContent = textContent;
         }
 
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
     }
 
     public static final Logger log = LoggerFactory.getLogger(PostingMediaTextUpdateJob.class);
@@ -78,7 +88,7 @@ public class PostingMediaTextUpdateJob extends StatelessJob<PostingMediaTextUpda
     @Override
     protected void execute() throws Exception {
         attachmentIngest.updateText(
-            parameters.nodeName, parameters.postingId, parameters.mediaId, parameters.textContent
+            parameters.nodeName, parameters.postingId, parameters.mediaId, parameters.title, parameters.textContent
         );
     }
 
