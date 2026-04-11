@@ -319,7 +319,7 @@ public class EntryRepository {
         info.setBodyPreview(new Body(entry.get("bodyPreview").asString()));
         info.setHeading(entry.get("heading").asString(null));
         info.setImageCount(entry.get("imageCount").asInt(0));
-        info.setAttachmentPresent(entry.get("attachmentCount").asInt(0) > 0);
+        info.setAttachmentCount(entry.get("attachmentCount").asInt(0));
         var mediaPreview = r.get("mediaPreview").isNull() ? null : new MediaFile(r.get("mediaPreview").asNode());
         if (mediaPreview != null) {
             info.setMediaPreview(PublicMediaFileInfoUtil.build(mediaPreview));
