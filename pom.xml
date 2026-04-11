@@ -5,7 +5,7 @@
 
     <groupId>org.moera</groupId>
     <artifactId>moera-search</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.7.0</version>
     <name>moera-search</name>
     <description>Moera search engine</description>
     <packaging>jar</packaging>
@@ -35,7 +35,7 @@
         <jakarta.validation.version>3.1.1</jakarta.validation.version>
         <lingua.version>1.2.2</lingua.version>
         <metadata-extractor.version>2.19.0</metadata-extractor.version>
-        <moeralib.version>0.18.3-SNAPSHOT</moeralib.version>
+        <moeralib.version>0.18.3</moeralib.version>
         <neo4j-java-driver.version>6.0.3</neo4j-java-driver.version>
         <opensearch-java.version>3.7.0</opensearch-java.version>
         <springdoc-openapi-ui.version>1.8.0</springdoc-openapi-ui.version>
