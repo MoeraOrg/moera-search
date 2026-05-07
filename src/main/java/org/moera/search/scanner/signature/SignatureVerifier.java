@@ -2,7 +2,7 @@ package org.moera.search.scanner.signature;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
@@ -46,7 +46,7 @@ class SignatureVerifier {
             : Rules.ANONYMOUS_NODE_PUBLIC_KEY;
     }
 
-    protected Function<String, byte[]> mediaDigest(String remoteNodeName, String carte) {
+    protected BiFunction<String, String, byte[]> mediaDigest(String remoteNodeName, String carte) {
         return mediaManager.privateMediaDigestGetter(remoteNodeName, carte);
     }
 

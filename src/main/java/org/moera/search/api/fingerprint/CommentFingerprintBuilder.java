@@ -1,6 +1,6 @@
 package org.moera.search.api.fingerprint;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.moera.lib.crypto.CryptoUtil;
 import org.moera.lib.crypto.FingerprintException;
@@ -16,7 +16,7 @@ public class CommentFingerprintBuilder {
     public static byte[] build(
         short version,
         CommentInfo commentInfo,
-        Function<String, byte[]> mediaDigest,
+        BiFunction<String, String, byte[]> mediaDigest,
         byte[] postingDigest,
         byte[] repliedToDigest
     ) {
@@ -59,7 +59,7 @@ public class CommentFingerprintBuilder {
         short version,
         CommentInfo commentInfo,
         CommentRevisionInfo commentRevisionInfo,
-        Function<String, byte[]> mediaDigest,
+        BiFunction<String, String, byte[]> mediaDigest,
         byte[] postingDigest,
         byte[] repliedToDigest
     ) {
@@ -76,7 +76,7 @@ public class CommentFingerprintBuilder {
                     Util.toTimestamp(commentRevisionInfo.getCreatedAt()),
                     (byte) 0,
                     CryptoUtil.digest(
-                        AttachmentFingerprintBuilder.build(null, commentInfo.getMedia(), mediaDigest)
+                        AttachmentFingerprintBuilder.build(null, commentRevisionInfo.getMedia(), mediaDigest)
                     )
                 );
             case 0 ->
@@ -91,7 +91,7 @@ public class CommentFingerprintBuilder {
                     Util.toTimestamp(commentRevisionInfo.getCreatedAt()),
                     (byte) 0,
                     CryptoUtil.digest(
-                        AttachmentFingerprintBuilder.build(null, commentInfo.getMedia(), mediaDigest)
+                        AttachmentFingerprintBuilder.build(null, commentRevisionInfo.getMedia(), mediaDigest)
                     )
                 );
             default -> throw new FingerprintException("Unknown fingerprint version: " + version);

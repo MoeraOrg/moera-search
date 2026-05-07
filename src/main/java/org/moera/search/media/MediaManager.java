@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
@@ -166,42 +166,57 @@ public class MediaManager {
     }
 
     private TemporaryMediaFile getPrivateMedia(
-        String nodeName, String carte, String id, TemporaryFile tmpFile, int maxSize
+        String nodeName,
+        String carte,
+        String id,
+        String grant,
+        TemporaryFile tmpFile,
+        int maxSize
     ) throws MoeraNodeException {
         var result = new AtomicReference<TemporaryMediaFile>();
         nodeApi.at(nodeName, carte).getPrivateMedia(
-            id, null, null, null,
+            id, null, null, grant, null,
             responseBody -> result.set(receiveMediaFile(nodeName, id, responseBody, tmpFile, maxSize))
         );
         return result.get();
     }
 
-    private byte[] getPrivateMediaDigest(String nodeName, String carte, String id) throws MoeraNodeException {
+    private byte[] getPrivateMediaDigest(
+        String nodeName,
+        String carte,
+        String id,
+        String grant
+    ) throws MoeraNodeException {
         var digest = database.read(() -> cacheMediaDigestRepository.getDigest(nodeName, id));
         if (digest != null) {
             return digest;
         }
 
         try (var tmp = mediaOperations.tmpFile()) {
-            var tmpMedia = getPrivateMedia(nodeName, carte, id, tmp, config.getMedia().getVerifyMaxSize());
+            var tmpMedia = getPrivateMedia(nodeName, carte, id, grant, tmp, config.getMedia().getVerifyMaxSize());
             database.writeNoResult(() -> cacheMediaDigestRepository.storeDigest(nodeName, id, tmpMedia.digest()));
             return tmpMedia.digest();
         }
     }
 
-    public Function<String, byte[]> privateMediaDigestGetter(String nodeName, String carte) {
-        return id -> {
+    public BiFunction<String, String, byte[]> privateMediaDigestGetter(String nodeName, String carte) {
+        return (id, grant) -> {
             try {
-                return getPrivateMediaDigest(nodeName, carte, id);
+                return getPrivateMediaDigest(nodeName, carte, id, grant);
             } catch (MoeraNodeException e) {
                 throw new MoeraNodeUncheckedException(e);
             }
         };
     }
 
-    private MediaFile previewPrivateMedia(String nodeName, String carte, String id) throws MoeraNodeException {
+    private MediaFile previewPrivateMedia(
+        String nodeName,
+        String carte,
+        String id,
+        String grant
+    ) throws MoeraNodeException {
         try (var tmp = mediaOperations.tmpFile()) {
-            var tmpMedia = getPrivateMedia(nodeName, carte, id, tmp, config.getMedia().getPreviewMaxSize());
+            var tmpMedia = getPrivateMedia(nodeName, carte, id, grant, tmp, config.getMedia().getPreviewMaxSize());
             return mediaOperations.createPreview(tmpMedia.contentType(), tmp.path());
         } catch (IOException e) {
             throw new MoeraNodeLocalStorageException(
@@ -230,9 +245,12 @@ public class MediaManager {
         if (Objects.equals(mediaPreviewId, mediaId)) {
             return;
         }
+        var grant = info != null ? info.getGrant() : null;
         database.writeNoResult(() -> {
             try {
-                var mediaFile = mediaId != null ? previewPrivateMedia(nodeName, carteSupplier.get(), mediaId) : null;
+                var mediaFile = mediaId != null
+                    ? previewPrivateMedia(nodeName, carteSupplier.get(), mediaId, grant)
+                    : null;
                 if (mediaFile != null) {
                     mediaPreviewSaver.save(mediaFile.getId(), mediaId);
                 } else {
