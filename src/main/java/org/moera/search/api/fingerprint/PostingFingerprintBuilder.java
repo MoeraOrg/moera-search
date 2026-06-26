@@ -1,10 +1,11 @@
 package org.moera.search.api.fingerprint;
 
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.moera.lib.crypto.CryptoUtil;
 import org.moera.lib.crypto.FingerprintException;
 import org.moera.lib.node.Fingerprints;
+import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.lib.node.types.PostingRevisionInfo;
 import org.moera.lib.node.types.SourceFormat;
@@ -22,7 +23,7 @@ public class PostingFingerprintBuilder {
         short version,
         PostingInfo postingInfo,
         byte[] parentMediaDigest,
-        BiFunction<String, String, byte[]> mediaDigest
+        Function<MediaAttachment, byte[]> mediaDigest
     ) {
         return switch (version) {
             case 1 ->
@@ -68,7 +69,7 @@ public class PostingFingerprintBuilder {
         PostingInfo postingInfo,
         PostingRevisionInfo postingRevisionInfo,
         byte[] parentMediaDigest,
-        BiFunction<String, String, byte[]> mediaDigest
+        Function<MediaAttachment, byte[]> mediaDigest
     ) {
         return switch (version) {
             case 1 ->

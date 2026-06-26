@@ -9,6 +9,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
+import org.moera.lib.jsonrpc.OkHttpJsonRpcFetcher;
 import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.lib.naming.types.RegisteredNameInfo;
@@ -53,7 +54,7 @@ public class NamingCache {
 
     @PostConstruct
     public void init() {
-        naming = new MoeraNaming(config.getNamingServer());
+        naming = new MoeraNaming(new OkHttpJsonRpcFetcher(config.getNamingServer()));
     }
 
     public RegisteredNameDetails getFast(String name) {

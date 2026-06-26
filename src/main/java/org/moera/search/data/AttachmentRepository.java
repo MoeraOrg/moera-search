@@ -5,7 +5,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import jakarta.inject.Inject;
 
-import org.moera.lib.node.types.PrivateMediaFileInfo;
+import org.moera.lib.node.types.MediaAttachment;
+import org.moera.search.util.MediaAttachmentUtil;
 import org.moera.search.util.MediaTextUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
@@ -44,16 +45,17 @@ public class AttachmentRepository {
         );
     }
 
-    public void attach(String nodeName, String postingId, PrivateMediaFileInfo mediaInfo) {
+    public void attach(String nodeName, String postingId, MediaAttachment attachment) {
         var args = new HashMap<String, Object>();
         args.put("nodeName", nodeName);
         args.put("postingId", postingId);
-        args.put("mediaId", mediaInfo.getId());
-        args.put("mimeType", mediaInfo.getMimeType());
-        args.put("size", mediaInfo.getSize());
-        args.put("attachment", mediaInfo.getAttachment());
-        args.put("title", mediaInfo.getTitle());
-        args.put("textContent", mediaInfo.getTextContent());
+        args.put("mediaNodeName", MediaAttachmentUtil.nodeName(attachment));
+        args.put("mediaId", MediaAttachmentUtil.mediaId(attachment));
+        args.put("mimeType", MediaAttachmentUtil.mimeType(attachment));
+        args.put("size", MediaAttachmentUtil.size(attachment));
+        args.put("attachment", MediaAttachmentUtil.attachment(attachment));
+        args.put("title", MediaAttachmentUtil.title(attachment));
+        args.put("textContent", MediaAttachmentUtil.textContent(attachment));
 
         database.tx().run(
             """
@@ -61,6 +63,7 @@ public class AttachmentRepository {
             CREATE (p)
                    <-[:ATTACHED]-
                    (:Attachment {
+                       mediaNodeName: $mediaNodeName,
                        mediaId: $mediaId,
                        mimeType: $mimeType,
                        size: $size,
@@ -73,17 +76,18 @@ public class AttachmentRepository {
         );
     }
 
-    public void attach(String nodeName, String postingId, String commentId, PrivateMediaFileInfo mediaInfo) {
+    public void attach(String nodeName, String postingId, String commentId, MediaAttachment attachment) {
         var args = new HashMap<String, Object>();
         args.put("nodeName", nodeName);
         args.put("postingId", postingId);
         args.put("commentId", commentId);
-        args.put("mediaId", mediaInfo.getId());
-        args.put("mimeType", mediaInfo.getMimeType());
-        args.put("size", mediaInfo.getSize());
-        args.put("attachment", mediaInfo.getAttachment());
-        args.put("title", mediaInfo.getTitle());
-        args.put("textContent", mediaInfo.getTextContent());
+        args.put("mediaNodeName", MediaAttachmentUtil.nodeName(attachment));
+        args.put("mediaId", MediaAttachmentUtil.mediaId(attachment));
+        args.put("mimeType", MediaAttachmentUtil.mimeType(attachment));
+        args.put("size", MediaAttachmentUtil.size(attachment));
+        args.put("attachment", MediaAttachmentUtil.attachment(attachment));
+        args.put("title", MediaAttachmentUtil.title(attachment));
+        args.put("textContent", MediaAttachmentUtil.textContent(attachment));
 
         database.tx().run(
             """
@@ -92,6 +96,7 @@ public class AttachmentRepository {
             CREATE (c)
                    <-[:ATTACHED]-
                    (:Attachment {
+                       mediaNodeName: $mediaNodeName,
                        mediaId: $mediaId,
                        mimeType: $mimeType,
                        size: $size,
@@ -99,6 +104,49 @@ public class AttachmentRepository {
                        title: $title,
                        textContent: $textContent
                    })
+            """,
+            args
+        );
+    }
+
+    public void updateMediaLocation(
+        String nodeName, String postingId, String remoteMediaNodeName, String remoteMediaId, String mediaId
+    ) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("remoteMediaNodeName", remoteMediaNodeName);
+        args.put("remoteMediaId", remoteMediaId);
+        args.put("mediaId", mediaId);
+
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})<-[:ATTACHED]-(a:Attachment)
+            WHERE a.mediaNodeName = $remoteMediaNodeName AND a.mediaId = $remoteMediaId
+            SET a.mediaNodeName = null, a.mediaId = $mediaId
+            """,
+            args
+        );
+    }
+
+    public void updateMediaLocation(
+        String nodeName, String postingId, String commentId, String remoteMediaNodeName, String remoteMediaId,
+        String mediaId
+    ) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("commentId", commentId);
+        args.put("remoteMediaNodeName", remoteMediaNodeName);
+        args.put("remoteMediaId", remoteMediaId);
+        args.put("mediaId", mediaId);
+
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
+                  <-[:UNDER]-(:Comment {id: $commentId})<-[:ATTACHED]-(a:Attachment)
+            WHERE a.mediaNodeName = $remoteMediaNodeName AND a.mediaId = $remoteMediaId
+            SET a.mediaNodeName = null, a.mediaId = $mediaId
             """,
             args
         );
@@ -118,6 +166,7 @@ public class AttachmentRepository {
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
                   <-[:ATTACHED]-(a:Attachment {mediaId: $mediaId})
+            WHERE a.mediaNodeName IS NULL OR a.mediaNodeName = $nodeName
             SET a.title = CASE WHEN $titleChanged THEN $title ELSE a.title END,
                 a.textContent = CASE WHEN $textContentChanged THEN $textContent ELSE a.textContent END
             """,
@@ -142,6 +191,7 @@ public class AttachmentRepository {
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
                   <-[:UNDER]-(:Comment {id: $commentId})<-[:ATTACHED]-(a:Attachment {mediaId: $mediaId})
+            WHERE a.mediaNodeName IS NULL OR a.mediaNodeName = $nodeName
             SET a.title = CASE WHEN $titleChanged THEN $title ELSE a.title END,
                 a.textContent = CASE WHEN $textContentChanged THEN $textContent ELSE a.textContent END
             """,

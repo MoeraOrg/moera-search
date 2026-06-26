@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.PostingInfo;
@@ -288,19 +289,23 @@ public class PostingRepository {
         );
     }
 
-    public void addMediaPreview(String nodeName, String postingId, String mediaId, String mediaFileId) {
+    public void addMediaPreview(
+        String nodeName, String postingId, String mediaNodeName, String mediaId, String mediaFileId
+    ) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("mediaNodeName", Objects.equals(mediaNodeName, nodeName) ? null : mediaNodeName);
+        args.put("mediaId", mediaId);
+        args.put("mediaFileId", mediaFileId);
+
         database.tx().run(
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
                   (mf:MediaFile {id: $mediaFileId})
-            CREATE (p)-[:MEDIA_PREVIEW {mediaId: $mediaId}]->(mf)
+            CREATE (p)-[:MEDIA_PREVIEW {mediaNodeName: $mediaNodeName, mediaId: $mediaId}]->(mf)
             """,
-            Map.of(
-                "nodeName", nodeName,
-                "postingId", postingId,
-                "mediaId", mediaId,
-                "mediaFileId", mediaFileId
-            )
+            args
         );
     }
 
@@ -317,17 +322,42 @@ public class PostingRepository {
         );
     }
 
-    public String getMediaPreviewId(String nodeName, String postingId) {
-        return database.tx().run(
+    public MediaLocation getMediaPreview(String nodeName, String postingId) {
+        var result = database.tx().run(
             """
             OPTIONAL MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})-[mp:MEDIA_PREVIEW]->()
-            RETURN mp.mediaId AS mediaId
+            RETURN coalesce(mp.mediaNodeName, $nodeName) AS mediaNodeName, mp.mediaId AS mediaId
             """,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
             )
-        ).single().get("mediaId").asString(null);
+        ).single();
+
+        var mediaNodeName = result.get("mediaNodeName").asString(null);
+        var mediaId = result.get("mediaId").asString(null);
+
+        return mediaId != null ? new MediaLocation(mediaNodeName, mediaId) : null;
+    }
+
+    public void updateMediaPreviewLocation(
+        String nodeName, String postingId, String remoteMediaNodeName, String remoteMediaId, String mediaId
+    ) {
+        var args = new HashMap<String, Object>();
+        args.put("nodeName", nodeName);
+        args.put("postingId", postingId);
+        args.put("remoteMediaNodeName", remoteMediaNodeName);
+        args.put("remoteMediaId", remoteMediaId);
+        args.put("mediaId", mediaId);
+
+        database.tx().run(
+            """
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})-[mp:MEDIA_PREVIEW]->()
+            WHERE mp.mediaNodeName = $remoteMediaNodeName AND mp.mediaId = $remoteMediaId
+            SET mp.mediaNodeName = null, mp.mediaId = $mediaId
+            """,
+            args
+        );
     }
 
     public void scanSucceeded(String nodeName, String postingId) {

@@ -2,14 +2,16 @@ package org.moera.search.scanner.signature;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 import org.moera.lib.Rules;
+import org.moera.lib.jsonrpc.OkHttpJsonRpcFetcher;
 import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.lib.naming.types.RegisteredNameInfo;
+import org.moera.lib.node.types.MediaAttachment;
 import org.moera.search.config.Config;
 import org.moera.search.media.MediaManager;
 
@@ -28,7 +30,7 @@ class SignatureVerifier {
 
     @PostConstruct
     public void init() {
-        naming = new MoeraNaming(config.getNamingServer());
+        naming = new MoeraNaming(new OkHttpJsonRpcFetcher(config.getNamingServer()));
     }
 
     protected byte[] signingKey(String remoteNodeName, long at) {
@@ -46,7 +48,7 @@ class SignatureVerifier {
             : Rules.ANONYMOUS_NODE_PUBLIC_KEY;
     }
 
-    protected BiFunction<String, String, byte[]> mediaDigest(String remoteNodeName, String carte) {
+    protected Function<MediaAttachment, byte[]> mediaDigest(String remoteNodeName, String carte) {
         return mediaManager.privateMediaDigestGetter(remoteNodeName, carte);
     }
 

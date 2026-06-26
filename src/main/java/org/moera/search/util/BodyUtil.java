@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.moera.lib.node.types.MediaAttachment;
-import org.moera.lib.node.types.PrivateMediaFileInfo;
 import org.moera.lib.node.types.body.Body;
 import org.moera.lib.node.types.body.LinkPreview;
 import org.springframework.util.ObjectUtils;
@@ -34,14 +33,14 @@ public class BodyUtil {
             : Collections.<String>emptySet();
         if (media != null) {
             for (var attachment : media) {
-                if (attachment.getMedia() == null) {
+                if (attachment.getMedia() == null && attachment.getRemoteMedia() == null) {
                     continue;
                 }
-                var hash = attachment.getMedia().getHash();
+                var hash = MediaAttachmentUtil.hash(attachment);
                 if (hash != null && linkPreviews.contains(hash)) {
                     continue;
                 }
-                if (Boolean.TRUE.equals(attachment.getMedia().getAttachment())) {
+                if (MediaAttachmentUtil.attachment(attachment)) {
                     attachmentCount++;
                 } else {
                     imageCount++;
@@ -53,7 +52,7 @@ public class BodyUtil {
         return new BodyMediaCount(imageCount, attachmentCount, videoPresent);
     }
 
-    public static PrivateMediaFileInfo findMediaForPreview(Body body, List<MediaAttachment> media) {
+    public static MediaAttachment findMediaForPreview(Body body, List<MediaAttachment> media) {
         if (!ObjectUtils.isEmpty(media)) {
             var linkPreviews = !ObjectUtils.isEmpty(body.getLinkPreviews())
                 ? body.getLinkPreviews().stream()
@@ -62,13 +61,12 @@ public class BodyUtil {
                     .collect(Collectors.toSet())
                 : Collections.emptySet();
             for (var attachment : media) {
-                if (attachment.getMedia() != null) {
-                    if (
-                        !Boolean.TRUE.equals(attachment.getMedia().getAttachment())
-                        && !linkPreviews.contains(attachment.getMedia().getHash())
-                    ) {
-                        return attachment.getMedia();
-                    }
+                if (
+                    (attachment.getMedia() != null || attachment.getRemoteMedia() != null)
+                    && !MediaAttachmentUtil.attachment(attachment)
+                    && !linkPreviews.contains(MediaAttachmentUtil.hash(attachment))
+                ) {
+                    return attachment;
                 }
             }
         }

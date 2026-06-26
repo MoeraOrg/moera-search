@@ -5,6 +5,7 @@ Nodes
 -----
 
 (:Attachment)
+mediaNodeName       string
 mediaId             string NOT NULL
 mimeType            string NOT NULL
 size                int NOT NULL
@@ -249,6 +250,7 @@ feedName            string NOT NULL
 (:Hashtag)<-[:MARKED_WITH]-(:Entry)
 
 (:Posting|Comment)-[:MEDIA_PREVIEW]->(:MediaFile)
+mediaNodeName       string
 mediaId             string
 
 (:MoeraNode)-[:FRIEND]->(:MoeraNode)

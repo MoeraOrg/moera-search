@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.inject.Inject;
 
+import org.moera.lib.jsonrpc.OkHttpJsonRpcFetcher;
 import org.moera.lib.naming.MoeraNaming;
 import org.moera.lib.naming.NodeName;
 import org.moera.search.Workload;
@@ -74,7 +75,7 @@ public class NamingServiceScanner {
                 try (var ignored2 = database.open()) {
                     long scanTimestamp = database.read(() -> namingServiceRepository.getScanTimestamp());
                     long lastTimestamp = scanTimestamp;
-                    var naming = new MoeraNaming(config.getNamingServer());
+                    var naming = new MoeraNaming(new OkHttpJsonRpcFetcher(config.getNamingServer()));
                     int page = 0;
                     while (true) {
                         var names = naming.getAllNewer(scanTimestamp, page++, PAGE_SIZE);

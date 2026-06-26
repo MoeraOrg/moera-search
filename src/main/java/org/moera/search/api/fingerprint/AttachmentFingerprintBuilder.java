@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.moera.lib.node.Fingerprints;
 import org.moera.lib.node.types.MediaAttachment;
@@ -24,7 +24,7 @@ public class AttachmentFingerprintBuilder {
     public static List<byte[]> build(
         byte[] parentMediaDigest,
         Collection<MediaAttachment> mediaAttachments,
-        BiFunction<String, String, byte[]> mediaDigest
+        Function<MediaAttachment, byte[]> mediaDigest
     ) {
         if (mediaAttachments == null) {
             mediaAttachments = Collections.emptyList();
@@ -35,8 +35,8 @@ public class AttachmentFingerprintBuilder {
             digests.add(build(parentMediaDigest));
         }
         mediaAttachments.stream()
-            .map(MediaAttachment::getMedia)
-            .map(mf -> mediaDigest.apply(mf.getId(), mf.getGrant()))
+            .filter(attachment -> attachment.getMedia() != null || attachment.getRemoteMedia() != null)
+            .map(mediaDigest)
             .map(AttachmentFingerprintBuilder::build)
             .forEach(digests::add);
         return digests;

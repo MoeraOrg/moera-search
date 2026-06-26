@@ -1,12 +1,13 @@
 package org.moera.search.api.fingerprint;
 
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.moera.lib.crypto.CryptoUtil;
 import org.moera.lib.crypto.FingerprintException;
 import org.moera.lib.node.Fingerprints;
 import org.moera.lib.node.types.CommentInfo;
 import org.moera.lib.node.types.CommentRevisionInfo;
+import org.moera.lib.node.types.MediaAttachment;
 import org.moera.search.util.Util;
 
 public class CommentFingerprintBuilder {
@@ -16,7 +17,7 @@ public class CommentFingerprintBuilder {
     public static byte[] build(
         short version,
         CommentInfo commentInfo,
-        BiFunction<String, String, byte[]> mediaDigest,
+        Function<MediaAttachment, byte[]> mediaDigest,
         byte[] postingDigest,
         byte[] repliedToDigest
     ) {
@@ -59,7 +60,7 @@ public class CommentFingerprintBuilder {
         short version,
         CommentInfo commentInfo,
         CommentRevisionInfo commentRevisionInfo,
-        BiFunction<String, String, byte[]> mediaDigest,
+        Function<MediaAttachment, byte[]> mediaDigest,
         byte[] postingDigest,
         byte[] repliedToDigest
     ) {

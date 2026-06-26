@@ -18,6 +18,7 @@ import org.moera.search.scanner.updates.CommentAddUpdate;
 import org.moera.search.scanner.updates.CommentDeleteUpdate;
 import org.moera.search.scanner.updates.CommentHeadingUpdateUpdate;
 import org.moera.search.scanner.updates.CommentMediaTextUpdateUpdate;
+import org.moera.search.scanner.updates.CommentMediaUpdateUpdate;
 import org.moera.search.scanner.updates.CommentReactionAddUpdate;
 import org.moera.search.scanner.updates.CommentReactionDeleteUpdate;
 import org.moera.search.scanner.updates.CommentReactionsDeleteAllUpdate;
@@ -27,6 +28,7 @@ import org.moera.search.scanner.updates.PostingAddUpdate;
 import org.moera.search.scanner.updates.PostingDeleteUpdate;
 import org.moera.search.scanner.updates.PostingHeadingUpdateUpdate;
 import org.moera.search.scanner.updates.PostingMediaTextUpdateUpdate;
+import org.moera.search.scanner.updates.PostingMediaUpdateUpdate;
 import org.moera.search.scanner.updates.PostingReactionAddUpdate;
 import org.moera.search.scanner.updates.PostingReactionDeleteUpdate;
 import org.moera.search.scanner.updates.PostingReactionsDeleteAllUpdate;
@@ -382,6 +384,24 @@ public class SearchProcessor {
                 );
                 break;
             }
+            case POSTING_UPDATE_MEDIA: {
+                var details = notification.getPostingMediaUpdate();
+                log.info(
+                    "Node {} updated location of remote media {} from node {} attached to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getRemoteMediaId()),
+                    LogUtil.format(details.getRemoteMediaNodeName()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new PostingMediaUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getMediaId(),
+                        details.getRemoteMediaNodeName(), details.getRemoteMediaId(), details.getTitle(),
+                        details.getTextContent()
+                    )
+                );
+                break;
+            }
             case POSTING_UPDATE_MEDIA_TEXT: {
                 var details = notification.getPostingMediaTextUpdate();
                 log.info(
@@ -393,6 +413,25 @@ public class SearchProcessor {
                 updateQueue.offer(
                     new PostingMediaTextUpdateUpdate(
                         notification.getSenderNodeName(), details.getPostingId(), details.getMediaId(),
+                        details.getTitle(), details.getTextContent()
+                    )
+                );
+                break;
+            }
+            case COMMENT_UPDATE_MEDIA: {
+                var details = notification.getCommentMediaUpdate();
+                log.info(
+                    "Node {} updated location of remote media {} from node {} attached to comment {} to posting {}",
+                    LogUtil.format(notification.getSenderNodeName()),
+                    LogUtil.format(details.getRemoteMediaId()),
+                    LogUtil.format(details.getRemoteMediaNodeName()),
+                    LogUtil.format(details.getCommentId()),
+                    LogUtil.format(details.getPostingId())
+                );
+                updateQueue.offer(
+                    new CommentMediaUpdateUpdate(
+                        notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
+                        details.getMediaId(), details.getRemoteMediaNodeName(), details.getRemoteMediaId(),
                         details.getTitle(), details.getTextContent()
                     )
                 );

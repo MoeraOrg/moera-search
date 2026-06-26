@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PrivateMediaFileInfo;
+import org.moera.lib.node.types.RemoteMediaInfo;
 import org.springframework.util.ObjectUtils;
 
 public final class MediaTextUtil {
@@ -31,13 +32,28 @@ public final class MediaTextUtil {
         return buildMediaText(mediaInfo.getTitle(), mediaInfo.getTextContent());
     }
 
+    public static String buildMediaText(RemoteMediaInfo mediaInfo) {
+        if (mediaInfo == null) {
+            return "";
+        }
+        return buildMediaText(mediaInfo.getTitle(), null);
+    }
+
+    public static String buildMediaText(MediaAttachment attachment) {
+        if (attachment == null) {
+            return "";
+        }
+        return attachment.getMedia() != null
+            ? buildMediaText(attachment.getMedia())
+            : buildMediaText(attachment.getRemoteMedia());
+    }
+
     public static String buildMediaText(List<MediaAttachment> media) {
         if (ObjectUtils.isEmpty(media)) {
             return "";
         }
 
         return media.stream()
-            .map(MediaAttachment::getMedia)
             .map(MediaTextUtil::buildMediaText)
             .filter(text -> !ObjectUtils.isEmpty(text))
             .collect(Collectors.joining(" "));

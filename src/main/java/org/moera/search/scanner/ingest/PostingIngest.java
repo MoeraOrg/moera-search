@@ -165,11 +165,11 @@ public class PostingIngest {
             carteSupplier,
             posting.getBody(),
             posting.getMedia(),
-            () -> postingRepository.getMediaPreviewId(nodeName, posting.getId()),
-            (mediaFileId, mediaId) -> {
+            () -> postingRepository.getMediaPreview(nodeName, posting.getId()),
+            (mediaFileId, mediaNodeName, mediaId) -> {
                 postingRepository.removeMediaPreview(nodeName, posting.getId());
                 if (mediaFileId != null) {
-                    postingRepository.addMediaPreview(nodeName, posting.getId(), mediaId, mediaFileId);
+                    postingRepository.addMediaPreview(nodeName, posting.getId(), mediaNodeName, mediaId, mediaFileId);
                 }
             }
         );

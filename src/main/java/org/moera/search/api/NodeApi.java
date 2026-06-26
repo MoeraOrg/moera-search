@@ -2,6 +2,7 @@ package org.moera.search.api;
 
 import jakarta.inject.Inject;
 
+import org.moera.lib.http.OkHttpTransport;
 import org.moera.lib.node.MoeraNode;
 import org.moera.search.util.UriUtil;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class NodeApi {
         if (nodeUri == null) {
             throw new MoeraNodeUnknownNameException(remoteNodeName);
         }
-        return new MoeraNode(nodeUri);
+        return new MoeraNode(new OkHttpTransport(), nodeUri);
     }
 
     public MoeraNode at(String remoteNodeName, String carte) throws MoeraNodeUnknownNameException {

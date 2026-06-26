@@ -1,10 +1,8 @@
 package org.moera.search.scanner.ingest;
 
-import java.util.Objects;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.CommentInfo;
-import org.moera.lib.node.types.MediaAttachment;
 import org.moera.lib.node.types.PostingInfo;
 import org.moera.search.data.AttachmentRepository;
 import org.moera.search.data.CommentRepository;
@@ -40,9 +38,8 @@ public class AttachmentIngest {
             attachmentRepository.deleteAll(nodeName, posting.getId());
             if (posting.getMedia() != null) {
                 posting.getMedia().stream()
-                    .map(MediaAttachment::getMedia)
-                    .filter(Objects::nonNull)
-                    .forEach(media -> attachmentRepository.attach(nodeName, posting.getId(), media));
+                    .filter(attachment -> attachment.getMedia() != null || attachment.getRemoteMedia() != null)
+                    .forEach(attachment -> attachmentRepository.attach(nodeName, posting.getId(), attachment));
             }
         });
     }
@@ -52,12 +49,38 @@ public class AttachmentIngest {
             attachmentRepository.deleteAll(nodeName, comment.getPostingId(), comment.getId());
             if (comment.getMedia() != null) {
                 comment.getMedia().stream()
-                    .map(MediaAttachment::getMedia)
-                    .filter(Objects::nonNull)
-                    .forEach(media ->
-                        attachmentRepository.attach(nodeName, comment.getPostingId(), comment.getId(), media)
+                    .filter(attachment -> attachment.getMedia() != null || attachment.getRemoteMedia() != null)
+                    .forEach(attachment ->
+                        attachmentRepository.attach(nodeName, comment.getPostingId(), comment.getId(), attachment)
                     );
             }
+        });
+    }
+
+    public void updateMediaLocation(
+        String nodeName, String postingId, String remoteMediaNodeName, String remoteMediaId, String mediaId
+    ) {
+        database.writeNoResult(() -> {
+            attachmentRepository.updateMediaLocation(
+                nodeName, postingId, remoteMediaNodeName, remoteMediaId, mediaId
+            );
+            postingRepository.updateMediaPreviewLocation(
+                nodeName, postingId, remoteMediaNodeName, remoteMediaId, mediaId
+            );
+        });
+    }
+
+    public void updateMediaLocation(
+        String nodeName, String postingId, String commentId, String remoteMediaNodeName, String remoteMediaId,
+        String mediaId
+    ) {
+        database.writeNoResult(() -> {
+            attachmentRepository.updateMediaLocation(
+                nodeName, postingId, commentId, remoteMediaNodeName, remoteMediaId, mediaId
+            );
+            commentRepository.updateMediaPreviewLocation(
+                nodeName, postingId, commentId, remoteMediaNodeName, remoteMediaId, mediaId
+            );
         });
     }
 

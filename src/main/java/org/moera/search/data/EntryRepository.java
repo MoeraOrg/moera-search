@@ -198,6 +198,7 @@ public class EntryRepository {
                 a.shape AS avatarShape,
                 e AS entry,
                 mp AS mediaPreview,
+                md.mediaNodeName AS mediaPreviewNodeName,
                 md.mediaId AS mediaPreviewId
             """
         );
@@ -280,6 +281,7 @@ public class EntryRepository {
                 a.shape AS avatarShape,
                 e AS entry,
                 mp AS mediaPreview,
+                md.mediaNodeName AS mediaPreviewNodeName,
                 md.mediaId AS mediaPreviewId
             """
         );
@@ -324,6 +326,7 @@ public class EntryRepository {
         if (mediaPreview != null) {
             info.setMediaPreview(PublicMediaFileInfoUtil.build(mediaPreview));
         }
+        info.setMediaPreviewNodeName(r.get("mediaPreviewNodeName").asString(null));
         info.setMediaPreviewId(r.get("mediaPreviewId").asString(null));
         info.setVideoPresent(entry.get("videoPresent").asBoolean(false));
         var repliedTo = entry.get("repliedTo").asString(null);
