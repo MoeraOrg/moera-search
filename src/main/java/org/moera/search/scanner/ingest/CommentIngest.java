@@ -4,10 +4,12 @@ import java.util.function.Supplier;
 import jakarta.inject.Inject;
 
 import org.moera.lib.node.types.CommentInfo;
+import org.moera.search.api.Feed;
 import org.moera.search.data.CommentRepository;
 import org.moera.search.data.Database;
 import org.moera.search.data.EntryRepository;
 import org.moera.search.data.PostingRepository;
+import org.moera.search.data.PublicationRepository;
 import org.moera.search.index.Index;
 import org.moera.search.index.IndexedDocument;
 import org.moera.search.index.LanguageAnalyzer;
@@ -33,6 +35,9 @@ public class CommentIngest {
 
     @Inject
     private CommentRepository commentRepository;
+
+    @Inject
+    private PublicationRepository publicationRepository;
 
     @Inject
     private NodeIngest nodeIngest;
@@ -176,6 +181,10 @@ public class CommentIngest {
 
         var document = new IndexedDocument(nodeName, comment);
         languageAnalyzer.analyze(document);
+        database.readNoResult(() -> {
+            document.setPublishers(publicationRepository.getPublishers(nodeName, comment.getPostingId(), Feed.TIMELINE));
+            document.setNews(publicationRepository.getPublishers(nodeName, comment.getPostingId(), Feed.NEWS));
+        });
 
         if (documentId == null) {
             var id = index.index(document);

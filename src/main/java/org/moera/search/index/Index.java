@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import jakarta.inject.Inject;
 
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -24,7 +25,13 @@ import org.moera.search.data.EntryRevision;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.InlineScript;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
@@ -38,6 +45,7 @@ import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.DeleteOperation;
@@ -143,6 +151,37 @@ public class Index {
                     .doc(document)
                     .build(),
                 IndexedDocument.class
+            );
+        } catch (IOException e) {
+            throw new TransientIndexException(e);
+        }
+    }
+
+    public void updatePublishersByPostingId(String postingId, List<String> publishers, List<String> news) {
+        try {
+            client.updateByQuery(
+                new UpdateByQueryRequest.Builder()
+                    .conflicts(Conflicts.Proceed)
+                    .refresh(Refresh.True)
+                    .query(termQuery("postingId", postingId))
+                    .script(new Script.Builder()
+                        .inline(new InlineScript.Builder()
+                            .source("ctx._source.publishers = params.publishers; ctx._source.news = params.news;")
+                            .lang(
+                                ScriptLanguage.builder()
+                                    .builtin(BuiltinScriptLanguage.Painless)
+                                    .build()
+                            )
+                            .params(
+                                Map.of(
+                                    "publishers", JsonData.of(publishers),
+                                    "news", JsonData.of(news)
+                                )
+                            )
+                            .build())
+                        .build()
+                    )
+                    .build()
             );
         } catch (IOException e) {
             throw new TransientIndexException(e);

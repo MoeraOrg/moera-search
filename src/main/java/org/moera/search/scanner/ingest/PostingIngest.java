@@ -18,7 +18,6 @@ import org.moera.search.media.MediaManager;
 import org.moera.search.scanner.UpdateQueue;
 import org.moera.search.scanner.updates.CommentsScanUpdate;
 import org.moera.search.scanner.updates.PostingReactionsScanUpdate;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -230,14 +229,7 @@ public class PostingIngest {
         database.writeNoResult(() ->
             publicationRepository.deletePublications(nodeName, postingId, publisherName)
         );
-        try {
-            updatePublicationsInIndex(nodeName, postingId);
-        } catch (OpenSearchException e) {
-            // ignore the exception because the document may have been deleted already
-            if (!e.error().type().equals("document_missing_exception")) {
-                throw e;
-            }
-        }
+        updatePublicationsInIndex(nodeName, postingId);
     }
 
     public void deleteAllPublications(String nodeName, String postingId) {
@@ -246,15 +238,12 @@ public class PostingIngest {
     }
 
     private void updatePublicationsInIndex(String nodeName, String postingId) {
-        String documentId = database.read(() -> postingRepository.getDocumentId(nodeName, postingId));
-        if (documentId != null && index.exists(documentId)) {
-            var document = new IndexedDocument();
-            database.readNoResult(() -> {
-                document.setPublishers(publicationRepository.getPublishers(nodeName, postingId, Feed.TIMELINE));
-                document.setNews(publicationRepository.getPublishers(nodeName, postingId, Feed.NEWS));
-            });
-            index.update(documentId, document);
-        }
+        var document = new IndexedDocument();
+        database.readNoResult(() -> {
+            document.setPublishers(publicationRepository.getPublishers(nodeName, postingId, Feed.TIMELINE));
+            document.setNews(publicationRepository.getPublishers(nodeName, postingId, Feed.NEWS));
+        });
+        index.updatePublishersByPostingId(postingId, document.getPublishers(), document.getNews());
     }
 
     @Scheduled(fixedDelayString = Workload.POSTING_POPULARITY_REFRESH_PERIOD)

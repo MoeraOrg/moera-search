@@ -60,15 +60,22 @@ public class BodyUtil {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet())
                 : Collections.emptySet();
+            MediaAttachment embeddedAttachment = null;
             for (var attachment : media) {
                 if (
                     (attachment.getMedia() != null || attachment.getRemoteMedia() != null)
                     && !MediaAttachmentUtil.attachment(attachment)
                     && !linkPreviews.contains(MediaAttachmentUtil.hash(attachment))
                 ) {
-                    return attachment;
+                    if (!attachment.isEmbedded()) {
+                        return attachment;
+                    }
+                    if (embeddedAttachment == null) {
+                        embeddedAttachment = attachment;
+                    }
                 }
             }
+            return embeddedAttachment;
         }
         return null;
     }
