@@ -66,7 +66,11 @@ public final class MediaAttachmentUtil {
     }
 
     public static String textContent(MediaAttachment attachment) {
-        return attachment.getMedia() != null ? attachment.getMedia().getTextContent() : null;
+        return attachment.getMedia() != null
+            ? attachment.getMedia().getTextContent()
+            : attachment.getRemoteMedia() != null
+              ? attachment.getRemoteMedia().getTextContent()
+              : null;
     }
 
 }

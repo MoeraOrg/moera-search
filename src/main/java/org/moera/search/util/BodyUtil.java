@@ -18,12 +18,34 @@ public class BodyUtil {
     private static final Pattern HASHTAGS = Pattern.compile(
         "(?U)(?:^|[\\s(\\[{>])(#[\\p{L}\\p{Nd}_]*[\\p{L}_][\\p{L}\\p{Nd}_]*)\\b"
     );
+    private static final List<String> VIDEO_FORMATS = List.of(
+        "video/mp4",
+        "video/quicktime",
+        "video/webm",
+        "video/ogg",
+        "video/x-msvideo",
+        "video/x-matroska",
+        "video/mpeg",
+        "video/mp2t",
+        "video/3gpp",
+        "video/3gpp2",
+        "video/x-flv",
+        "video/x-ms-wmv",
+        "video/x-ms-asf",
+        "video/x-m4v",
+        "application/mp4",
+        "application/ogg",
+        "application/x-matroska",
+        "application/vnd.rn-realmedia",
+        "application/vnd.ms-asf"
+    );
 
     public record BodyMediaCount(int imageCount, int attachmentCount, boolean videoPresent) {
     }
 
     public static BodyMediaCount countBodyMedia(Body body, List<MediaAttachment> media) {
         int imageCount = 0;
+        int videoCount = 0;
         int attachmentCount = 0;
         var linkPreviews = !ObjectUtils.isEmpty(body.getLinkPreviews())
             ? body.getLinkPreviews().stream()
@@ -42,12 +64,15 @@ public class BodyUtil {
                 }
                 if (MediaAttachmentUtil.attachment(attachment)) {
                     attachmentCount++;
+                } else if (VIDEO_FORMATS.contains(MediaAttachmentUtil.mimeType(attachment))) {
+                    videoCount++;
                 } else {
                     imageCount++;
                 }
             }
         }
-        boolean videoPresent = body.getText() != null && VIDEO_TAGS.matcher(body.getText()).find();
+        boolean videoObjectPresent = body.getText() != null && VIDEO_TAGS.matcher(body.getText()).find();
+        boolean videoPresent = videoCount > 0 || videoObjectPresent;
 
         return new BodyMediaCount(imageCount, attachmentCount, videoPresent);
     }

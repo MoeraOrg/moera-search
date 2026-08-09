@@ -175,6 +175,7 @@ public class MediaManager {
         String nodeName,
         String carte,
         String id,
+        Integer width,
         String grant,
         TemporaryFile tmpFile,
         int maxSize
@@ -182,7 +183,7 @@ public class MediaManager {
         var result = new AtomicReference<TemporaryMediaFile>();
         var node = carte != null ? nodeApi.at(nodeName, carte) : nodeApi.at(nodeName);
         node.getPrivateMedia(
-            id, null, null, grant, null,
+            id, width, null, grant, null,
             responseBody -> result.set(receiveMediaFile(nodeName, id, responseBody, tmpFile, maxSize))
         );
         return result.get();
@@ -224,7 +225,7 @@ public class MediaManager {
         }
 
         try (var tmp = mediaOperations.tmpFile()) {
-            var tmpMedia = getPrivateMedia(nodeName, carte, id, info.getGrant(), tmp, maxSize);
+            var tmpMedia = getPrivateMedia(nodeName, carte, id, null, info.getGrant(), tmp, maxSize);
             database.writeNoResult(() -> cacheMediaDigestRepository.storeDigest(nodeName, id, tmpMedia.digest()));
             return tmpMedia.digest();
         }
@@ -300,7 +301,10 @@ public class MediaManager {
         String grant
     ) throws MoeraNodeException {
         try (var tmp = mediaOperations.tmpFile()) {
-            var tmpMedia = getPrivateMedia(nodeName, carte, id, grant, tmp, config.getMedia().getPreviewMaxSize());
+            var tmpMedia = getPrivateMedia(
+                nodeName, carte, id, config.getMedia().getPreviewWidth(), grant, tmp,
+                config.getMedia().getPreviewMaxSize()
+            );
             return mediaOperations.createPreview(tmpMedia.contentType(), tmp.path());
         } catch (IOException e) {
             throw new MoeraNodeLocalStorageException(

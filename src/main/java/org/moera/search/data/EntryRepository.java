@@ -153,6 +153,15 @@ public class EntryRepository {
         query.append('\n');
         query.append("OPTIONAL MATCH (o)-[a:AVATAR]->(mf:MediaFile)\n");
         query.append("OPTIONAL MATCH (e)-[md:MEDIA_PREVIEW]->(mp:MediaFile)\n");
+        query.append(
+            """
+            OPTIONAL MATCH (e)<-[:ATTACHED]-(pa:Attachment)
+            WHERE pa.mediaId = md.mediaId AND (
+                pa.mediaNodeName = md.mediaNodeName
+                OR (pa.mediaNodeName IS NULL AND md.mediaNodeName IS NULL)
+            )
+            """
+        );
         if (after != null) {
             query.append("ORDER BY e.moment ASC\n");
         } else if (before != null) {
@@ -199,7 +208,8 @@ public class EntryRepository {
                 e AS entry,
                 mp AS mediaPreview,
                 md.mediaNodeName AS mediaPreviewNodeName,
-                md.mediaId AS mediaPreviewId
+                md.mediaId AS mediaPreviewId,
+                pa.mimeType AS mediaPreviewMimeType
             """
         );
 
@@ -245,6 +255,15 @@ public class EntryRepository {
         query.append("OPTIONAL MATCH (e)-[md:MEDIA_PREVIEW]->(mp:MediaFile)\n");
         query.append(
             """
+            OPTIONAL MATCH (e)<-[:ATTACHED]-(pa:Attachment)
+            WHERE pa.mediaId = md.mediaId AND (
+                pa.mediaNodeName = md.mediaNodeName
+                OR (pa.mediaNodeName IS NULL AND md.mediaNodeName IS NULL)
+            )
+            """
+        );
+        query.append(
+            """
             RETURN
                 n.name AS nodeName,
             """
@@ -282,7 +301,8 @@ public class EntryRepository {
                 e AS entry,
                 mp AS mediaPreview,
                 md.mediaNodeName AS mediaPreviewNodeName,
-                md.mediaId AS mediaPreviewId
+                md.mediaId AS mediaPreviewId,
+                pa.mimeType AS mediaPreviewMimeType
             """
         );
 
@@ -328,6 +348,7 @@ public class EntryRepository {
         }
         info.setMediaPreviewNodeName(r.get("mediaPreviewNodeName").asString(null));
         info.setMediaPreviewId(r.get("mediaPreviewId").asString(null));
+        info.setMediaPreviewMimeType(r.get("mediaPreviewMimeType").asString(null));
         info.setVideoPresent(entry.get("videoPresent").asBoolean(false));
         var repliedTo = entry.get("repliedTo").asString(null);
         if (repliedTo != null) {

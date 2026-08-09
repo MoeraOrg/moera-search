@@ -152,10 +152,13 @@ public class AttachmentRepository {
         );
     }
 
-    public void updateMediaText(String nodeName, String postingId, String mediaId, String title, String textContent) {
+    public void updateMediaText(
+        String nodeName, String postingId, String mediaNodeName, String mediaId, String title, String textContent
+    ) {
         var args = new HashMap<String, Object>();
         args.put("nodeName", nodeName);
         args.put("postingId", postingId);
+        args.put("mediaNodeName", mediaNodeName);
         args.put("mediaId", mediaId);
         args.put("title", title);
         args.put("textContent", textContent);
@@ -166,7 +169,8 @@ public class AttachmentRepository {
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
                   <-[:ATTACHED]-(a:Attachment {mediaId: $mediaId})
-            WHERE a.mediaNodeName IS NULL OR a.mediaNodeName = $nodeName
+            WHERE ($mediaNodeName IS NULL AND (a.mediaNodeName IS NULL OR a.mediaNodeName = $nodeName))
+                  OR ($mediaNodeName IS NOT NULL AND a.mediaNodeName = $mediaNodeName)
             SET a.title = CASE WHEN $titleChanged THEN $title ELSE a.title END,
                 a.textContent = CASE WHEN $textContentChanged THEN $textContent ELSE a.textContent END
             """,
@@ -175,12 +179,14 @@ public class AttachmentRepository {
     }
 
     public void updateMediaText(
-        String nodeName, String postingId, String commentId, String mediaId, String title, String textContent
+        String nodeName, String postingId, String commentId, String mediaNodeName, String mediaId, String title,
+        String textContent
     ) {
         var args = new HashMap<String, Object>();
         args.put("nodeName", nodeName);
         args.put("postingId", postingId);
         args.put("commentId", commentId);
+        args.put("mediaNodeName", mediaNodeName);
         args.put("mediaId", mediaId);
         args.put("title", title);
         args.put("textContent", textContent);
@@ -191,7 +197,8 @@ public class AttachmentRepository {
             """
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(:Posting {id: $postingId})
                   <-[:UNDER]-(:Comment {id: $commentId})<-[:ATTACHED]-(a:Attachment {mediaId: $mediaId})
-            WHERE a.mediaNodeName IS NULL OR a.mediaNodeName = $nodeName
+            WHERE ($mediaNodeName IS NULL AND (a.mediaNodeName IS NULL OR a.mediaNodeName = $nodeName))
+                  OR ($mediaNodeName IS NOT NULL AND a.mediaNodeName = $mediaNodeName)
             SET a.title = CASE WHEN $titleChanged THEN $title ELSE a.title END,
                 a.textContent = CASE WHEN $textContentChanged THEN $textContent ELSE a.textContent END
             """,

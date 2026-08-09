@@ -8,6 +8,7 @@ public class PublicMediaFileInfoUtil {
     public static PublicMediaFileInfo build(MediaFile mediaFile) {
         PublicMediaFileInfo info = new PublicMediaFileInfo();
         info.setId(mediaFile.getId());
+        info.setMimeType(mediaFile.getMimeType());
         info.setPath("public/" + mediaFile.getFileName());
         info.setWidth(mediaFile.getSizeX());
         info.setHeight(mediaFile.getSizeY());

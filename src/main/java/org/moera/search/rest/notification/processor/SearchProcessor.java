@@ -413,7 +413,7 @@ public class SearchProcessor {
                 updateQueue.offer(
                     new PostingMediaTextUpdateUpdate(
                         notification.getSenderNodeName(), details.getPostingId(), details.getMediaId(),
-                        details.getTitle(), details.getTextContent()
+                        details.getMediaNodeName(), details.getTitle(), details.getTextContent()
                     )
                 );
                 break;
@@ -449,7 +449,7 @@ public class SearchProcessor {
                 updateQueue.offer(
                     new CommentMediaTextUpdateUpdate(
                         notification.getSenderNodeName(), details.getPostingId(), details.getCommentId(),
-                        details.getMediaId(), details.getTitle(), details.getTextContent()
+                        details.getMediaId(), details.getMediaNodeName(), details.getTitle(), details.getTextContent()
                     )
                 );
                 break;

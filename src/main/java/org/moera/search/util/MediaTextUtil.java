@@ -36,7 +36,7 @@ public final class MediaTextUtil {
         if (mediaInfo == null) {
             return "";
         }
-        return buildMediaText(mediaInfo.getTitle(), null);
+        return buildMediaText(mediaInfo.getTitle(), mediaInfo.getTextContent());
     }
 
     public static String buildMediaText(MediaAttachment attachment) {

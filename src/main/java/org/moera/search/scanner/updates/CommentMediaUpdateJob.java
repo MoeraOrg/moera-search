@@ -125,7 +125,7 @@ public class CommentMediaUpdateJob extends StatelessJob<CommentMediaUpdateJob.Pa
             parameters.remoteMediaId, parameters.mediaId
         );
         attachmentIngest.updateText(
-            parameters.nodeName, parameters.postingId, parameters.commentId, parameters.mediaId,
+            parameters.nodeName, parameters.postingId, parameters.commentId, null, parameters.mediaId,
             parameters.title, parameters.textContent
         );
     }

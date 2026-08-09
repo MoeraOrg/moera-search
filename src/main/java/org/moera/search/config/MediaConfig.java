@@ -6,9 +6,10 @@ public class MediaConfig {
     private String serve = "stream"; // stream, sendfile, accel
     private String accelPrefix = "/";
     private boolean directServe;
-    private int avatarMaxSize = 102400;
+    private int avatarMaxSize = 204800;
     private int verifyMaxSize = 10485760;
-    private int previewMaxSize = 10485760;
+    private int previewMaxSize = 1048576;
+    private int previewWidth = 900;
 
     public String getPath() {
         return path;
@@ -64,6 +65,14 @@ public class MediaConfig {
 
     public void setPreviewMaxSize(int previewMaxSize) {
         this.previewMaxSize = previewMaxSize;
+    }
+
+    public int getPreviewWidth() {
+        return previewWidth;
+    }
+
+    public void setPreviewWidth(int previewWidth) {
+        this.previewWidth = previewWidth;
     }
 
 }

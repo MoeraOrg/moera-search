@@ -115,7 +115,8 @@ public class PostingMediaUpdateJob extends StatelessJob<PostingMediaUpdateJob.Pa
             parameters.mediaId
         );
         attachmentIngest.updateText(
-            parameters.nodeName, parameters.postingId, parameters.mediaId, parameters.title, parameters.textContent
+            parameters.nodeName, parameters.postingId, null, parameters.mediaId, parameters.title,
+            parameters.textContent
         );
     }
 
