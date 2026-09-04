@@ -331,10 +331,11 @@ public class FavorRepository {
     public void createNoviceFavors(String nodeName, String postingId, long createdAt, long deadline) {
         database.tx().run(
             """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId}),
+                  (m:Machine)
             CREATE (f:Favor)
             CREATE (f)-[:DONE_TO]->(p)
-            CREATE (f)-[:DONE_BY]->(:Machine)
+            CREATE (f)-[:DONE_BY]->(m)
             CREATE (f)-[:CAUSED_BY]->(:Onboarding)
             SET f.value = $value,
                 f.decayHours = $decayHours,

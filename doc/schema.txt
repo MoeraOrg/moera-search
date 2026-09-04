@@ -118,6 +118,8 @@ digest              byte[]
 createdAt           int NOT NULL            (ms timestamp)
 UNIQUE media_file_id ON (id)
 
+(:Machine) UNIQUE
+
 (:MoeraNode)
 name                string NOT NULL
 fullName            string
@@ -212,8 +214,6 @@ emoji               int NOT NULL
 createdAt           int NOT NULL            (sec timestamp)
 viewPrincipal       string
 
-(:System) UNIQUE
-
 (:Upgrade) UNIQUE
 
 (:Version) UNIQUE
@@ -238,7 +238,7 @@ updatedAt           int NOT NULL            (ms timestamp)
 
 (:Publication)-[:CONTAINS]->(:Posting)
 
-(:Favor)-[:DONE_BY]->(:MoeraNode|System)
+(:Favor)-[:DONE_BY]->(:MoeraNode|Machine)
 
 (:Favor)-[:DONE_TO]->(:MoeraNode|Posting)
 

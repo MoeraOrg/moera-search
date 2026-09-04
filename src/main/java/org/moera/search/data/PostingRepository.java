@@ -544,7 +544,7 @@ public class PostingRepository {
                 MATCH (c)-[:SUBSCRIBED|FRIEND]->(fr:MoeraNode)<-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)
                 RETURN p
                 UNION
-                MATCH (:System)<-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)
+                MATCH (:Machine)<-[:DONE_BY]-(:Favor)-[:DONE_TO]->(p:Posting)
                 RETURN p
             }
             ORDER BY p.recommendationOrder DESC
