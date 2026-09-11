@@ -129,8 +129,9 @@ ordering removes the onboarding term from the score before the corresponding fav
 r = number of positive reactions directly on the posting
 c = number of comments directly under the posting
 ob = number of current onboarding favors targeting the posting
+external = 25 when the source node has a non-empty sourceUri, otherwise 0
 
-engagement = r + 5*c + 25*ob
+engagement = r + 5*c + 25*ob - external
 boost = trunc(tanh(engagement / 35) * 600000)
 recommendationOrder = createdAt + boost
 ```
@@ -139,13 +140,16 @@ Both `createdAt` and the resulting order are in seconds. The boost is therefore 
 days. It saturates through `tanh`: additional engagement has progressively less effect. Each comment has five times the
 weight of a positive reaction. A current onboarding favor contributes 25 to this particular formula; its stored value of
 50 is not read by this formula or by the posting-popularity queries. Only the number of matching onboarding favors
-matters to `recommendationOrder`.
+matters to `recommendationOrder`. A posting whose source node has a non-empty `sourceUri` receives a penalty of 25
+before the engagement value passes through `tanh`.
 
 The value is updated on posting fill, direct comment addition/deletion, direct posting reaction addition/deletion, and
-the hourly removal of expired onboarding favors. Publication favors and their deletion do not change it.
+the hourly removal of expired onboarding favors. Updating a source node profile also recomputes the value for all its
+postings so changes to `sourceUri` take effect. Publication favors and their deletion do not change it.
 
 Migration V26 initialized existing postings with the same formula without the onboarding term. Runtime recomputation
-uses the current formula with onboarding.
+uses the current formula with onboarding and the external-source penalty. Migration V33 applies the current formula to
+existing postings whose source profile already contains `sourceUri`.
 
 ### Posting popularity
 

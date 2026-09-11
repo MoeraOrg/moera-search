@@ -46,13 +46,16 @@ public class NodeRepository {
         var args = new HashMap<String, Object>();
         args.put("name", name);
         args.put("fullName", whoAmI.getFullName());
+        args.put("sourceUri", whoAmI.getSourceUri());
         args.put("title", whoAmI.getTitle());
 
         database.tx().run(
             """
             MATCH (n:MoeraNode {name: $name})
-            SET n.fullName = $fullName, n.title = $title
-            """,
+            SET n.fullName = $fullName, n.sourceUri = $sourceUri, n.title = $title
+            WITH n
+            MATCH (n)<-[:SOURCE]-(p:Posting)
+            """ + RecommendationOrder.SET,
             args
         );
     }

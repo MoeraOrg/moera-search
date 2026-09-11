@@ -96,6 +96,7 @@ public class CommentRepository {
         args.put("commentId", commentId);
         args.put("revisionId", info.getRevisionId());
         args.put("ownerFullName", info.getOwnerFullName());
+        args.put("ownerSourceUri", info.getOwnerSourceUri());
         args.put("heading", info.getHeading());
         if (info.getRepliedTo() != null) {
             String repliedTo = objectMapper.writeValueAsString(SearchRepliedToUtil.build(info.getRepliedTo()));
@@ -123,6 +124,7 @@ public class CommentRepository {
                   <-[:UNDER]-(c:Comment {id: $commentId})
             SET c.revisionId = $revisionId,
                 c.ownerFullName = $ownerFullName,
+                c.ownerSourceUri = $ownerSourceUri,
                 c.heading = $heading,
                 c.repliedTo = $repliedTo,
                 c.bodyPreview = $bodyPreview,

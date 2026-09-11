@@ -22,6 +22,7 @@ public class SearchNodeInfoUtil {
         var info = new SearchNodeInfo();
         info.setNodeName(node.get("name").asString(null));
         info.setFullName(node.get("fullName").asString(null));
+        info.setNodeSourceUri(node.get("sourceUri").asString(null));
         info.setTitle(node.get("title").asString(null));
         if (avatar != null) {
             info.setAvatar(AvatarImageUtil.build(avatar, avatarShape));

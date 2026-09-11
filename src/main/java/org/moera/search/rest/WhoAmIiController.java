@@ -29,6 +29,7 @@ public class WhoAmIiController {
         WhoAmI whoAmI = new WhoAmI();
         whoAmI.setNodeName(config.getNodeName());
         whoAmI.setFullName(config.getNodeFullName());
+        whoAmI.setSourceUri(config.getNodeSourceUri());
         whoAmI.setTitle(config.getNodeTitle());
         whoAmI.setType(NodeType.SEARCH);
 

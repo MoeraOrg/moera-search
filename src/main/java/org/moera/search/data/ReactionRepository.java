@@ -24,6 +24,7 @@ public class ReactionRepository {
         }
         args.put("ownerName", reaction.getOwnerName());
         args.put("ownerFullName", reaction.getOwnerFullName());
+        args.put("ownerSourceUri", reaction.getOwnerSourceUri());
         args.put("negative", reaction.getNegative() != null ? reaction.getNegative() : false);
         args.put("emoji", reaction.getEmoji());
         args.put("createdAt", reaction.getCreatedAt());
@@ -36,6 +37,7 @@ public class ReactionRepository {
                       (o:MoeraNode {name: $ownerName})
                 MERGE (p)<-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(o)
                 SET r.ownerFullName = $ownerFullName,
+                    r.ownerSourceUri = $ownerSourceUri,
                     r.negative = $negative,
                     r.emoji = $emoji,
                     r.createdAt = $createdAt,
@@ -50,6 +52,7 @@ public class ReactionRepository {
                       <-[:UNDER]-(c:Comment {id: $commentId}), (o:MoeraNode {name: $ownerName})
                 MERGE (c)<-[:REACTS_TO]-(r:Reaction)-[:OWNER]->(o)
                 SET r.ownerFullName = $ownerFullName,
+                    r.ownerSourceUri = $ownerSourceUri,
                     r.negative = $negative,
                     r.emoji = $emoji,
                     r.createdAt = $createdAt,

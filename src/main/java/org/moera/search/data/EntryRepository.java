@@ -333,6 +333,11 @@ public class EntryRepository {
             ownerFullName = owner.get("fullName").asString(null);
         }
         info.setOwnerFullName(ownerFullName);
+        var ownerSourceUri = entry.get("ownerSourceUri").asString(null);
+        if (ownerSourceUri == null) {
+            ownerSourceUri = owner.get("sourceUri").asString(null);
+        }
+        info.setOwnerSourceUri(ownerSourceUri);
         var avatarShape = r.get("avatarShape").asString(null);
         var avatar = r.get("avatar").isNull() ? null : new MediaFile(r.get("avatar").asNode());
         if (avatar != null) {

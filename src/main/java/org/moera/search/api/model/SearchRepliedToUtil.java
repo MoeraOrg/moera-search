@@ -11,6 +11,7 @@ public class SearchRepliedToUtil {
         searchRepliedTo.setRevisionId(repliedTo.getRevisionId());
         searchRepliedTo.setName(repliedTo.getName());
         searchRepliedTo.setFullName(repliedTo.getFullName());
+        searchRepliedTo.setSourceUri(repliedTo.getSourceUri());
         searchRepliedTo.setAvatar(repliedTo.getAvatar());
         searchRepliedTo.setHeading(repliedTo.getHeading());
         return searchRepliedTo;

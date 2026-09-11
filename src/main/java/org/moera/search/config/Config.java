@@ -10,6 +10,7 @@ public class Config {
     private boolean dryRun;
     private String nodeName;
     private String nodeFullName;
+    private String nodeSourceUri;
     private String nodeTitle;
     private String signingKey;
     private String address;
@@ -42,6 +43,14 @@ public class Config {
 
     public void setNodeFullName(String nodeFullName) {
         this.nodeFullName = nodeFullName;
+    }
+
+    public String getNodeSourceUri() {
+        return nodeSourceUri;
+    }
+
+    public void setNodeSourceUri(String nodeSourceUri) {
+        this.nodeSourceUri = nodeSourceUri;
     }
 
     public String getNodeTitle() {

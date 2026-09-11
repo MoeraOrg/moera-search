@@ -50,17 +50,6 @@ public class PostingRepository {
             COUNT {(p)<-[:UNDER]-(c:Comment WHERE c.createdAt > $yesterday)} AS dayComments
         """;
 
-    // TODO take publications in timelines of other users into account
-    private static final String SET_RECOMMENDATION_ORDER =
-        """
-        WITH
-            p,
-            COUNT {(p)<-[:REACTS_TO]-(:Reaction {negative: false})} AS r,
-            COUNT {(p)<-[:UNDER]-(:Comment)} AS c,
-            COUNT {(p)<-[:DONE_TO]-(:Favor)-[:CAUSED_BY]->(:Onboarding)} AS ob
-        SET p.recommendationOrder = p.createdAt + toInteger(apoc.math.tanh((r + c * 5 + ob * 25) / 35.0) * 600000);
-        """;
-
     @Inject
     private Database database;
 
@@ -125,6 +114,7 @@ public class PostingRepository {
         args.put("postingId", postingId);
         args.put("revisionId", info.getRevisionId());
         args.put("ownerFullName", info.getOwnerFullName());
+        args.put("ownerSourceUri", info.getOwnerSourceUri());
         args.put("heading", info.getHeading());
         var bodyPreview = new Body();
         if (info.getBodyPreview() != null && !info.getBodyPreview().getEncoded().equals(Body.EMPTY)) {
@@ -152,6 +142,7 @@ public class PostingRepository {
             MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
             SET p.revisionId = $revisionId,
                 p.ownerFullName = $ownerFullName,
+                p.ownerSourceUri = $ownerSourceUri,
                 p.heading = $heading,
                 p.bodyPreview = $bodyPreview,
                 p.imageCount = $imageCount,
@@ -604,6 +595,7 @@ public class PostingRepository {
         var owner = r.get("owner").asNode();
         info.setOwnerName(owner.get("name").asString(null));
         info.setOwnerFullName(owner.get("fullName").asString(null));
+        info.setOwnerSourceUri(owner.get("sourceUri").asString(null));
         var avatarShape = r.get("avatarShape").asString(null);
         var avatar = r.get("avatar").isNull() ? null : new MediaFile(r.get("avatar").asNode());
         if (avatar != null) {
@@ -731,8 +723,8 @@ public class PostingRepository {
     public void updateRecommendationOrder(String nodeName, String postingId) {
         database.tx().run(
             """
-            MATCH (:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
-            """ + SET_RECOMMENDATION_ORDER,
+            MATCH (n:MoeraNode {name: $nodeName})<-[:SOURCE]-(p:Posting {id: $postingId})
+            """ + RecommendationOrder.SET,
             Map.of(
                 "nodeName", nodeName,
                 "postingId", postingId
@@ -745,7 +737,8 @@ public class PostingRepository {
             """
             MATCH (p:Posting)<-[:DONE_TO]-(f:Favor)
             WHERE f.deadline < $now
-            """ + SET_RECOMMENDATION_ORDER,
+            MATCH (p)-[:SOURCE]->(n:MoeraNode)
+            """ + RecommendationOrder.SET,
             Map.of("now", Instant.now().toEpochMilli())
         );
     }
